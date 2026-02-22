@@ -1078,8 +1078,14 @@
                 <div class="card-body">
                     <p class="text-muted small mb-3">
                         Available placeholders: <code>[Name]</code> <code>[Balance]</code> <code>[BalanceStatus]</code> <code>[Date]</code>
-                        &nbsp;— Leave a field blank to omit that line from the email.
+                        &nbsp;— Leave a body field blank to omit that line from the email.
                     </p>
+                    <div class="mb-3">
+                        <label for="tpl_email_subject" class="form-label">Subject</label>
+                        <input type="text" class="form-control" id="tpl_email_subject"
+                               name="tpl_email_subject" value="{{ cfg.tpl_email_subject }}"
+                               placeholder="Bank of Tina - Weekly Balance Update ([Date])">
+                    </div>
                     <div class="mb-3">
                         <label for="tpl_email_greeting" class="form-label">Greeting</label>
                         <input type="text" class="form-control" id="tpl_email_greeting"
@@ -1119,8 +1125,14 @@
                 <div class="card-body">
                     <p class="text-muted small mb-3">
                         Available placeholders: <code>[Date]</code> <code>[UserCount]</code>
-                        &nbsp;— Leave a field blank to omit that line.
+                        &nbsp;— Leave a body field blank to omit that line.
                     </p>
+                    <div class="mb-3">
+                        <label for="tpl_admin_subject" class="form-label">Subject</label>
+                        <input type="text" class="form-control" id="tpl_admin_subject"
+                               name="tpl_admin_subject" value="{{ cfg.tpl_admin_subject }}"
+                               placeholder="Bank of Tina - Admin Summary ([Date])">
+                    </div>
                     <div class="mb-3">
                         <label for="tpl_admin_intro" class="form-label">Intro line</label>
                         <input type="text" class="form-control" id="tpl_admin_intro"
@@ -1146,9 +1158,15 @@
                 </div>
                 <div class="card-body">
                     <p class="text-muted small mb-3">
-                        Available placeholders: <code>[Date]</code>
-                        &nbsp;— Leave blank to omit the footer.
+                        Available placeholders: <code>[Date]</code> <code>[BackupStatus]</code>
+                        &nbsp;— Leave the footer blank to omit it.
                     </p>
+                    <div class="mb-3">
+                        <label for="tpl_backup_subject" class="form-label">Subject</label>
+                        <input type="text" class="form-control" id="tpl_backup_subject"
+                               name="tpl_backup_subject" value="{{ cfg.tpl_backup_subject }}"
+                               placeholder="Bank of Tina - Backup [BackupStatus] ([Date])">
+                    </div>
                     <div class="mb-3">
                         <label for="tpl_backup_footer" class="form-label">Footer</label>
                         <input type="text" class="form-control" id="tpl_backup_footer"

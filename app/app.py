@@ -85,12 +85,15 @@ TEMPLATE_DEFAULTS = {
     'color_email_grad_end':     '#764ba2',
     'color_balance_positive':   '#28a745',
     'color_balance_negative':   '#dc3545',
+    'tpl_email_subject':   'Bank of Tina - Weekly Balance Update ([Date])',
     'tpl_email_greeting':  'Hi [Name],',
     'tpl_email_intro':     "Here's your weekly update from the Bank of Tina:",
     'tpl_email_footer1':   'This is an automated weekly update from the Bank of Tina system.',
     'tpl_email_footer2':   'Making office lunches easier! 🥗',
+    'tpl_admin_subject':   'Bank of Tina - Admin Summary ([Date])',
     'tpl_admin_intro':     '',
     'tpl_admin_footer':    'This is an automated admin summary from the Bank of Tina system.',
+    'tpl_backup_subject':  'Bank of Tina - Backup [BackupStatus] ([Date])',
     'tpl_backup_footer':   'This is an automated backup report from the Bank of Tina system.',
 }
 
@@ -481,7 +484,7 @@ def send_all_emails():
     success, fail = 0, 0
     errors = []
     debug = get_setting('email_debug', '0') == '1'
-    subject = f"Bank of Tina - Weekly Balance Update ({now_local().strftime('%Y-%m-%d')})"
+    subject = apply_template(get_tpl('tpl_email_subject'), Date=now_local().strftime('%Y-%m-%d'))
     for user in users:
         html = build_email_html(user)
         ok, err = send_single_email(user.email, user.name, subject, html)
@@ -504,7 +507,9 @@ def send_all_emails():
     if get_setting('admin_summary_email', '0') == '1' and admin_id:
         admin = User.query.get(int(admin_id)) if admin_id.isdigit() else None
         if admin:
-            summary_subject = f"Bank of Tina - Admin Summary ({now_local().strftime('%Y-%m-%d')})"
+            summary_subject = apply_template(get_tpl('tpl_admin_subject'),
+                                             Date=now_local().strftime('%Y-%m-%d'),
+                                             UserCount=len(users))
             summary_html = build_admin_summary_email(users)
             ok, err = send_single_email(admin.email, admin.name, summary_subject, summary_html)
             if debug:
@@ -817,7 +822,9 @@ def _add_backup_job():
                 if admin:
                     kept = len(_list_backups())
                     html = build_backup_status_email(ok, result, kept, pruned)
-                    subject = f"Bank of Tina - Backup {'Success' if ok else 'Failed'} ({now_local().strftime('%Y-%m-%d')})"
+                    subject = apply_template(get_tpl('tpl_backup_subject'),
+                                             Date=now_local().strftime('%Y-%m-%d'),
+                                             BackupStatus='Success' if ok else 'Failed')
                     send_single_email(admin.email, admin.name, subject, html)
 
     scheduler.add_job(job, 'cron', day_of_week=day, hour=hour, minute=minute,
@@ -1337,12 +1344,15 @@ def settings():
         'color_email_grad_end':     get_tpl('color_email_grad_end'),
         'color_balance_positive':   get_tpl('color_balance_positive'),
         'color_balance_negative':   get_tpl('color_balance_negative'),
+        'tpl_email_subject':   get_tpl('tpl_email_subject'),
         'tpl_email_greeting':  get_tpl('tpl_email_greeting'),
         'tpl_email_intro':     get_tpl('tpl_email_intro'),
         'tpl_email_footer1':   get_tpl('tpl_email_footer1'),
         'tpl_email_footer2':   get_tpl('tpl_email_footer2'),
+        'tpl_admin_subject':   get_tpl('tpl_admin_subject'),
         'tpl_admin_intro':     get_tpl('tpl_admin_intro'),
         'tpl_admin_footer':    get_tpl('tpl_admin_footer'),
+        'tpl_backup_subject':  get_tpl('tpl_backup_subject'),
         'tpl_backup_footer':   get_tpl('tpl_backup_footer'),
         # Backup
         'backup_enabled':      get_setting('backup_enabled',      '0'),
@@ -1648,8 +1658,10 @@ def settings_templates():
         if re.match(r'^#[0-9a-fA-F]{6}$', val):
             set_setting(key, val)
 
-    text_keys = ['tpl_email_greeting', 'tpl_email_intro', 'tpl_email_footer1',
-                 'tpl_email_footer2', 'tpl_admin_intro', 'tpl_admin_footer', 'tpl_backup_footer']
+    text_keys = ['tpl_email_subject', 'tpl_email_greeting', 'tpl_email_intro',
+                 'tpl_email_footer1', 'tpl_email_footer2',
+                 'tpl_admin_subject', 'tpl_admin_intro', 'tpl_admin_footer',
+                 'tpl_backup_subject', 'tpl_backup_footer']
     for key in text_keys:
         set_setting(key, request.form.get(key, '')[:500])
 
