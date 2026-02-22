@@ -101,6 +101,13 @@ class AutoCollectLog(db.Model):
     category = db.Column(db.String(20), nullable=False)   # 'item' | 'description' | 'price' | 'system'
     message  = db.Column(db.String(500), nullable=False)
 
+class EmailLog(db.Model):
+    id        = db.Column(db.Integer, primary_key=True)
+    sent_at   = db.Column(db.DateTime, default=datetime.utcnow)
+    level     = db.Column(db.String(10), nullable=False)   # 'SUCCESS' | 'FAIL' | 'INFO'
+    recipient = db.Column(db.String(200))                  # "Name <email>" or None for system lines
+    message   = db.Column(db.String(500), nullable=False)
+
 # Helper Functions
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -283,15 +290,34 @@ def send_all_emails():
     users = User.query.filter_by(is_active=True).all()
     success, fail = 0, 0
     errors = []
+    debug = get_setting('email_debug', '0') == '1'
     subject = f"Bank of Tina - Weekly Balance Update ({datetime.now().strftime('%Y-%m-%d')})"
     for user in users:
         html = build_email_html(user)
         ok, err = send_single_email(user.email, user.name, subject, html)
         if ok:
             success += 1
+            if debug:
+                db.session.add(EmailLog(level='SUCCESS',
+                                        recipient=f'{user.name} <{user.email}>',
+                                        message='Email sent successfully'))
         else:
             fail += 1
             errors.append(f"{user.name} <{user.email}>: {err}")
+            if debug:
+                db.session.add(EmailLog(level='FAIL',
+                                        recipient=f'{user.name} <{user.email}>',
+                                        message=err or 'Unknown error'))
+
+    if debug:
+        db.session.add(EmailLog(level='INFO', recipient=None,
+                                message=f'Run complete: {success} sent, {fail} failed'))
+        db.session.commit()
+        oldest_kept = (EmailLog.query.order_by(EmailLog.id.desc()).offset(500).first())
+        if oldest_kept:
+            EmailLog.query.filter(EmailLog.id <= oldest_kept.id).delete()
+        db.session.commit()
+
     return success, fail, errors
 
 # APScheduler
@@ -889,6 +915,7 @@ def settings():
     common_prices       = CommonPrice.query.order_by(CommonPrice.value).all()
     common_blacklist    = CommonBlacklist.query.order_by(CommonBlacklist.type, CommonBlacklist.value).all()
     auto_collect_logs   = AutoCollectLog.query.order_by(AutoCollectLog.id.desc()).limit(500).all()
+    email_logs          = EmailLog.query.order_by(EmailLog.id.desc()).limit(500).all()
     all_users = User.query.order_by(User.name).all()
     timezone_groups = {}
     for tz in pytz.common_timezones:
@@ -897,6 +924,7 @@ def settings():
     return render_template('settings.html', cfg=cfg, common_items=common_items,
                            common_descriptions=common_descriptions, common_prices=common_prices,
                            common_blacklist=common_blacklist, auto_collect_logs=auto_collect_logs,
+                           email_logs=email_logs,
                            all_users=all_users, timezone_groups=timezone_groups)
 
 @app.route('/settings/email', methods=['POST'])
@@ -922,6 +950,13 @@ def settings_send_now():
     if errors and get_setting('email_debug', '0') == '1':
         for err in errors:
             flash(f'Debug: {err}', 'error')
+    return redirect(url_for('settings'))
+
+@app.route('/settings/email/clear-log', methods=['POST'])
+def settings_email_clear_log():
+    EmailLog.query.delete()
+    db.session.commit()
+    flash('Email debug log cleared.', 'success')
     return redirect(url_for('settings'))
 
 @app.route('/settings/schedule', methods=['POST'])

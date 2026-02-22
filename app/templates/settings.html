@@ -277,6 +277,29 @@
 
             </div>
         </div>
+
+        {% if cfg.email_debug == '1' %}
+        <div class="card mt-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-journal-text"></i> Email Debug Log</span>
+                <form method="POST" action="{{ url_for('settings_email_clear_log') }}" class="d-inline">
+                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                            onclick="return confirm('Clear the entire email debug log?')">
+                        <i class="bi bi-trash"></i> Clear Log
+                    </button>
+                </form>
+            </div>
+            <div class="card-body">
+                {% if email_logs %}
+                <pre class="bg-dark text-light p-3 rounded small mb-0" style="max-height: 400px; overflow-y: auto; font-size: 0.78rem;">{% for log in email_logs %}{{ log.sent_at.strftime('%Y-%m-%d %H:%M') }} [{{ log.level|upper }}] {% if log.recipient %}{{ '%-40s'|format(log.recipient) }} {% endif %}{{ log.message }}
+{% endfor %}</pre>
+                {% else %}
+                <p class="text-muted small mb-0">No log entries yet. Send emails to generate log entries.</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
     </div><!-- /tab-email -->
 
     <!-- ── Common tab ── -->
