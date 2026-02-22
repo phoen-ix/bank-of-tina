@@ -1242,6 +1242,31 @@ def edit_transaction(transaction_id):
         if new_to:
             new_to.balance += trans.amount
 
+    # Receipt: remove first, then upload (upload wins if both submitted)
+    if request.form.get('remove_receipt'):
+        if trans.receipt_path:
+            abs_path = os.path.join(app.config['UPLOAD_FOLDER'], trans.receipt_path)
+            try:
+                os.remove(abs_path)
+            except OSError:
+                pass
+        trans.receipt_path = None
+
+    new_file = request.files.get('receipt')
+    if new_file and new_file.filename:
+        # Delete old file if there was one and we're replacing it
+        if trans.receipt_path:
+            abs_old = os.path.join(app.config['UPLOAD_FOLDER'], trans.receipt_path)
+            try:
+                os.remove(abs_old)
+            except OSError:
+                pass
+        buyer = User.query.get(trans.from_user_id) if trans.from_user_id else None
+        buyer_name = buyer.name if buyer else 'unknown'
+        saved = save_receipt(new_file, buyer_name)
+        if saved:
+            trans.receipt_path = saved
+
     db.session.commit()
     flash('Transaction updated successfully!', 'success')
     return redirect(url_for('view_transactions'))
