@@ -58,8 +58,8 @@ The Settings page is split into five tabs:
 
 | Tab | What you configure |
 |-----|--------------------|
-| **General** | Default number of blank item rows in the Add Transaction form; number of recent transactions shown on the dashboard (0 hides the section); timezone |
-| **Email** | SMTP credentials; enable/disable email sending; debug mode (logs runs to DB, surfaces SMTP errors in the UI); send balance emails on demand; set a recurring auto-schedule |
+| **General** | Default number of blank item rows in the Add Transaction form; number of recent transactions shown on the dashboard (0 hides the section); timezone; site admin (used for admin summary emails) |
+| **Email** | SMTP credentials; enable/disable email sending; debug mode (logs runs to DB, surfaces SMTP errors in the UI); admin summary email toggle; send balance emails on demand; set a recurring auto-schedule |
 | **Common** | Global autocomplete toggle; manually manage item names, descriptions, and prices (each with its own blacklist); configure the auto-collect scheduled job and view its debug log |
 | **Backup** | Create/download/delete backups; restore from any backup or an uploaded file; configure an automatic backup schedule with auto-prune; debug log |
 | **Users** | Add new users; view all users with their status and balance; deactivate or reactivate any user |
@@ -68,6 +68,7 @@ The Settings page is split into five tabs:
 - SMTP credentials are stored securely in the database (configured via Settings → Email)
 - **Send Now** button to immediately email all active users their current balance
 - **Auto-schedule** — pick a day and time (24 h clock); the schedule survives container restarts
+- **Admin summary email** — when a site admin is configured (Settings → General), an optional extra email is sent to them after each run with a colour-coded balance overview of all active users
 - Standalone `send_weekly_email.py` script still works via environment variables if needed
 
 ---
@@ -144,6 +145,7 @@ That's it. SMTP credentials and the email schedule are configured from the **Set
 1. **Settings** → **Email** tab
 2. Fill in SMTP credentials and click **Save Settings**
 3. Use **Send Emails Now** to test, or configure a recurring schedule under **Auto-Schedule**
+4. Optionally enable **Send admin summary email** — requires a site admin to be set in the General tab first
 
 ### Creating a Backup
 1. **Settings** → **Backup** tab → **Create Backup Now**
