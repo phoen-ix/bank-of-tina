@@ -249,6 +249,26 @@ def apply_template(text, **kwargs):
         text = text.replace(f'[{key}]', str(value) if value is not None else '')
     return text
 
+def parse_amount(s):
+    """Parse a user-supplied decimal string, accepting both '.' and ',' as separator."""
+    if s is None:
+        return 0.0
+    return float(str(s).strip().replace(',', '.'))
+
+def fmt_amount(value):
+    """Format a float with 2 decimal places using the configured decimal separator."""
+    sep = get_setting('decimal_separator', '.')
+    return f'{value:.2f}'.replace('.', sep)
+
+@app.template_filter('money')
+def money_filter(value):
+    """Jinja filter: format a float as 2 decimal places using the configured decimal separator."""
+    try:
+        return fmt_amount(float(value))
+    except (ValueError, TypeError):
+        sep = get_setting('decimal_separator', '.')
+        return '0' + sep + '00'
+
 def hex_to_rgb(hex_color):
     """Convert #rrggbb to 'r, g, b' string for CSS custom properties."""
     try:
@@ -278,6 +298,7 @@ def inject_theme():
         theme_navbar_rgb=hex_to_rgb(navbar),
         theme_balance_positive=pos,
         theme_balance_negative=neg,
+        decimal_sep=get_setting('decimal_separator', '.'),
     )
 
 # Email logic
@@ -313,10 +334,10 @@ def build_email_html(user):
 
     if user.balance < 0:
         balance_class = "color: #dc3545;"
-        balance_status = f"You owe €{abs(user.balance):.2f}"
+        balance_status = f"You owe €{fmt_amount(abs(user.balance))}"
     elif user.balance > 0:
         balance_class = "color: #28a745;"
-        balance_status = f"You are owed €{user.balance:.2f}"
+        balance_status = f"You are owed €{fmt_amount(user.balance)}"
     else:
         balance_class = "color: #6c757d;"
         balance_status = "Your balance is settled"
@@ -349,7 +370,7 @@ def build_email_html(user):
                         {direction} {other_user}
                     </td>
                     <td style="padding: 8px; border-bottom: 1px solid #dee2e6; text-align: right; {amount_class}">
-                        {amount_sign}€{trans.amount:.2f}
+                        {amount_sign}€{fmt_amount(trans.amount)}
                     </td>
                 </tr>
                 """
@@ -380,7 +401,7 @@ def build_email_html(user):
 
     grad_start = get_tpl('color_email_grad_start')
     grad_end   = get_tpl('color_email_grad_end')
-    tpl_vars   = dict(Name=user.name, Balance=f'€{user.balance:.2f}',
+    tpl_vars   = dict(Name=user.name, Balance=f'€{fmt_amount(user.balance)}',
                       BalanceStatus=balance_status, Date=now_local().strftime('%Y-%m-%d'))
 
     greeting = apply_template(get_tpl('tpl_email_greeting'), **tpl_vars)
@@ -412,7 +433,7 @@ def build_email_html(user):
 
             <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
                 <p style="margin: 0 0 10px 0; color: #6c757d; text-transform: uppercase; font-size: 12px; font-weight: bold;">Current Balance</p>
-                <h2 style="margin: 0; font-size: 36px; {balance_class}">€{user.balance:.2f}</h2>
+                <h2 style="margin: 0; font-size: 36px; {balance_class}">€{fmt_amount(user.balance)}</h2>
                 <p style="margin: 10px 0 0 0; {balance_class}">{balance_status}</p>
             </div>
 
@@ -449,7 +470,7 @@ def build_admin_summary_email(users):
             <tr>
                 <td style="padding: 10px 8px; border-bottom: 1px solid #dee2e6;">{user.name}</td>
                 <td style="padding: 10px 8px; border-bottom: 1px solid #dee2e6; color: #6c757d; font-size: 0.9em;">{user.email}</td>
-                <td style="padding: 10px 8px; border-bottom: 1px solid #dee2e6; text-align: right; font-weight: bold; color: {color};">€{user.balance:.2f}</td>
+                <td style="padding: 10px 8px; border-bottom: 1px solid #dee2e6; text-align: right; font-weight: bold; color: {color};">€{fmt_amount(user.balance)}</td>
             </tr>"""
 
     return f"""<!DOCTYPE html>
@@ -1030,7 +1051,7 @@ def add_transaction():
 
     if transaction_type == 'deposit':
         user_id = int(request.form.get('user_id'))
-        amount = float(request.form.get('amount'))
+        amount = parse_amount(request.form.get('amount'))
         description = request.form.get('description', 'Deposit')
 
         transaction = Transaction(
@@ -1042,11 +1063,11 @@ def add_transaction():
         )
         db.session.add(transaction)
         update_balance(user_id, amount)
-        flash(f'Deposit of €{amount:.2f} added successfully!', 'success')
+        flash(f'Deposit of €{fmt_amount(amount)} added successfully!', 'success')
 
     elif transaction_type == 'withdrawal':
         user_id = int(request.form.get('user_id'))
-        amount = float(request.form.get('amount'))
+        amount = parse_amount(request.form.get('amount'))
         description = request.form.get('description', 'Withdrawal')
 
         transaction = Transaction(
@@ -1058,7 +1079,7 @@ def add_transaction():
         )
         db.session.add(transaction)
         update_balance(user_id, -amount)
-        flash(f'Withdrawal of €{amount:.2f} processed successfully!', 'success')
+        flash(f'Withdrawal of €{fmt_amount(amount)} processed successfully!', 'success')
 
     elif transaction_type == 'expense':
         buyer_id = int(request.form.get('buyer_id'))
@@ -1078,7 +1099,7 @@ def add_transaction():
             debts = {}
             for item in items:
                 debtor_id = int(item['debtor_id'])
-                price = float(item['price'])
+                price = parse_amount(item['price'])
                 if debtor_id != buyer_id:
                     debts[debtor_id] = debts.get(debtor_id, 0) + price
 
@@ -1105,7 +1126,7 @@ def add_transaction():
                         expense_item = ExpenseItem(
                             transaction=transaction,
                             item_name=item['name'],
-                            price=float(item['price']),
+                            price=parse_amount(item['price']),
                             buyer_id=buyer_id
                         )
                         db.session.add(expense_item)
@@ -1198,13 +1219,13 @@ def search():
                 pass
         if amount_min:
             try:
-                qry = qry.filter(Transaction.amount >= float(amount_min))
-            except ValueError:
+                qry = qry.filter(Transaction.amount >= parse_amount(amount_min))
+            except (ValueError, TypeError):
                 pass
         if amount_max:
             try:
-                qry = qry.filter(Transaction.amount <= float(amount_max))
-            except ValueError:
+                qry = qry.filter(Transaction.amount <= parse_amount(amount_max))
+            except (ValueError, TypeError):
                 pass
         if has_receipt:
             qry = qry.filter(Transaction.receipt_path.isnot(None),
@@ -1282,7 +1303,7 @@ def edit_transaction(transaction_id):
             if items:
                 total = 0.0
                 for item in items:
-                    price = float(item['price'])
+                    price = parse_amount(item['price'])
                     db.session.add(ExpenseItem(
                         transaction_id=trans.id,
                         item_name=item['name'],
@@ -1299,8 +1320,8 @@ def edit_transaction(transaction_id):
         trans.amount = new_items_total
     else:
         try:
-            trans.amount = float(request.form.get('amount', old_amount))
-        except ValueError:
+            trans.amount = parse_amount(request.form.get('amount', old_amount))
+        except (ValueError, TypeError):
             trans.amount = old_amount
 
     # Apply new balance effects
@@ -1426,6 +1447,7 @@ def settings():
         'backup_hour':         get_setting('backup_hour',         '3'),
         'backup_minute':       get_setting('backup_minute',       '0'),
         'backup_keep':         get_setting('backup_keep',         '7'),
+        'decimal_separator':   get_setting('decimal_separator',   '.'),
     }
     common_items        = CommonItem.query.order_by(CommonItem.name).all()
     common_descriptions = CommonDescription.query.order_by(CommonDescription.value).all()
@@ -1531,6 +1553,10 @@ def settings_general():
     admin_id = request.form.get('site_admin_id', '').strip()
     if admin_id == '' or (admin_id.isdigit() and User.query.get(int(admin_id))):
         set_setting('site_admin_id', admin_id)
+    sep = request.form.get('decimal_separator', '.')
+    if sep not in ('.', ','):
+        sep = '.'
+    set_setting('decimal_separator', sep)
     flash('General settings saved.', 'success')
     return redirect(url_for('settings'))
 
@@ -1601,14 +1627,14 @@ def delete_common_description(item_id):
 @app.route('/settings/common-prices/add', methods=['POST'])
 def add_common_price():
     try:
-        value = float(request.form.get('value', ''))
+        value = parse_amount(request.form.get('value', ''))
     except (ValueError, TypeError):
         flash('Valid price is required.', 'error')
         return redirect(url_for('settings'))
     if not CommonPrice.query.filter_by(value=value).first():
         db.session.add(CommonPrice(value=value))
         db.session.commit()
-    flash(f'€{value:.2f} added to common prices.', 'success')
+    flash(f'€{fmt_amount(value)} added to common prices.', 'success')
     return redirect(url_for('settings'))
 
 @app.route('/settings/common-prices/<int:item_id>/delete', methods=['POST'])
@@ -1617,7 +1643,7 @@ def delete_common_price(item_id):
     value = item.value
     db.session.delete(item)
     db.session.commit()
-    flash(f'€{value:.2f} removed from common prices.', 'success')
+    flash(f'€{fmt_amount(value)} removed from common prices.', 'success')
     return redirect(url_for('settings'))
 
 @app.route('/settings/common-blacklist/add', methods=['POST'])

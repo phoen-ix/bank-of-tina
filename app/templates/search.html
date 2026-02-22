@@ -58,12 +58,12 @@
                     </div>
                     <div class="col-sm-6 col-md-3">
                         <label class="form-label small fw-semibold">Min amount (€)</label>
-                        <input type="number" step="0.01" min="0" class="form-control form-control-sm"
-                               name="amount_min" value="{{ amount_min }}" placeholder="0.00">
+                        <input type="text" inputmode="decimal" class="form-control form-control-sm"
+                               name="amount_min" value="{{ amount_min }}" placeholder="0{{ decimal_sep }}00">
                     </div>
                     <div class="col-sm-6 col-md-3">
                         <label class="form-label small fw-semibold">Max amount (€)</label>
-                        <input type="number" step="0.01" min="0" class="form-control form-control-sm"
+                        <input type="text" inputmode="decimal" class="form-control form-control-sm"
                                name="amount_max" value="{{ amount_max }}" placeholder="—">
                     </div>
                     <div class="col-sm-6 col-md-3 d-flex align-items-end">
@@ -139,7 +139,7 @@
                                     -
                                 {% endif %}
                             </td>
-                            <td class="text-end"><strong>€{{ "%.2f"|format(trans.amount) }}</strong></td>
+                            <td class="text-end"><strong>€{{ trans.amount|money }}</strong></td>
                             <td>
                                 {% if trans.receipt_path %}
                                     <a href="{{ url_for('view_receipt', filepath=trans.receipt_path) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
@@ -169,7 +169,7 @@
                                     <small class="ms-4">
                                         <strong>Items:</strong>
                                         {% for item in trans.items %}
-                                            {{ item.item_name }} (€{{ "%.2f"|format(item.price) }}){% if not loop.last %}, {% endif %}
+                                            {{ item.item_name }} (€{{ item.price|money }}){% if not loop.last %}, {% endif %}
                                         {% endfor %}
                                     </small>
                                 </td>
@@ -182,7 +182,7 @@
         </div>
         <div class="card-footer text-muted small">
             {{ results|length }} transaction{{ 's' if results|length != 1 else '' }}
-            &middot; Total: €{{ "%.2f"|format(results|sum(attribute='amount')) }}
+            &middot; Total: €{{ (results|sum(attribute='amount'))|money }}
         </div>
     </div>
 

@@ -99,6 +99,23 @@
                     </div>
 
                     <div class="mb-4">
+                        <label class="form-label">Decimal separator</label>
+                        <div class="d-flex gap-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="decimal_separator" id="sep_dot"
+                                       value="." {% if cfg.decimal_separator == '.' %}checked{% endif %}>
+                                <label class="form-check-label" for="sep_dot">Period &nbsp;<code>1.99</code></label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="decimal_separator" id="sep_comma"
+                                       value="," {% if cfg.decimal_separator == ',' %}checked{% endif %}>
+                                <label class="form-check-label" for="sep_comma">Comma &nbsp;<code>1,99</code></label>
+                            </div>
+                        </div>
+                        <div class="form-text">Used for displaying and entering all monetary amounts.</div>
+                    </div>
+
+                    <div class="mb-4">
                         <label for="site_admin_id" class="form-label">Site Admin</label>
                         <select class="form-select" id="site_admin_id" name="site_admin_id" style="max-width: 300px">
                             <option value="">— None —</option>
@@ -515,8 +532,8 @@
                     These appear as autocomplete suggestions in the expense item price fields.
                 </p>
                 <form method="POST" action="{{ url_for('add_common_price') }}" class="d-flex gap-2 mb-3">
-                    <input type="number" class="form-control" name="value" placeholder="Price (e.g. 3.50)"
-                           step="0.01" min="0.01" required style="max-width: 200px">
+                    <input type="text" inputmode="decimal" class="form-control" name="value" placeholder="Price (e.g. 3{{ cfg.decimal_separator }}50)"
+                           required style="max-width: 200px">
                     <button type="submit" class="btn btn-success text-nowrap">
                         <i class="bi bi-plus"></i> Add
                     </button>
@@ -525,10 +542,10 @@
                 <div class="d-flex flex-wrap gap-2 mb-4">
                     {% for price in common_prices %}
                     <div class="badge bg-light text-dark border d-inline-flex align-items-center gap-1 px-2 py-2 fs-6 fw-normal">
-                        €{{ "%.2f"|format(price.value) }}
+                        €{{ price.value|money }}
                         <form method="POST" action="{{ url_for('delete_common_price', item_id=price.id) }}" class="d-inline m-0">
                             <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent text-danger lh-1"
-                                    title="Remove" onclick="return confirm('Remove €{{ '%.2f'|format(price.value) }} from common prices?')">
+                                    title="Remove" onclick="return confirm('Remove €{{ price.value|money }} from common prices?')">
                                 <i class="bi bi-x-lg" style="font-size:0.75rem"></i>
                             </button>
                         </form>
@@ -544,8 +561,8 @@
                 <p class="text-muted small mb-2">Prices listed here are never auto-collected, even if they meet the threshold. Enter as decimal (e.g. 3.50).</p>
                 <form method="POST" action="{{ url_for('add_common_blacklist') }}" class="d-flex gap-2 mb-3">
                     <input type="hidden" name="type" value="price">
-                    <input type="number" class="form-control" name="value" placeholder="Price to blacklist (e.g. 3.50)"
-                           step="0.01" min="0.01" required style="max-width: 200px">
+                    <input type="text" inputmode="decimal" class="form-control" name="value" placeholder="Price to blacklist (e.g. 3{{ cfg.decimal_separator }}50)"
+                           required style="max-width: 200px">
                     <button type="submit" class="btn btn-outline-secondary text-nowrap">
                         <i class="bi bi-plus"></i> Add to blacklist
                     </button>
@@ -1267,7 +1284,7 @@
                                 <td class="text-muted">{{ user.email }}</td>
                                 <td class="text-end">
                                     <span class="{% if user.balance >= 0 %}balance-positive{% else %}balance-negative{% endif %}">
-                                        <strong>€{{ "%.2f"|format(user.balance) }}</strong>
+                                        <strong>€{{ user.balance|money }}</strong>
                                     </span>
                                 </td>
                                 <td>

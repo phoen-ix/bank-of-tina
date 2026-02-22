@@ -117,6 +117,7 @@ The `settings()` view builds a `cfg` dict from all keys and passes it to `settin
 | `backup_admin_email` | `0` | Email admin after scheduled backup |
 | `backup_day/hour/minute` | `*, 3, 0` | Backup cron |
 | `backup_keep` | `7` | How many backups to keep (auto-prune) |
+| `decimal_separator` | `.` | `'.'` or `','`; applied to all monetary display and input |
 | `color_navbar` | `#0d6efd` | Theme: navbar background |
 | `color_email_grad_start/end` | `#667eea / #764ba2` | Theme: email header gradient |
 | `color_balance_positive/negative` | `#28a745 / #dc3545` | Theme: balance colors |
@@ -146,6 +147,18 @@ get_tpl(key)
 apply_template(text, **kwargs)
 # Replaces [Key] placeholders: apply_template("Hi [Name]", Name="Alice") → "Hi Alice"
 
+parse_amount(s)
+# Parses a user-supplied decimal string, normalising both '.' and ',' as separators.
+# parse_amount("1,99") → 1.99.  Used everywhere a monetary value is read from a form.
+
+fmt_amount(value)
+# Formats a float to 2 decimal places using the configured decimal_separator setting.
+# fmt_amount(1.99) → "1,99" when separator is comma.
+
+@app.template_filter('money')
+# Jinja filter: {{ value|money }} — calls fmt_amount(float(value)).
+# Used in all templates instead of "%.2f"|format(value).
+
 hex_to_rgb(hex_color)
 # "#0d6efd" → "13, 110, 253"  (for Bootstrap CSS custom property --bs-primary-rgb)
 
@@ -157,8 +170,9 @@ save_receipt(file, buyer_name)
 # Returns relative path for DB storage, or None if file invalid.
 
 @app.context_processor inject_theme()
-# Injects theme_navbar, theme_navbar_rgb, theme_balance_positive, theme_balance_negative
-# into every template. base.html uses these in an inline <style> block.
+# Injects theme_navbar, theme_navbar_rgb, theme_balance_positive, theme_balance_negative,
+# and decimal_sep into every template. base.html uses the theme values in an inline
+# <style> block; decimal_sep is used by JS (const DECIMAL_SEP) for input/display formatting.
 ```
 
 ---
@@ -267,6 +281,7 @@ Route: `GET /search` — parameters: `q`, `type`, `user`, `date_from`, `date_to`
 ## Common Gotchas
 
 - **Adding a new column** — add it to the model *and* register an `ALTER TABLE` entry in `_migrate_db()` so existing installs pick it up automatically on the next container start.
+- **Monetary input/display** — always use `parse_amount()` (not `float()`) to read form values and `fmt_amount()` / `|money` filter to display them, so the configured decimal separator is respected everywhere.
 - **`datetime.now()` is UTC in Docker** — always use `now_local()` for display or filenames, never `datetime.now()` directly.
 - **Balance is stored, not derived** — never recalculate from transactions; mutate `user.balance` carefully.
 - **`/uploads` is a bind-mount** — cannot `rmtree` the directory itself; clear its contents only.
@@ -343,6 +358,7 @@ All features are fully implemented and committed. Recent work in order:
 9. `.dockerignore` updated (excludes `backups/`, `mariadb-data/`, `*.tar.gz`)
 10. **Per-user email preferences** — `email_opt_in` and `email_transactions` fields on `User`; `_migrate_db()` for existing installs; opt-in filtering in `send_all_emails()`; preference-driven transaction query in `build_email_html()`; controls in Add User form (settings.html) and Edit User modal (user_detail.html)
 11. **Charts & Statistics page** — `/analytics` + `/analytics/data` JSON endpoint; 5-tab Chart.js dashboard (Balances, History, Volume, Top Items, Breakdown); shared filter bar (date range + user multi-select + quick presets); A4 landscape print/PDF with per-tab canvas resize via `beforeprint`
+12. **Decimal separator setting** — `decimal_separator` key in `Setting` (`.` or `,`); configured in Settings → General; `parse_amount()` helper normalises all user input; `fmt_amount()` / `|money` Jinja filter applied to all monetary display; `DECIMAL_SEP` JS constant injected via `inject_theme` context processor and used in `add_transaction.html` and `edit_transaction.html` for live total display and item serialisation; all monetary inputs changed from `type="number"` to `type="text" inputmode="decimal"`
 
 ---
 
@@ -350,7 +366,6 @@ All features are fully implemented and committed. Recent work in order:
 
 - CSV / Excel export of transactions
 - User authentication / login system
-- Charts and analytics dashboard
 - Multiple currency support
 - OCR for automatic receipt parsing
 - Saved/pinned searches

@@ -20,7 +20,7 @@
                     <dt class="col-sm-4">Balance:</dt>
                     <dd class="col-sm-8">
                         <h4 class="mb-0 {% if user.balance >= 0 %}balance-positive{% else %}balance-negative{% endif %}">
-                            €{{ "%.2f"|format(user.balance) }}
+                            €{{ user.balance|money }}
                         </h4>
                     </dd>
 
@@ -28,15 +28,6 @@
                     <dd class="col-sm-8">{{ user.created_at.strftime('%Y-%m-%d') }}</dd>
                 </dl>
 
-                {% if user.balance < 0 %}
-                    <div class="alert alert-warning mt-3 mb-0">
-                        <i class="bi bi-exclamation-triangle"></i> This user needs to add €{{ "%.2f"|format(-user.balance) }} to balance their account.
-                    </div>
-                {% elif user.balance > 0 %}
-                    <div class="alert alert-success mt-3 mb-0">
-                        <i class="bi bi-check-circle"></i> This user is owed €{{ "%.2f"|format(user.balance) }}.
-                    </div>
-                {% endif %}
 
                 <div class="mt-3 d-grid gap-2">
                     <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#editUserModal">
@@ -79,14 +70,14 @@
                             <p class="mb-1">
                                 {% if trans.from_user and trans.from_user.id == user.id %}
                                     <span class="text-danger">
-                                        <i class="bi bi-arrow-up"></i> Paid €{{ "%.2f"|format(trans.amount) }}
+                                        <i class="bi bi-arrow-up"></i> Paid €{{ trans.amount|money }}
                                     </span>
                                     {% if trans.to_user %}
                                         to <strong>{{ trans.to_user.name }}</strong>
                                     {% endif %}
                                 {% elif trans.to_user and trans.to_user.id == user.id %}
                                     <span class="text-success">
-                                        <i class="bi bi-arrow-down"></i> Received €{{ "%.2f"|format(trans.amount) }}
+                                        <i class="bi bi-arrow-down"></i> Received €{{ trans.amount|money }}
                                     </span>
                                     {% if trans.from_user %}
                                         from <strong>{{ trans.from_user.name }}</strong>
@@ -97,7 +88,7 @@
                                 <small class="text-muted">
                                     <strong>Items:</strong>
                                     {% for item in trans.items %}
-                                        {{ item.item_name }} (€{{ "%.2f"|format(item.price) }}){% if not loop.last %}, {% endif %}
+                                        {{ item.item_name }} (€{{ item.price|money }}){% if not loop.last %}, {% endif %}
                                     {% endfor %}
                                 </small>
                             {% endif %}

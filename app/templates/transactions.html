@@ -93,7 +93,7 @@
                                     -
                                 {% endif %}
                             </td>
-                            <td class="text-end"><strong>€{{ "%.2f"|format(trans.amount) }}</strong></td>
+                            <td class="text-end"><strong>€{{ trans.amount|money }}</strong></td>
                             <td>
                                 {% if trans.receipt_path %}
                                     <a href="{{ url_for('view_receipt', filepath=trans.receipt_path) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
@@ -123,7 +123,7 @@
                                     <small class="ms-4">
                                         <strong>Items:</strong>
                                         {% for item in trans.items %}
-                                            {{ item.item_name }} (€{{ "%.2f"|format(item.price) }}){% if not loop.last %}, {% endif %}
+                                            {{ item.item_name }} (€{{ item.price|money }}){% if not loop.last %}, {% endif %}
                                         {% endfor %}
                                     </small>
                                 </td>
@@ -141,7 +141,7 @@
 
     {% if tx_count %}
     <div class="card-footer text-muted small">
-        {{ tx_count }} transaction{{ 's' if tx_count != 1 else '' }} &middot; Total: €{{ "%.2f"|format(tx_total) }}
+        {{ tx_count }} transaction{{ 's' if tx_count != 1 else '' }} &middot; Total: €{{ tx_total|money }}
     </div>
     {% endif %}
 </div>
