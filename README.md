@@ -1,6 +1,6 @@
 # 🏦 Bank of Tina
 
-A lightweight, self-hosted web application for managing shared expenses and balances within an office or group. Built with Flask and SQLite, runs entirely in Docker — no external services required.
+A lightweight, self-hosted web application for managing shared expenses and balances within an office or group. Built with Flask and MariaDB, runs entirely in Docker — no external services required.
 
 ---
 
@@ -65,11 +65,12 @@ cd bank-of-tina
 ```bash
 cp .env.example .env
 ```
-Open `.env` and set a strong `SECRET_KEY`:
+Open `.env` and set a strong `SECRET_KEY` and your desired database credentials:
 ```bash
-# Generate one with:
+# Generate a secret key with:
 python3 -c "import secrets; print(secrets.token_hex(32))"
 ```
+The `DB_*` defaults (`tina`/`tina`) are fine for a private deployment — change them for anything internet-facing.
 
 ### 3. Start the application
 ```bash
@@ -140,7 +141,7 @@ bank-of-tina/
 │   │   └── settings.html         # Settings (General / Email / Common Items / Deactivated Users)
 │   └── static/
 ├── uploads/                      # Receipts — organised as YYYY/MM/DD/
-├── database/                     # SQLite database
+├── mariadb-data/                 # MariaDB data directory (created on first run)
 ├── Dockerfile
 ├── docker-compose.yml
 ├── requirements.txt
@@ -155,7 +156,7 @@ bank-of-tina/
 - Never commit your `.env` file (it is in `.gitignore`)
 - Use an **App Password** for Gmail rather than your main account password
 - Restrict network access to port 5000 — place behind a reverse proxy (nginx, Caddy) with authentication if the app is internet-facing
-- Back up the `database/` folder regularly
+- Back up the `mariadb-data/` directory regularly (or use `mysqldump` — see Maintenance below)
 
 ---
 
@@ -164,11 +165,17 @@ bank-of-tina/
 ### View logs
 ```bash
 docker compose logs -f web
+docker compose logs -f db
 ```
 
 ### Backup the database
 ```bash
-cp database/bank_of_tina.db database/bank_of_tina_$(date +%Y%m%d).db
+docker compose exec db mysqldump -u tina -ptina bank_of_tina > backup_$(date +%Y%m%d).sql
+```
+
+### Restore a backup
+```bash
+docker compose exec -T db mysql -u tina -ptina bank_of_tina < backup_YYYYMMDD.sql
 ```
 
 ### Update after code changes
@@ -179,7 +186,7 @@ docker compose build && docker compose up -d
 ### Reset everything ⚠️ (deletes all data)
 ```bash
 docker compose down
-rm -rf database/* uploads/*/
+rm -rf mariadb-data/ uploads/*/
 docker compose up -d
 ```
 
@@ -192,7 +199,8 @@ docker compose up -d
 | Emails not sending | Check Settings → Email; verify SMTP credentials; check logs |
 | Receipt upload fails | Check `chmod 755 uploads/`; verify file is JPG/PNG/PDF and < 16 MB |
 | Port 5000 in use | Change the host port in `docker-compose.yml` (`"8080:5000"`) |
-| Database locked | `docker compose restart web` |
+| Web container won't start | `docker compose logs db` — db may still be initialising; it will retry automatically |
+| DB connection refused | Ensure `mariadb-data/` is writable; `docker compose restart db` |
 
 ---
 

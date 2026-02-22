@@ -1,32 +1,48 @@
 version: '3.8'
 
-# This file works with both:
-# - docker compose (plugin, newer)
-# - docker-compose (standalone, older)
-
 services:
+  db:
+    image: mariadb:11
+    container_name: bank-of-tina-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootchangeme}
+      MYSQL_DATABASE:      ${DB_NAME:-bank_of_tina}
+      MYSQL_USER:          ${DB_USER:-tina}
+      MYSQL_PASSWORD:      ${DB_PASSWORD:-tina}
+    volumes:
+      - ./mariadb-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
   web:
     build: .
     container_name: bank-of-tina
     ports:
       - "5000:5000"
     volumes:
-      # Mount uploads directory from host to container
       - ./uploads:/uploads
-      # Mount database directory from host to container
-      - ./database:/database
     environment:
-      # Flask configuration
       - FLASK_APP=app.py
       - SECRET_KEY=${SECRET_KEY:-change-this-to-a-random-secret-key}
-      
-      # SMTP configuration for email notifications
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_NAME=${DB_NAME:-bank_of_tina}
+      - DB_USER=${DB_USER:-tina}
+      - DB_PASSWORD=${DB_PASSWORD:-tina}
       - SMTP_SERVER=${SMTP_SERVER:-smtp.gmail.com}
       - SMTP_PORT=${SMTP_PORT:-587}
-      - SMTP_USERNAME=${SMTP_USERNAME}
-      - SMTP_PASSWORD=${SMTP_PASSWORD}
-      - FROM_EMAIL=${FROM_EMAIL}
+      - SMTP_USERNAME=${SMTP_USERNAME:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - FROM_EMAIL=${FROM_EMAIL:-}
       - FROM_NAME=${FROM_NAME:-Bank of Tina}
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/"]
@@ -34,25 +50,3 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-
-  # Optional: Uncomment to run email notifications via cron
-  # cron:
-  #   build: .
-  #   container_name: bank-of-tina-cron
-  #   volumes:
-  #     - ./uploads:/uploads
-  #     - ./database:/database
-  #     - ./crontab:/etc/cron.d/bank-of-tina-cron
-  #   environment:
-  #     - SMTP_SERVER=${SMTP_SERVER:-smtp.gmail.com}
-  #     - SMTP_PORT=${SMTP_PORT:-587}
-  #     - SMTP_USERNAME=${SMTP_USERNAME}
-  #     - SMTP_PASSWORD=${SMTP_PASSWORD}
-  #     - FROM_EMAIL=${FROM_EMAIL}
-  #     - FROM_NAME=${FROM_NAME:-Bank of Tina}
-  #   command: cron -f
-  #   restart: unless-stopped
-
-volumes:
-  uploads:
-  database:

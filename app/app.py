@@ -14,7 +14,14 @@ import atexit
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'change-this-to-a-random-secret-key'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////database/bank_of_tina.db'
+_db_user = os.environ.get('DB_USER', 'tina')
+_db_pass = os.environ.get('DB_PASSWORD', 'tina')
+_db_host = os.environ.get('DB_HOST', 'localhost')
+_db_port = os.environ.get('DB_PORT', '3306')
+_db_name = os.environ.get('DB_NAME', 'bank_of_tina')
+app.config['SQLALCHEMY_DATABASE_URI'] = (
+    f'mysql+pymysql://{_db_user}:{_db_pass}@{_db_host}:{_db_port}/{_db_name}'
+)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = '/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
@@ -719,13 +726,6 @@ def delete_common_item(item_id):
 # Initialize database
 with app.app_context():
     db.create_all()
-    # Migrate: add is_active column if it doesn't exist
-    from sqlalchemy import text
-    try:
-        db.session.execute(text('ALTER TABLE user ADD COLUMN is_active BOOLEAN DEFAULT 1'))
-        db.session.commit()
-    except Exception:
-        pass  # Column already exists
     _restore_schedule()
 
 scheduler.start()

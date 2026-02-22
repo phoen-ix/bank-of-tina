@@ -2,9 +2,8 @@
 .env
 
 # Database
-database/*.db
-database/*.db-shm
-database/*.db-wal
+mariadb-data/
+database/
 
 # Uploads
 uploads/*
