@@ -261,7 +261,8 @@
                                 <div class="alert alert-success py-2 mb-3">
                                     <i class="bi bi-check-circle"></i>
                                     Emails will be sent <strong>{{ day_labels.get(cfg.schedule_day, cfg.schedule_day) }}</strong>
-                                    at <strong>{{ '%02d:%02d'|format(cfg.schedule_hour|int, cfg.schedule_minute|int) }}</strong>.
+                                    at <strong>{{ '%02d:%02d'|format(cfg.schedule_hour|int, cfg.schedule_minute|int) }}</strong>
+                                    <span class="text-muted">({{ cfg.timezone }})</span>.
                                 </div>
                                 {% endif %}
 
