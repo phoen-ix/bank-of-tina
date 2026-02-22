@@ -27,6 +27,12 @@
         </button>
     </li>
     <li class="nav-item">
+        <button class="nav-link" id="tab-btn-backup"
+                data-bs-toggle="tab" data-bs-target="#tab-backup" type="button">
+            <i class="bi bi-archive"></i> Backup
+        </button>
+    </li>
+    <li class="nav-item">
         <button class="nav-link" id="tab-btn-users"
                 data-bs-toggle="tab" data-bs-target="#tab-users" type="button">
             <i class="bi bi-people"></i> Users
@@ -692,6 +698,223 @@
 
     </div><!-- /tab-common-items -->
 
+    <!-- ── Backup tab ── -->
+    <div class="tab-pane fade" id="tab-backup">
+
+        <!-- Card 1 — Backups list + Create Now -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-archive"></i> Backups</span>
+                <form method="POST" action="{{ url_for('settings_backup_create') }}">
+                    <button type="submit" class="btn btn-sm btn-success">
+                        <i class="bi bi-plus-circle"></i> Create Backup Now
+                    </button>
+                </form>
+            </div>
+            <div class="card-body">
+                {% if backups %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Filename</th>
+                                <th>Size</th>
+                                <th>Created</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for b in backups %}
+                            <tr>
+                                <td class="font-monospace small">{{ b.filename }}</td>
+                                <td class="text-muted small">
+                                    {% set mb = b.size / 1048576 %}
+                                    {% if mb >= 1 %}{{ '%.1f'|format(mb) }} MB
+                                    {% else %}{{ '%.0f'|format(b.size / 1024) }} KB{% endif %}
+                                </td>
+                                <td class="text-muted small">{{ b.modified.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td class="text-end">
+                                    <div class="d-flex gap-2 justify-content-end">
+                                        <a href="{{ url_for('backup_download', filename=b.filename) }}"
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-download"></i> Download
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-success"
+                                                onclick="confirmRestore('{{ b.filename }}')">
+                                            <i class="bi bi-arrow-counterclockwise"></i> Restore
+                                        </button>
+                                        <form method="POST" action="{{ url_for('backup_delete', filename=b.filename) }}"
+                                              class="d-inline">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                    onclick="return confirm('Delete {{ b.filename }}?')">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">No backups yet. Click "Create Backup Now" to create your first one.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Hidden restore form (submitted by JS) -->
+        <form id="restoreForm" method="POST" action="" style="display:none"></form>
+
+        <!-- Card 2 — Upload & Restore -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-upload"></i> Upload Backup
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">
+                    Upload a <code>bot_backup_*.tar.gz</code> file. Large files are sent in chunks
+                    so there is no size limit.
+                </p>
+
+                <div class="mb-3">
+                    <input type="file" class="form-control" id="backupFileInput" accept=".tar.gz,.gz">
+                </div>
+
+                <button type="button" class="btn btn-primary" id="uploadBtn" onclick="startChunkedUpload()">
+                    <i class="bi bi-upload"></i> Upload
+                </button>
+
+                <div id="uploadProgress" class="mt-3" style="display:none">
+                    <div class="progress mb-2" style="height: 20px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated"
+                             id="uploadProgressBar" role="progressbar" style="width: 0%">0%</div>
+                    </div>
+                    <small class="text-muted" id="uploadStatus">Preparing…</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3 — Auto-Schedule -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-clock"></i> Auto-Backup Schedule
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('settings_backup') }}">
+
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" role="switch"
+                               id="backup_enabled" name="backup_enabled" value="1"
+                               {% if cfg.backup_enabled == '1' %}checked{% endif %}
+                               onchange="toggleBackupFields(this)">
+                        <label class="form-check-label" for="backup_enabled">
+                            Enable automatic backups
+                        </label>
+                    </div>
+                    <div class="form-text mb-3">
+                        Automatically create a backup on the configured schedule.
+                    </div>
+
+                    <div class="form-check form-switch mb-4">
+                        <input class="form-check-input" type="checkbox" role="switch"
+                               id="backup_debug" name="backup_debug" value="1"
+                               {% if cfg.backup_debug == '1' %}checked{% endif %}>
+                        <label class="form-check-label" for="backup_debug">
+                            Debug mode — log backup runs to database
+                        </label>
+                    </div>
+
+                    <div id="backup_schedule_fields" {% if cfg.backup_enabled != '1' %}style="display:none"{% endif %}>
+
+                        <div class="mb-3">
+                            <label class="form-label">Run</label>
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <select class="form-select w-auto" name="backup_day">
+                                    <option value="*"   {% if cfg.backup_day == '*'   %}selected{% endif %}>Every day</option>
+                                    <option value="mon" {% if cfg.backup_day == 'mon' %}selected{% endif %}>Monday</option>
+                                    <option value="tue" {% if cfg.backup_day == 'tue' %}selected{% endif %}>Tuesday</option>
+                                    <option value="wed" {% if cfg.backup_day == 'wed' %}selected{% endif %}>Wednesday</option>
+                                    <option value="thu" {% if cfg.backup_day == 'thu' %}selected{% endif %}>Thursday</option>
+                                    <option value="fri" {% if cfg.backup_day == 'fri' %}selected{% endif %}>Friday</option>
+                                    <option value="sat" {% if cfg.backup_day == 'sat' %}selected{% endif %}>Saturday</option>
+                                    <option value="sun" {% if cfg.backup_day == 'sun' %}selected{% endif %}>Sunday</option>
+                                </select>
+                                <span class="text-muted">at</span>
+                                <select class="form-select w-auto" name="backup_hour">
+                                    {% for h in range(24) %}
+                                    <option value="{{ h }}" {% if cfg.backup_hour|int == h %}selected{% endif %}>
+                                        {{ '%02d'|format(h) }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <span class="fw-bold fs-5">:</span>
+                                <select class="form-select w-auto" name="backup_minute">
+                                    {% set stored_bmin = (cfg.backup_minute|int // 5) * 5 %}
+                                    {% for m in range(0, 60, 5) %}
+                                    <option value="{{ m }}" {% if stored_bmin == m %}selected{% endif %}>
+                                        {{ '%02d'|format(m) }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="backup_keep" class="form-label">Keep last</label>
+                            <div class="d-flex align-items-center gap-2">
+                                <input type="number" class="form-control" id="backup_keep" name="backup_keep"
+                                       value="{{ cfg.backup_keep }}" min="1" max="365" style="width: 90px">
+                                <span class="text-muted">backups (older ones are deleted automatically)</span>
+                            </div>
+                        </div>
+
+                        {% if cfg.backup_enabled == '1' %}
+                        {% set bday_labels = {'*': 'every day', 'mon': 'every Monday',
+                                              'tue': 'every Tuesday', 'wed': 'every Wednesday',
+                                              'thu': 'every Thursday', 'fri': 'every Friday',
+                                              'sat': 'every Saturday', 'sun': 'every Sunday'} %}
+                        <div class="alert alert-success py-2 mb-3">
+                            <i class="bi bi-check-circle"></i>
+                            Backups run <strong>{{ bday_labels.get(cfg.backup_day, cfg.backup_day) }}</strong>
+                            at <strong>{{ '%02d:%02d'|format(cfg.backup_hour|int, cfg.backup_minute|int) }}</strong>
+                            <span class="text-muted">({{ cfg.timezone }})</span>.
+                        </div>
+                        {% endif %}
+
+                    </div><!-- /backup_schedule_fields -->
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-floppy"></i> Save Schedule
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        {% if cfg.backup_debug == '1' %}
+        <div class="card mt-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-journal-text"></i> Backup Debug Log</span>
+                <form method="POST" action="{{ url_for('settings_backup_clear_log') }}" class="d-inline">
+                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                            onclick="return confirm('Clear the entire backup debug log?')">
+                        <i class="bi bi-trash"></i> Clear Log
+                    </button>
+                </form>
+            </div>
+            <div class="card-body">
+                {% if backup_logs %}
+                <pre class="bg-dark text-light p-3 rounded small mb-0" style="max-height: 400px; overflow-y: auto; font-size: 0.78rem;">{% for log in backup_logs %}{{ log.ran_at.strftime('%Y-%m-%d %H:%M') }} [{{ log.level|upper }}] {{ log.message }}
+{% endfor %}</pre>
+                {% else %}
+                <p class="text-muted small mb-0">No log entries yet.</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+    </div><!-- /tab-backup -->
+
     <!-- ── Users tab ── -->
     <div class="tab-pane fade" id="tab-users">
 
@@ -796,6 +1019,76 @@ function toggleScheduleFields(checkbox) {
 
 function toggleCommonAutoFields(checkbox) {
     document.getElementById('common_auto_fields').style.display = checkbox.checked ? '' : 'none';
+}
+
+function toggleBackupFields(checkbox) {
+    document.getElementById('backup_schedule_fields').style.display = checkbox.checked ? '' : 'none';
+}
+
+function confirmRestore(filename) {
+    if (!confirm('Restore from ' + filename + '?\n\nThis will overwrite the current database and all receipt images. This cannot be undone.')) return;
+    const form = document.getElementById('restoreForm');
+    form.action = '/backups/restore/' + encodeURIComponent(filename);
+    form.submit();
+}
+
+function startChunkedUpload() {
+    const fileInput = document.getElementById('backupFileInput');
+    const file = fileInput.files[0];
+    if (!file) { alert('Please select a file first.'); return; }
+
+    const CHUNK_SIZE = 5 * 1024 * 1024; // 5 MB
+    const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+    const uploadId = crypto.randomUUID();
+
+    const btn       = document.getElementById('uploadBtn');
+    const progress  = document.getElementById('uploadProgress');
+    const bar       = document.getElementById('uploadProgressBar');
+    const status    = document.getElementById('uploadStatus');
+
+    btn.disabled = true;
+    progress.style.display = '';
+
+    let chunkIndex = 0;
+
+    function uploadNext() {
+        if (chunkIndex >= totalChunks) return;
+
+        const start = chunkIndex * CHUNK_SIZE;
+        const end   = Math.min(start + CHUNK_SIZE, file.size);
+        const chunk = file.slice(start, end);
+
+        const fd = new FormData();
+        fd.append('uploadId',    uploadId);
+        fd.append('chunkIndex',  chunkIndex);
+        fd.append('totalChunks', totalChunks);
+        fd.append('chunk',       chunk);
+
+        fetch('/backups/upload-chunk', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(data => {
+                chunkIndex++;
+                const pct = Math.round((chunkIndex / totalChunks) * 100);
+                bar.style.width = pct + '%';
+                bar.textContent = pct + '%';
+                status.textContent = `Uploading… chunk ${chunkIndex} of ${totalChunks}`;
+
+                if (data.done) {
+                    bar.classList.remove('progress-bar-animated');
+                    status.textContent = 'Upload complete: ' + data.filename;
+                    btn.disabled = false;
+                    setTimeout(() => location.reload(), 1200);
+                } else {
+                    uploadNext();
+                }
+            })
+            .catch(err => {
+                status.textContent = 'Upload error: ' + err;
+                btn.disabled = false;
+            });
+    }
+
+    uploadNext();
 }
 
 // Persist active tab across redirects (e.g. after saving common items)

@@ -3,6 +3,9 @@ FROM python:3.11-slim
 # Set working directory
 WORKDIR /app
 
+# Install system dependencies (mariadb-client for mysqldump/mysql in backup/restore)
+RUN apt-get update && apt-get install -y --no-install-recommends mariadb-client && rm -rf /var/lib/apt/lists/*
+
 # Install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
@@ -11,7 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app/ .
 
 # Create necessary directories
-RUN mkdir -p /uploads /database
+RUN mkdir -p /uploads /database /backups
 
 # Make the email script executable
 RUN chmod +x send_weekly_email.py
@@ -24,4 +27,4 @@ ENV FLASK_APP=app.py
 ENV PYTHONUNBUFFERED=1
 
 # Run with gunicorn for production
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--timeout", "60", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--timeout", "300", "app:app"]

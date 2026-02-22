@@ -1,11 +1,15 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, g
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, g, abort
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from werkzeug.utils import secure_filename
 import os
 import re
 import json
+import shutil
 import smtplib
+import subprocess
+import tarfile
+import tempfile
 import calendar as cal_mod
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -25,7 +29,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = (
 )
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = '/uploads'
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10 MB per chunk (chunked upload)
+BACKUP_DIR = '/backups'
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'}
 
@@ -107,6 +112,12 @@ class EmailLog(db.Model):
     level     = db.Column(db.String(10), nullable=False)   # 'SUCCESS' | 'FAIL' | 'INFO'
     recipient = db.Column(db.String(200))                  # "Name <email>" or None for system lines
     message   = db.Column(db.String(500), nullable=False)
+
+class BackupLog(db.Model):
+    id       = db.Column(db.Integer, primary_key=True)
+    ran_at   = db.Column(db.DateTime, default=datetime.utcnow)
+    level    = db.Column(db.String(10), nullable=False)   # 'INFO' | 'SUCCESS' | 'ERROR'
+    message  = db.Column(db.String(500), nullable=False)
 
 # Helper Functions
 def allowed_file(filename):
@@ -320,6 +331,110 @@ def send_all_emails():
 
     return success, fail, errors
 
+# Backup logic
+def _backup_log(level, message):
+    db.session.add(BackupLog(level=level, message=message))
+    db.session.commit()
+
+def run_backup():
+    """Create a full backup tar.gz in BACKUP_DIR. Returns (True, filename) or (False, error_msg)."""
+    debug = get_setting('backup_debug', '0') == '1'
+
+    def log(level, msg):
+        if debug:
+            _backup_log(level, msg)
+
+    ts = datetime.now().strftime('%Y_%m_%d_%H-%M-%S')
+    filename = f'bot_backup_{ts}.tar.gz'
+    dest = os.path.join(BACKUP_DIR, filename)
+    os.makedirs(BACKUP_DIR, exist_ok=True)
+
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            # 1. SQL dump written directly to file (no memory buffering)
+            dump_path = os.path.join(tmp, 'dump.sql')
+            db_host = os.environ.get('DB_HOST', 'db')
+            db_port = os.environ.get('DB_PORT', '3306')
+            db_user = os.environ.get('DB_USER', 'tina')
+            db_pass = os.environ.get('DB_PASSWORD', 'tina')
+            db_name = os.environ.get('DB_NAME', 'bank_of_tina')
+
+            with open(dump_path, 'wb') as dump_file:
+                result = subprocess.run(
+                    ['mysqldump', '-h', db_host, '-P', db_port,
+                     f'-u{db_user}', f'-p{db_pass}',
+                     '--add-drop-table', db_name],
+                    stdout=dump_file, stderr=subprocess.PIPE, timeout=300
+                )
+            if result.returncode != 0:
+                err = result.stderr.decode(errors='replace')[:300]
+                log('ERROR', f'mysqldump failed: {err}')
+                return False, f'mysqldump failed: {err}'
+            log('INFO', 'SQL dump created')
+
+            # 2. Copy receipts
+            receipts_dest = os.path.join(tmp, 'receipts')
+            upload_folder = app.config['UPLOAD_FOLDER']
+            if os.path.exists(upload_folder):
+                shutil.copytree(upload_folder, receipts_dest)
+            else:
+                os.makedirs(receipts_dest)
+            log('INFO', 'Receipts copied')
+
+            # 3. Reconstruct .env from environment variables
+            env_keys = ['DB_ROOT_PASSWORD', 'DB_NAME', 'DB_USER', 'DB_PASSWORD',
+                        'SECRET_KEY', 'SMTP_SERVER', 'SMTP_PORT', 'SMTP_USERNAME',
+                        'SMTP_PASSWORD', 'FROM_EMAIL', 'FROM_NAME']
+            env_lines = [f'{k}={os.environ.get(k, "")}' for k in env_keys if os.environ.get(k)]
+            with open(os.path.join(tmp, '.env'), 'w') as f:
+                f.write('\n'.join(env_lines) + '\n')
+            log('INFO', '.env reconstructed')
+
+            # 4. Create tar.gz
+            with tarfile.open(dest, 'w:gz') as tar:
+                tar.add(dump_path, arcname='dump.sql')
+                tar.add(receipts_dest, arcname='receipts')
+                tar.add(os.path.join(tmp, '.env'), arcname='.env')
+
+        log('SUCCESS', f'Backup created: {filename}')
+        return True, filename
+
+    except Exception as e:
+        err = str(e)[:300]
+        log('ERROR', err)
+        if os.path.exists(dest):
+            os.remove(dest)
+        return False, err
+
+
+def _prune_old_backups(keep):
+    """Delete oldest backups keeping only the most recent `keep` files."""
+    if keep <= 0:
+        return
+    files = sorted([
+        f for f in os.listdir(BACKUP_DIR)
+        if re.match(r'^bot_backup_[\d_-]+\.tar\.gz$', f)
+    ])
+    while len(files) > keep:
+        os.remove(os.path.join(BACKUP_DIR, files.pop(0)))
+
+
+def _list_backups():
+    """Return list of dicts with backup file info, newest first."""
+    backups = []
+    if os.path.exists(BACKUP_DIR):
+        for f in sorted(os.listdir(BACKUP_DIR), reverse=True):
+            if re.match(r'^bot_backup_[\d_-]+\.tar\.gz$', f):
+                fpath = os.path.join(BACKUP_DIR, f)
+                stat = os.stat(fpath)
+                backups.append({
+                    'filename': f,
+                    'size': stat.st_size,
+                    'modified': datetime.fromtimestamp(stat.st_mtime),
+                })
+    return backups
+
+
 # APScheduler
 scheduler = BackgroundScheduler(daemon=True)
 
@@ -436,11 +551,33 @@ def _add_common_job():
                       timezone=tz, id='common_job', replace_existing=True)
 
 
+def _add_backup_job():
+    day    = get_setting('backup_day', '*')
+    hour   = int(get_setting('backup_hour', '3'))
+    minute = int(get_setting('backup_minute', '0'))
+    keep   = int(get_setting('backup_keep', '7'))
+    try:
+        tz = pytz.timezone(get_setting('timezone', 'UTC'))
+    except pytz.exceptions.UnknownTimeZoneError:
+        tz = pytz.UTC
+
+    def job():
+        with app.app_context():
+            ok, _ = run_backup()
+            if ok and keep > 0:
+                _prune_old_backups(keep)
+
+    scheduler.add_job(job, 'cron', day_of_week=day, hour=hour, minute=minute,
+                      timezone=tz, id='backup_job', replace_existing=True)
+
+
 def _restore_schedule():
     if get_setting('schedule_enabled') == '1':
         _add_email_job()
     if get_setting('common_auto_enabled', '0') == '1':
         _add_common_job()
+    if get_setting('backup_enabled', '0') == '1':
+        _add_backup_job()
 
 def parse_submitted_date(date_str):
     """Parse a datetime-local string entered in the app timezone and return a naive UTC datetime."""
@@ -909,6 +1046,12 @@ def settings():
         'common_descriptions_threshold': get_setting('common_descriptions_threshold', '5'),
         'common_prices_auto':            get_setting('common_prices_auto', '0'),
         'common_prices_threshold':       get_setting('common_prices_threshold', '5'),
+        'backup_enabled': get_setting('backup_enabled', '0'),
+        'backup_debug':   get_setting('backup_debug',   '0'),
+        'backup_day':     get_setting('backup_day',     '*'),
+        'backup_hour':    get_setting('backup_hour',    '3'),
+        'backup_minute':  get_setting('backup_minute',  '0'),
+        'backup_keep':    get_setting('backup_keep',    '7'),
     }
     common_items        = CommonItem.query.order_by(CommonItem.name).all()
     common_descriptions = CommonDescription.query.order_by(CommonDescription.value).all()
@@ -916,6 +1059,8 @@ def settings():
     common_blacklist    = CommonBlacklist.query.order_by(CommonBlacklist.type, CommonBlacklist.value).all()
     auto_collect_logs   = AutoCollectLog.query.order_by(AutoCollectLog.id.desc()).limit(500).all()
     email_logs          = EmailLog.query.order_by(EmailLog.id.desc()).limit(500).all()
+    backup_logs         = BackupLog.query.order_by(BackupLog.id.desc()).limit(500).all()
+    backups             = _list_backups()
     all_users = User.query.order_by(User.name).all()
     timezone_groups = {}
     for tz in pytz.common_timezones:
@@ -924,7 +1069,7 @@ def settings():
     return render_template('settings.html', cfg=cfg, common_items=common_items,
                            common_descriptions=common_descriptions, common_prices=common_prices,
                            common_blacklist=common_blacklist, auto_collect_logs=auto_collect_logs,
-                           email_logs=email_logs,
+                           email_logs=email_logs, backup_logs=backup_logs, backups=backups,
                            all_users=all_users, timezone_groups=timezone_groups)
 
 @app.route('/settings/email', methods=['POST'])
@@ -1184,6 +1329,176 @@ def settings_common_auto_clear_log():
     AutoCollectLog.query.delete()
     db.session.commit()
     flash('Debug log cleared.', 'success')
+    return redirect(url_for('settings'))
+
+
+# ── Backup / Restore routes ────────────────────────────────────────────────
+
+BACKUP_FILENAME_RE = re.compile(r'^bot_backup_[\d_-]+\.tar\.gz$')
+
+@app.route('/settings/backup', methods=['POST'])
+def settings_backup():
+    enabled = '1' if request.form.get('backup_enabled') else '0'
+    debug   = '1' if request.form.get('backup_debug')   else '0'
+    day     = request.form.get('backup_day', '*')
+    try:
+        hour   = str(max(0, min(23, int(request.form.get('backup_hour',   '3')))))
+        minute = str(max(0, min(55, int(request.form.get('backup_minute', '0')))))
+    except ValueError:
+        hour, minute = '3', '0'
+    try:
+        keep = str(max(1, min(365, int(request.form.get('backup_keep', '7')))))
+    except ValueError:
+        keep = '7'
+
+    set_setting('backup_enabled', enabled)
+    set_setting('backup_debug',   debug)
+    set_setting('backup_day',     day)
+    set_setting('backup_hour',    hour)
+    set_setting('backup_minute',  minute)
+    set_setting('backup_keep',    keep)
+
+    if enabled == '1':
+        _add_backup_job()
+        flash('Backup schedule saved and enabled.', 'success')
+    else:
+        if scheduler.get_job('backup_job'):
+            scheduler.remove_job('backup_job')
+        flash('Backup schedule disabled.', 'success')
+
+    return redirect(url_for('settings'))
+
+
+@app.route('/settings/backup/create', methods=['POST'])
+def settings_backup_create():
+    ok, result = run_backup()
+    if ok:
+        flash(f'Backup created: {result}', 'success')
+    else:
+        flash(f'Backup failed: {result}', 'error')
+    return redirect(url_for('settings'))
+
+
+@app.route('/settings/backup/clear-log', methods=['POST'])
+def settings_backup_clear_log():
+    BackupLog.query.delete()
+    db.session.commit()
+    flash('Backup debug log cleared.', 'success')
+    return redirect(url_for('settings'))
+
+
+@app.route('/backups/download/<filename>')
+def backup_download(filename):
+    from flask import send_from_directory
+    if not BACKUP_FILENAME_RE.match(filename):
+        abort(404)
+    return send_from_directory(BACKUP_DIR, filename, as_attachment=True)
+
+
+@app.route('/backups/delete/<filename>', methods=['POST'])
+def backup_delete(filename):
+    if not BACKUP_FILENAME_RE.match(filename):
+        flash('Invalid filename.', 'error')
+        return redirect(url_for('settings'))
+    path = os.path.join(BACKUP_DIR, filename)
+    if os.path.exists(path):
+        os.remove(path)
+        flash(f'{filename} deleted.', 'success')
+    else:
+        flash('Backup file not found.', 'error')
+    return redirect(url_for('settings'))
+
+
+@app.route('/backups/upload-chunk', methods=['POST'])
+def backup_upload_chunk():
+    upload_id   = request.form.get('uploadId', '')
+    chunk_index = request.form.get('chunkIndex', '')
+    total_chunks = request.form.get('totalChunks', '')
+    chunk_file  = request.files.get('chunk')
+
+    if not re.match(r'^[a-f0-9\-]{36}$', upload_id):
+        return jsonify({'error': 'Invalid upload ID'}), 400
+    try:
+        chunk_index  = int(chunk_index)
+        total_chunks = int(total_chunks)
+    except (TypeError, ValueError):
+        return jsonify({'error': 'Invalid chunk parameters'}), 400
+    if not chunk_file:
+        return jsonify({'error': 'No chunk data'}), 400
+
+    tmp_dir = os.path.join(BACKUP_DIR, '.tmp', upload_id)
+    os.makedirs(tmp_dir, exist_ok=True)
+    chunk_file.save(os.path.join(tmp_dir, f'{chunk_index:05d}'))
+
+    received = len([f for f in os.listdir(tmp_dir) if f.isdigit() or f[:-1].isdigit()])
+    if received >= total_chunks:
+        # Assemble chunks in order
+        ts = datetime.now().strftime('%Y_%m_%d_%H-%M-%S')
+        filename = f'bot_backup_{ts}.tar.gz'
+        dest = os.path.join(BACKUP_DIR, filename)
+        with open(dest, 'wb') as out:
+            for i in range(total_chunks):
+                chunk_path = os.path.join(tmp_dir, f'{i:05d}')
+                with open(chunk_path, 'rb') as c:
+                    out.write(c.read())
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+        return jsonify({'done': True, 'filename': filename})
+
+    return jsonify({'done': False, 'received': received, 'total': total_chunks})
+
+
+@app.route('/backups/restore/<filename>', methods=['POST'])
+def backup_restore(filename):
+    if not BACKUP_FILENAME_RE.match(filename):
+        flash('Invalid filename.', 'error')
+        return redirect(url_for('settings'))
+
+    path = os.path.join(BACKUP_DIR, filename)
+    if not os.path.exists(path):
+        flash('Backup file not found.', 'error')
+        return redirect(url_for('settings'))
+
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            # Safe extraction — only allow known top-level entries
+            with tarfile.open(path, 'r:gz') as tar:
+                safe = [m for m in tar.getmembers()
+                        if not m.name.startswith('/') and '..' not in m.name]
+                tar.extractall(tmp, members=safe)
+
+            # 1. Restore database
+            dump_path = os.path.join(tmp, 'dump.sql')
+            if os.path.exists(dump_path):
+                db_host = os.environ.get('DB_HOST', 'db')
+                db_port = os.environ.get('DB_PORT', '3306')
+                db_user = os.environ.get('DB_USER', 'tina')
+                db_pass = os.environ.get('DB_PASSWORD', 'tina')
+                db_name = os.environ.get('DB_NAME', 'bank_of_tina')
+                with open(dump_path, 'rb') as f:
+                    result = subprocess.run(
+                        ['mysql', '-h', db_host, '-P', db_port,
+                         f'-u{db_user}', f'-p{db_pass}', db_name],
+                        stdin=f, stderr=subprocess.PIPE, timeout=300
+                    )
+                if result.returncode != 0:
+                    err = result.stderr.decode(errors='replace')[:300]
+                    flash(f'Database restore failed: {err}', 'error')
+                    return redirect(url_for('settings'))
+
+            # 2. Restore receipts
+            receipts_src = os.path.join(tmp, 'receipts')
+            upload_folder = app.config['UPLOAD_FOLDER']
+            if os.path.exists(receipts_src):
+                if os.path.exists(upload_folder):
+                    shutil.rmtree(upload_folder)
+                shutil.copytree(receipts_src, upload_folder)
+
+        flash(f'Restore from {filename} completed successfully. '
+              f'Check the .env file inside the backup if credentials changed.', 'success')
+
+    except Exception as e:
+        flash(f'Restore failed: {str(e)[:200]}', 'error')
+
     return redirect(url_for('settings'))
 
 

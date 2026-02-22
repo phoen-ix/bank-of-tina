@@ -26,6 +26,7 @@ services:
       - "5000:5000"
     volumes:
       - ./uploads:/uploads
+      - ./backups:/backups
     environment:
       - FLASK_APP=app.py
       - SECRET_KEY=${SECRET_KEY:-change-this-to-a-random-secret-key}
