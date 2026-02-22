@@ -1,4 +1,0 @@
-# Send weekly balance emails every Monday at 9:00 AM
-0 9 * * 1 cd /app && /usr/local/bin/python send_weekly_email.py >> /var/log/cron.log 2>&1
-
-# Empty line required at end of crontab file
