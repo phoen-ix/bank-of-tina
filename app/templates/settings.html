@@ -27,11 +27,11 @@
         </button>
     </li>
     <li class="nav-item">
-        <button class="nav-link" id="tab-btn-inactive-users"
-                data-bs-toggle="tab" data-bs-target="#tab-inactive-users" type="button">
-            <i class="bi bi-person-slash"></i> Deactivated Users
-            {% if inactive_users %}
-                <span class="badge bg-secondary ms-1">{{ inactive_users|length }}</span>
+        <button class="nav-link" id="tab-btn-users"
+                data-bs-toggle="tab" data-bs-target="#tab-users" type="button">
+            <i class="bi bi-people"></i> Users
+            {% if all_users %}
+                <span class="badge bg-secondary ms-1">{{ all_users|length }}</span>
             {% endif %}
         </button>
     </li>
@@ -271,14 +271,40 @@
         </div>
     </div><!-- /tab-common-items -->
 
-    <!-- ── Deactivated Users tab ── -->
-    <div class="tab-pane fade" id="tab-inactive-users">
-        <div class="card">
+    <!-- ── Users tab ── -->
+    <div class="tab-pane fade" id="tab-users">
+
+        <!-- Add User -->
+        <div class="card mb-4">
             <div class="card-header">
-                <i class="bi bi-person-slash"></i> Deactivated Users
+                <i class="bi bi-person-plus"></i> Add User
             </div>
             <div class="card-body">
-                {% if inactive_users %}
+                <form method="POST" action="{{ url_for('add_user') }}" class="row g-3">
+                    <div class="col-sm-5">
+                        <label for="new_user_name" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="new_user_name" name="name" required>
+                    </div>
+                    <div class="col-sm-5">
+                        <label for="new_user_email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="new_user_email" name="email" required>
+                    </div>
+                    <div class="col-sm-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-plus-circle"></i> Add
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- User List -->
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-people"></i> All Users
+            </div>
+            <div class="card-body">
+                {% if all_users %}
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
                         <thead>
@@ -286,11 +312,12 @@
                                 <th>Name</th>
                                 <th>Email</th>
                                 <th class="text-end">Balance</th>
+                                <th>Status</th>
                                 <th></th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for user in inactive_users %}
+                            {% for user in all_users %}
                             <tr>
                                 <td>
                                     <a href="{{ url_for('user_detail', user_id=user.id) }}" class="text-decoration-none">
@@ -303,11 +330,25 @@
                                         <strong>€{{ "%.2f"|format(user.balance) }}</strong>
                                     </span>
                                 </td>
+                                <td>
+                                    {% if user.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Inactive</span>
+                                    {% endif %}
+                                </td>
                                 <td class="text-end">
                                     <form method="POST" action="{{ url_for('toggle_user_active', user_id=user.id) }}">
+                                        {% if user.is_active %}
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary"
+                                                onclick="return confirm('Deactivate {{ user.name }}?')">
+                                            <i class="bi bi-person-dash"></i> Deactivate
+                                        </button>
+                                        {% else %}
                                         <button type="submit" class="btn btn-sm btn-outline-success">
                                             <i class="bi bi-person-check"></i> Reactivate
                                         </button>
+                                        {% endif %}
                                     </form>
                                 </td>
                             </tr>
@@ -316,11 +357,12 @@
                     </table>
                 </div>
                 {% else %}
-                <p class="text-muted mb-0">No deactivated users.</p>
+                <p class="text-muted mb-0">No users yet. Add your first user above.</p>
                 {% endif %}
             </div>
         </div>
-    </div><!-- /tab-inactive-users -->
+
+    </div><!-- /tab-users -->
 
 </div><!-- /tab-content -->
 {% endblock %}

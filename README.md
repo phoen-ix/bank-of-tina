@@ -40,7 +40,7 @@ The Settings page is split into four tabs:
 | **General** | Default number of blank item rows in the Add Transaction form; number of recent transactions shown on the dashboard (0 hides the section) |
 | **Email** | SMTP credentials, send balance emails on demand, set a recurring auto-schedule |
 | **Common Items** | Add / remove common item names used for autocomplete |
-| **Deactivated Users** | View and reactivate deactivated users |
+| **Users** | Add new users; view all users with their status and balance; deactivate or reactivate any user |
 
 ### Email Notifications
 - SMTP credentials are stored securely in the database (configured via Settings → Email)
@@ -89,8 +89,7 @@ That's it. SMTP credentials and the email schedule are configured from the **Set
 ## 📱 Usage Guide
 
 ### Adding Users
-1. Dashboard → **Add User**
-2. Enter name and email → **Add User**
+1. **Settings** → **Users** tab → fill in name and email → **Add**
 
 ### Recording an Expense
 1. **Add Transaction** → **Expense** tab
@@ -118,9 +117,10 @@ That's it. SMTP credentials and the email schedule are configured from the **Set
 2. Fill in SMTP credentials and click **Save Settings**
 3. Use **Send Emails Now** to test, or configure a recurring schedule under **Auto-Schedule**
 
-### Managing Deactivated Users
-1. **Settings** → **Deactivated Users** tab
-2. Click **Reactivate** next to any user to restore them to the dashboard
+### Managing Users
+1. **Settings** → **Users** tab
+2. All users are listed with their status (Active / Inactive) and current balance
+3. Click **Deactivate** to hide a user from the dashboard, or **Reactivate** to restore them
 
 ---
 

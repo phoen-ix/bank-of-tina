@@ -300,17 +300,17 @@ def add_user():
 
     if not name or not email:
         flash('Name and email are required!', 'error')
-        return redirect(url_for('index'))
+        return redirect(url_for('settings'))
 
     if User.query.filter_by(name=name).first():
         flash('User already exists!', 'error')
-        return redirect(url_for('index'))
+        return redirect(url_for('settings'))
 
     user = User(name=name, email=email)
     db.session.add(user)
     db.session.commit()
     flash(f'User {name} added successfully!', 'success')
-    return redirect(url_for('index'))
+    return redirect(url_for('settings'))
 
 @app.route('/user/<int:user_id>/edit', methods=['POST'])
 def edit_user(user_id):
@@ -353,7 +353,7 @@ def toggle_user_active(user_id):
     db.session.commit()
     status = 'activated' if user.is_active else 'deactivated'
     flash(f'User {user.name} has been {status}.', 'success')
-    return redirect(url_for('user_detail', user_id=user_id))
+    return redirect(request.referrer or url_for('settings'))
 
 
 @app.route('/transaction/add', methods=['GET', 'POST'])
@@ -629,8 +629,8 @@ def settings():
         'recent_transactions_count': get_setting('recent_transactions_count', '5'),
     }
     common_items = CommonItem.query.order_by(CommonItem.name).all()
-    inactive_users = User.query.filter_by(is_active=False).order_by(User.name).all()
-    return render_template('settings.html', cfg=cfg, common_items=common_items, inactive_users=inactive_users)
+    all_users = User.query.order_by(User.name).all()
+    return render_template('settings.html', cfg=cfg, common_items=common_items, all_users=all_users)
 
 @app.route('/settings/email', methods=['POST'])
 def settings_email():
