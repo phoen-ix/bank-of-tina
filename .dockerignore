@@ -1,12 +1,25 @@
+# Runtime data — never needed in the image (all are bind-mounted at runtime)
+uploads/
+backups/
+mariadb-data/
+
+# Environment & secrets
 .env
 .env.example
-README.md
-uploads/
-database/
-*.db
-*.pyc
-__pycache__/
+
+# Repo / project files
 .git/
 .gitignore
+.dockerignore
+README.md
 docker-compose.yml
-send_emails.sh
+
+# Python artefacts
+*.pyc
+*.pyo
+__pycache__/
+*.db
+
+# Misc
+*.tar.gz
+*.sql
