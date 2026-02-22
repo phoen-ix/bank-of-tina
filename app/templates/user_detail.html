@@ -6,25 +6,28 @@
 <div class="row">
     <div class="col-md-4">
         <div class="card border-primary">
-            <div class="card-header bg-primary text-white">
-                <i class="bi bi-person-circle"></i> {{ user.name }}
+            <div class="card-header {% if not user.is_active %}bg-secondary{% else %}bg-primary{% endif %} text-white d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-person-circle"></i> {{ user.name }}</span>
+                {% if not user.is_active %}
+                    <span class="badge bg-light text-dark">Inactive</span>
+                {% endif %}
             </div>
             <div class="card-body">
                 <dl class="row mb-0">
                     <dt class="col-sm-4">Email:</dt>
                     <dd class="col-sm-8">{{ user.email }}</dd>
-                    
+
                     <dt class="col-sm-4">Balance:</dt>
                     <dd class="col-sm-8">
                         <h4 class="mb-0 {% if user.balance >= 0 %}balance-positive{% else %}balance-negative{% endif %}">
                             €{{ "%.2f"|format(user.balance) }}
                         </h4>
                     </dd>
-                    
+
                     <dt class="col-sm-4">Member since:</dt>
                     <dd class="col-sm-8">{{ user.created_at.strftime('%Y-%m-%d') }}</dd>
                 </dl>
-                
+
                 {% if user.balance < 0 %}
                     <div class="alert alert-warning mt-3 mb-0">
                         <i class="bi bi-exclamation-triangle"></i> This user needs to add €{{ "%.2f"|format(-user.balance) }} to balance their account.
@@ -34,6 +37,18 @@
                         <i class="bi bi-check-circle"></i> This user is owed €{{ "%.2f"|format(user.balance) }}.
                     </div>
                 {% endif %}
+
+                <div class="mt-3 d-grid gap-2">
+                    <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#editUserModal">
+                        <i class="bi bi-pencil"></i> Edit User
+                    </button>
+                    <form method="POST" action="{{ url_for('toggle_user_active', user_id=user.id) }}">
+                        <button type="submit" class="btn btn-sm w-100 {% if user.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}">
+                            <i class="bi {% if user.is_active %}bi-person-dash{% else %}bi-person-check{% endif %}"></i>
+                            {% if user.is_active %}Deactivate User{% else %}Reactivate User{% endif %}
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
@@ -88,11 +103,23 @@
                             {% endif %}
                             {% if trans.receipt_path %}
                                 <div class="mt-2">
-                                    <a href="{{ url_for('view_receipt', filename=trans.receipt_path) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                    <a href="{{ url_for('view_receipt', filepath=trans.receipt_path) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
                                         <i class="bi bi-paperclip"></i> View Receipt
                                     </a>
                                 </div>
                             {% endif %}
+                            <div class="mt-2 d-flex gap-1">
+                                <a href="{{ url_for('edit_transaction', transaction_id=trans.id) }}"
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-pencil"></i> Edit
+                                </a>
+                                <form method="POST" action="{{ url_for('delete_transaction', transaction_id=trans.id) }}"
+                                      onsubmit="return confirm('Delete this transaction? Balances will be reversed.')">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i> Delete
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                         {% endfor %}
                     </div>
@@ -108,5 +135,37 @@
     <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left"></i> Back to Dashboard
     </a>
+</div>
+
+<!-- Edit User Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('edit_user', user_id=user.id) }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="editName" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="editName" name="name" value="{{ user.name }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="editEmail" name="email" value="{{ user.email }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editCreatedAt" class="form-label">Member since</label>
+                        <input type="date" class="form-control" id="editCreatedAt" name="created_at" value="{{ user.created_at.strftime('%Y-%m-%d') }}" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 {% endblock %}

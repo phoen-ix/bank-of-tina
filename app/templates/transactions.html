@@ -18,6 +18,7 @@
                             <th>To</th>
                             <th class="text-end">Amount</th>
                             <th>Receipt</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -55,12 +56,25 @@
                             <td class="text-end"><strong>€{{ "%.2f"|format(trans.amount) }}</strong></td>
                             <td>
                                 {% if trans.receipt_path %}
-                                    <a href="{{ url_for('view_receipt', filename=trans.receipt_path) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                    <a href="{{ url_for('view_receipt', filepath=trans.receipt_path) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
                                         <i class="bi bi-paperclip"></i> View
                                     </a>
                                 {% else %}
                                     -
                                 {% endif %}
+                            </td>
+                            <td class="text-end text-nowrap">
+                                <a href="{{ url_for('edit_transaction', transaction_id=trans.id) }}"
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form method="POST" action="{{ url_for('delete_transaction', transaction_id=trans.id) }}"
+                                      class="d-inline"
+                                      onsubmit="return confirm('Delete this transaction? Balances will be reversed.')">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
                             </td>
                         </tr>
                         {% if trans.items %}

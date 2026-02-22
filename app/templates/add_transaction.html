@@ -32,7 +32,8 @@
                         <form method="POST" action="{{ url_for('add_transaction') }}" enctype="multipart/form-data" id="expenseForm">
                             <input type="hidden" name="transaction_type" value="expense">
                             <input type="hidden" name="items_json" id="items_json">
-                            
+                            <datalist id="commonItemsList"></datalist>
+
                             <div class="mb-3">
                                 <label for="buyer_id" class="form-label">Who paid?</label>
                                 <select class="form-select" id="buyer_id" name="buyer_id" required>
@@ -157,7 +158,7 @@ function addExpenseItem() {
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-5">
-                        <input type="text" class="form-control item-name" placeholder="Item name" required>
+                        <input type="text" class="form-control item-name" placeholder="Item name" list="commonItemsList" required>
                     </div>
                     <div class="col-md-3">
                         <input type="number" class="form-control item-price" placeholder="Price" step="0.01" min="0.01" required onchange="updateTotal()">
@@ -233,6 +234,21 @@ document.getElementById('expenseForm').addEventListener('submit', function(e) {
     // Submit form
     this.submit();
 });
+
+// Populate common items datalist
+fetch('/api/common-items')
+    .then(r => r.json())
+    .then(items => {
+        const dl = document.getElementById('commonItemsList');
+        items.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item.name;
+            dl.appendChild(opt);
+        });
+    });
+
+// Pre-fill default empty item rows
+for (let i = 0; i < {{ default_item_rows }}; i++) { addExpenseItem(); }
 
 // URL parameter handling for quick actions
 const urlParams = new URLSearchParams(window.location.search);

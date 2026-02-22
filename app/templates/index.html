@@ -78,7 +78,7 @@
                             {% if trans.receipt_path %}
                                 <small>
                                     <i class="bi bi-paperclip"></i>
-                                    <a href="{{ url_for('view_receipt', filename=trans.receipt_path) }}" target="_blank">View Receipt</a>
+                                    <a href="{{ url_for('view_receipt', filepath=trans.receipt_path) }}" target="_blank">View Receipt</a>
                                 </small>
                             {% endif %}
                         </div>
@@ -167,4 +167,5 @@
         </div>
     </div>
 </div>
+
 {% endblock %}

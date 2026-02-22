@@ -1,0 +1,340 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - Bank of Tina{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2><i class="bi bi-gear"></i> Settings</h2>
+</div>
+
+<ul class="nav nav-tabs mb-4" id="settingsTabs">
+    <li class="nav-item">
+        <button class="nav-link" id="tab-btn-general"
+                data-bs-toggle="tab" data-bs-target="#tab-general" type="button">
+            <i class="bi bi-sliders"></i> General
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" id="tab-btn-email"
+                data-bs-toggle="tab" data-bs-target="#tab-email" type="button">
+            <i class="bi bi-envelope"></i> Email
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" id="tab-btn-common-items"
+                data-bs-toggle="tab" data-bs-target="#tab-common-items" type="button">
+            <i class="bi bi-bookmark-star"></i> Common Items
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" id="tab-btn-inactive-users"
+                data-bs-toggle="tab" data-bs-target="#tab-inactive-users" type="button">
+            <i class="bi bi-person-slash"></i> Deactivated Users
+            {% if inactive_users %}
+                <span class="badge bg-secondary ms-1">{{ inactive_users|length }}</span>
+            {% endif %}
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content">
+
+    <!-- ── General tab ── -->
+    <div class="tab-pane fade" id="tab-general">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-sliders"></i> General
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('settings_general') }}">
+                    <div class="mb-4">
+                        <label for="default_item_rows" class="form-label">Default empty item rows</label>
+                        <input type="number" class="form-control" id="default_item_rows"
+                               name="default_item_rows" value="{{ cfg.default_item_rows }}"
+                               min="0" max="20" style="width: 120px">
+                        <div class="form-text">
+                            How many blank item rows to pre-fill when opening the Add Transaction form.
+                            Set to 0 to keep the current behaviour (no rows until you click Add Item).
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-floppy"></i> Save
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div><!-- /tab-general -->
+
+    <!-- ── Email tab ── -->
+    <div class="tab-pane fade" id="tab-email">
+        <div class="row g-4">
+
+            <!-- Left: credentials -->
+            <div class="col-lg-6">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <i class="bi bi-envelope"></i> Email Credentials
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('settings_email') }}">
+                            <div class="mb-3">
+                                <label for="smtp_server" class="form-label">SMTP Server</label>
+                                <input type="text" class="form-control" id="smtp_server" name="smtp_server"
+                                       value="{{ cfg.smtp_server }}" placeholder="smtp.gmail.com">
+                            </div>
+                            <div class="mb-3">
+                                <label for="smtp_port" class="form-label">SMTP Port</label>
+                                <input type="number" class="form-control" id="smtp_port" name="smtp_port"
+                                       value="{{ cfg.smtp_port }}" placeholder="587">
+                            </div>
+                            <div class="mb-3">
+                                <label for="smtp_username" class="form-label">SMTP Username</label>
+                                <input type="text" class="form-control" id="smtp_username" name="smtp_username"
+                                       value="{{ cfg.smtp_username }}" autocomplete="username">
+                            </div>
+                            <div class="mb-3">
+                                <label for="smtp_password" class="form-label">SMTP Password</label>
+                                <input type="password" class="form-control" id="smtp_password" name="smtp_password"
+                                       placeholder="{{ '•••••••••' if cfg.smtp_password else '' }}"
+                                       autocomplete="current-password">
+                                {% if cfg.smtp_password %}
+                                    <div class="form-text">Leave blank to keep the existing password.</div>
+                                {% endif %}
+                            </div>
+                            <div class="mb-3">
+                                <label for="from_email" class="form-label">From Email</label>
+                                <input type="email" class="form-control" id="from_email" name="from_email"
+                                       value="{{ cfg.from_email }}">
+                            </div>
+                            <div class="mb-3">
+                                <label for="from_name" class="form-label">From Name</label>
+                                <input type="text" class="form-control" id="from_name" name="from_name"
+                                       value="{{ cfg.from_name }}">
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-floppy"></i> Save Settings
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Send Now + Schedule -->
+            <div class="col-lg-6 d-flex flex-column gap-4">
+
+                <div class="card">
+                    <div class="card-header">
+                        <i class="bi bi-send"></i> Send Now
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-3">
+                            Send a balance-update email to every active user immediately using
+                            the credentials configured on the left.
+                        </p>
+                        <form method="POST" action="{{ url_for('settings_send_now') }}">
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="bi bi-send-fill"></i> Send Emails Now
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <i class="bi bi-clock"></i> Auto-Schedule
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('settings_schedule') }}">
+
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" role="switch"
+                                       id="schedule_enabled" name="schedule_enabled" value="1"
+                                       {% if cfg.schedule_enabled == '1' %}checked{% endif %}
+                                       onchange="toggleScheduleFields(this)">
+                                <label class="form-check-label" for="schedule_enabled">
+                                    Enable automatic schedule
+                                </label>
+                            </div>
+
+                            <div id="schedule_fields" {% if cfg.schedule_enabled != '1' %}style="display:none"{% endif %}>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Day</label>
+                                    <select class="form-select" name="schedule_day">
+                                        <option value="*"   {% if cfg.schedule_day == '*'   %}selected{% endif %}>Every day</option>
+                                        <option value="mon" {% if cfg.schedule_day == 'mon' %}selected{% endif %}>Monday</option>
+                                        <option value="tue" {% if cfg.schedule_day == 'tue' %}selected{% endif %}>Tuesday</option>
+                                        <option value="wed" {% if cfg.schedule_day == 'wed' %}selected{% endif %}>Wednesday</option>
+                                        <option value="thu" {% if cfg.schedule_day == 'thu' %}selected{% endif %}>Thursday</option>
+                                        <option value="fri" {% if cfg.schedule_day == 'fri' %}selected{% endif %}>Friday</option>
+                                        <option value="sat" {% if cfg.schedule_day == 'sat' %}selected{% endif %}>Saturday</option>
+                                        <option value="sun" {% if cfg.schedule_day == 'sun' %}selected{% endif %}>Sunday</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label class="form-label">Time <span class="text-muted">(24 h)</span></label>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <select class="form-select w-auto" name="schedule_hour">
+                                            {% for h in range(24) %}
+                                            <option value="{{ h }}" {% if cfg.schedule_hour|int == h %}selected{% endif %}>
+                                                {{ '%02d'|format(h) }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                        <span class="fw-bold fs-5">:</span>
+                                        <select class="form-select w-auto" name="schedule_minute">
+                                            {% set stored_min = (cfg.schedule_minute|int // 5) * 5 %}
+                                            {% for m in range(0, 60, 5) %}
+                                            <option value="{{ m }}" {% if stored_min == m %}selected{% endif %}>
+                                                {{ '%02d'|format(m) }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {% if cfg.schedule_enabled == '1' %}
+                                {% set day_labels = {'*': 'every day', 'mon': 'every Monday',
+                                                     'tue': 'every Tuesday', 'wed': 'every Wednesday',
+                                                     'thu': 'every Thursday', 'fri': 'every Friday',
+                                                     'sat': 'every Saturday', 'sun': 'every Sunday'} %}
+                                <div class="alert alert-success py-2 mb-3">
+                                    <i class="bi bi-check-circle"></i>
+                                    Emails will be sent <strong>{{ day_labels.get(cfg.schedule_day, cfg.schedule_day) }}</strong>
+                                    at <strong>{{ '%02d:%02d'|format(cfg.schedule_hour|int, cfg.schedule_minute|int) }}</strong>.
+                                </div>
+                                {% endif %}
+
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-floppy"></i> Save Schedule
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div><!-- /tab-email -->
+
+    <!-- ── Common Items tab ── -->
+    <div class="tab-pane fade" id="tab-common-items">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-bookmark-star"></i> Common Items
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">
+                    Items saved here appear as autocomplete suggestions when adding expense items to a transaction.
+                </p>
+
+                <form method="POST" action="{{ url_for('add_common_item') }}" class="d-flex gap-2 mb-4">
+                    <input type="text" class="form-control" name="name" placeholder="New item name" required>
+                    <button type="submit" class="btn btn-success text-nowrap">
+                        <i class="bi bi-plus"></i> Add
+                    </button>
+                </form>
+
+                {% if common_items %}
+                <div class="d-flex flex-wrap gap-2">
+                    {% for item in common_items %}
+                    <div class="badge bg-light text-dark border d-inline-flex align-items-center gap-1 px-2 py-2 fs-6 fw-normal">
+                        {{ item.name }}
+                        <form method="POST" action="{{ url_for('delete_common_item', item_id=item.id) }}" class="d-inline m-0">
+                            <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent text-danger lh-1"
+                                    title="Remove" onclick="return confirm('Remove \'{{ item.name }}\' from common items?')">
+                                <i class="bi bi-x-lg" style="font-size:0.75rem"></i>
+                            </button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted small mb-0">No common items saved yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div><!-- /tab-common-items -->
+
+    <!-- ── Deactivated Users tab ── -->
+    <div class="tab-pane fade" id="tab-inactive-users">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-person-slash"></i> Deactivated Users
+            </div>
+            <div class="card-body">
+                {% if inactive_users %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th class="text-end">Balance</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in inactive_users %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('user_detail', user_id=user.id) }}" class="text-decoration-none">
+                                        <strong>{{ user.name }}</strong>
+                                    </a>
+                                </td>
+                                <td class="text-muted">{{ user.email }}</td>
+                                <td class="text-end">
+                                    <span class="{% if user.balance >= 0 %}balance-positive{% else %}balance-negative{% endif %}">
+                                        <strong>€{{ "%.2f"|format(user.balance) }}</strong>
+                                    </span>
+                                </td>
+                                <td class="text-end">
+                                    <form method="POST" action="{{ url_for('toggle_user_active', user_id=user.id) }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-success">
+                                            <i class="bi bi-person-check"></i> Reactivate
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">No deactivated users.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div><!-- /tab-inactive-users -->
+
+</div><!-- /tab-content -->
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleScheduleFields(checkbox) {
+    document.getElementById('schedule_fields').style.display = checkbox.checked ? '' : 'none';
+}
+
+// Persist active tab across redirects (e.g. after saving common items)
+const STORAGE_KEY = 'settingsActiveTab';
+const defaultTab  = '#tab-general';
+
+function activateTab(targetId) {
+    const btn = document.querySelector(`[data-bs-target="${targetId}"]`);
+    if (btn) bootstrap.Tab.getOrCreateInstance(btn).show();
+}
+
+// Save tab choice whenever the user switches
+document.querySelectorAll('[data-bs-toggle="tab"]').forEach(btn => {
+    btn.addEventListener('shown.bs.tab', e => {
+        sessionStorage.setItem(STORAGE_KEY, e.target.dataset.bsTarget);
+    });
+});
+
+// Restore on load
+activateTab(sessionStorage.getItem(STORAGE_KEY) || defaultTab);
+</script>
+{% endblock %}

@@ -1,353 +1,202 @@
 # 🏦 Bank of Tina
 
-A simple, dockerized web application to manage shared expenses and balances within your office or group. Perfect for tracking lunch expenses, shared purchases, and keeping everyone's account balanced!
+A lightweight, self-hosted web application for managing shared expenses and balances within an office or group. Built with Flask and SQLite, runs entirely in Docker — no external services required.
+
+---
 
 ## ✨ Features
 
-- **User Management**: Add team members with email addresses
-- **Expense Tracking**: Record who paid for what and who owes whom
-- **Receipt Upload**: Upload and store receipt images (JPG, PNG, PDF)
-- **Manual Item Entry**: Easily add items with prices and assign to the right person
-- **Balance Tracking**: Real-time balance updates for all users
-- **Deposit/Withdrawal**: Users can add or withdraw money from their accounts
-- **Transaction History**: Complete audit trail of all transactions
-- **Weekly Email Reports**: Automated balance updates sent every Monday
-- **Mobile Responsive**: Works great on phones, tablets, and desktops
+### Users & Balances
+- Add team members with name and email
+- Real-time balance tracking for every user
+- Deactivate users (hidden from dashboard, manageable from Settings)
+- Full transaction history per user
+
+### Transactions
+- **Expense** — record who paid and assign items to individuals
+- **Deposit** — add money to a user's balance
+- **Withdrawal** — deduct money from a user's balance
+- **Edit** any saved transaction: description, amount, date, from/to user
+- **Delete** any transaction (balances are automatically reversed)
+
+### Expense Items
+- Add line items per expense (name + price)
+- Edit, add, or remove items on saved transactions
+- **Common Items** — save frequently used item names and get autocomplete suggestions when adding new items
+- Configurable number of pre-filled blank rows when opening the Add Transaction form
+
+### Receipts
+- Upload JPG, PNG, or PDF receipts (max 16 MB)
+- Files are saved in an organised directory tree:
+  `uploads/YYYY/MM/DD/BuyerName_filename.ext`
+- Filenames are sanitised (special characters removed) before saving
+
+### Settings (web UI — no `.env` editing needed)
+The Settings page is split into four tabs:
+
+| Tab | What you configure |
+|-----|--------------------|
+| **General** | Default number of blank item rows in the Add Transaction form |
+| **Email** | SMTP credentials, send balance emails on demand, set a recurring auto-schedule |
+| **Common Items** | Add / remove common item names used for autocomplete |
+| **Deactivated Users** | View and reactivate deactivated users |
+
+### Email Notifications
+- SMTP credentials are stored securely in the database (configured via Settings → Email)
+- **Send Now** button to immediately email all active users their current balance
+- **Auto-schedule** — pick a day and time (24 h clock); the schedule survives container restarts
+- Standalone `send_weekly_email.py` script still works via environment variables if needed
+
+---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
+- Docker and Docker Compose (plugin `docker compose` or standalone `docker-compose`)
 
-- Docker and Docker Compose installed on your server
-  - For newer Docker installations, Compose is a plugin (use `docker compose`)
-  - For older installations, use standalone `docker-compose`
-  - The scripts auto-detect which version you have
-- An email account for sending notifications (Gmail, Outlook, etc.)
-
-### Installation
-
-1. **Clone or copy this project to your server**:
+### 1. Clone the repository
 ```bash
-cd /path/to/your/server
-# Copy the bank-of-tina directory here
-```
-
-2. **Create the required directories** (if they don't exist):
-```bash
+git clone https://github.com/your-username/bank-of-tina.git
 cd bank-of-tina
-mkdir -p uploads database
 ```
 
-3. **Configure email settings**:
+### 2. Create your environment file
 ```bash
 cp .env.example .env
-nano .env  # Edit with your email credentials
+```
+Open `.env` and set a strong `SECRET_KEY`:
+```bash
+# Generate one with:
+python3 -c "import secrets; print(secrets.token_hex(32))"
 ```
 
-**Note**: `.env.example` is a hidden file (starts with a dot). To see it:
+### 3. Start the application
 ```bash
-ls -la    # Shows hidden files
-# OR use the visible copy:
-cp env.example .env
-```
-
-For Gmail:
-- Go to Google Account → Security → 2-Step Verification → App Passwords
-- Generate an app password for "Bank of Tina"
-- Use this password in your `.env` file
-
-4. **Start the application**:
-```bash
-# The script auto-detects your Docker Compose version
-docker-compose up -d
-# OR if using the Docker Compose plugin:
 docker compose up -d
 ```
 
-5. **Access the web interface**:
+### 4. Open the web interface
 ```
 http://your-server-ip:5000
 ```
 
-## 📧 Email Configuration
+That's it. SMTP credentials and the email schedule are configured from the **Settings** page inside the app — no restart required.
 
-### Supported Email Providers
-
-**Gmail** (recommended for simplicity):
-```env
-SMTP_SERVER=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USERNAME=your-email@gmail.com
-SMTP_PASSWORD=your-app-password
-```
-
-**Outlook/Office365**:
-```env
-SMTP_SERVER=smtp.office365.com
-SMTP_PORT=587
-SMTP_USERNAME=your-email@outlook.com
-SMTP_PASSWORD=your-password
-```
-
-**Yahoo**:
-```env
-SMTP_SERVER=smtp.mail.yahoo.com
-SMTP_PORT=587
-SMTP_USERNAME=your-email@yahoo.com
-SMTP_PASSWORD=your-password
-```
-
-**Custom SMTP Server**:
-```env
-SMTP_SERVER=mail.yourdomain.com
-SMTP_PORT=587
-SMTP_USERNAME=your-username
-SMTP_PASSWORD=your-password
-```
-
-### Setting Up Automated Weekly Emails
-
-#### Option 1: Using Cron on Host Server (Recommended)
-
-Add to your server's crontab:
-```bash
-crontab -e
-```
-
-Add this line (adjust path):
-```cron
-# Send weekly emails every Monday at 9:00 AM
-0 9 * * 1 /path/to/bank-of-tina/send_emails.sh
-```
-
-#### Option 2: Using Docker Cron Container
-
-Uncomment the `cron` service in `docker-compose.yml` and restart:
-```bash
-docker-compose down
-docker-compose up -d
-```
-
-#### Manual Email Sending
-
-To send emails manually at any time:
-```bash
-./send_emails.sh
-```
-
-Or directly:
-```bash
-docker exec bank-of-tina python send_weekly_email.py
-```
+---
 
 ## 📱 Usage Guide
 
 ### Adding Users
-
-1. Go to the dashboard
-2. Click "Add User"
-3. Enter name and email address
-4. User is created with €0.00 balance
+1. Dashboard → **Add User**
+2. Enter name and email → **Add User**
 
 ### Recording an Expense
+1. **Add Transaction** → **Expense** tab
+2. Select who paid
+3. Enter a description (optional: upload a receipt)
+4. Fill in item rows (pre-filled based on your General setting)
+5. **Record Expense**
 
-**Example: Alex buys lunch, Walter owes for a salad**
+### Editing a Transaction
+1. **All Transactions** (or a user's detail page) → pencil icon
+2. Adjust any field — description, amount, date, from/to user
+3. Add, edit, or remove expense items (the total auto-updates the Amount field)
+4. **Save Changes** — balances are recalculated automatically
 
-1. Click "Add Transaction" → "Expense" tab
-2. Select who paid (Alex)
-3. Add description (e.g., "Supermarket lunch")
-4. Upload receipt (optional)
-5. Click "Add Item" for each item:
-   - Item: "Caesar Salad"
-   - Price: €5.50
-   - Who owes: Walter
-6. Click "Record Expense"
+### Deleting a Transaction
+- Trash icon on any transaction row — balances are reversed automatically
 
-Result: Walter's balance: -€5.50, Alex's balance: +€5.50
+### Setting Up Email
+1. **Settings** → **Email** tab
+2. Fill in SMTP credentials and click **Save Settings**
+3. Use **Send Emails Now** to test, or configure a recurring schedule under **Auto-Schedule**
 
-### Adding Money (Deposit)
+### Managing Deactivated Users
+1. **Settings** → **Deactivated Users** tab
+2. Click **Reactivate** next to any user to restore them to the dashboard
 
-When someone wants to add money to their account:
-1. Click "Add Transaction" → "Deposit" tab
-2. Select the user
-3. Enter amount
-4. Click "Add Money"
-
-### Withdrawing Money
-
-When someone wants to withdraw from their balance:
-1. Click "Add Transaction" → "Withdrawal" tab
-2. Select the user
-3. Enter amount
-4. Click "Withdraw Money"
+---
 
 ## 🗂️ File Structure
 
 ```
 bank-of-tina/
 ├── app/
-│   ├── app.py                 # Main Flask application
-│   ├── send_weekly_email.py   # Email notification script
-│   ├── templates/             # HTML templates
+│   ├── app.py                    # Flask application (routes, models, scheduler)
+│   ├── send_weekly_email.py      # Standalone email script (uses env vars)
+│   ├── templates/
 │   │   ├── base.html
-│   │   ├── index.html
+│   │   ├── index.html            # Dashboard (active users only)
 │   │   ├── add_transaction.html
-│   │   ├── transactions.html
-│   │   └── user_detail.html
-│   └── static/                # Static files (CSS, JS)
-├── uploads/                   # Receipt images (mounted volume)
-├── database/                  # SQLite database (mounted volume)
+│   │   ├── edit_transaction.html # Edit transactions & items
+│   │   ├── transactions.html     # All transactions list
+│   │   ├── user_detail.html
+│   │   └── settings.html         # Settings (General / Email / Common Items / Deactivated Users)
+│   └── static/
+├── uploads/                      # Receipts — organised as YYYY/MM/DD/
+├── database/                     # SQLite database
 ├── Dockerfile
 ├── docker-compose.yml
 ├── requirements.txt
-├── .env.example
-├── .env                       # Your configuration (create from .env.example)
-├── crontab                    # Cron schedule for emails
-├── send_emails.sh            # Script to manually send emails
-└── README.md
+└── .env.example
 ```
+
+---
 
 ## 🔒 Security Notes
 
-- **Change the SECRET_KEY** in `.env` to a random string
-- **Never commit** your `.env` file to version control
-- **Use app passwords** for Gmail instead of your main password
-- **Restrict access** to the web interface (use a reverse proxy with authentication if exposed to internet)
-- **Backup** your database regularly (it's in the `database/` folder)
+- Set a strong, random `SECRET_KEY` in your `.env` file
+- Never commit your `.env` file (it is in `.gitignore`)
+- Use an **App Password** for Gmail rather than your main account password
+- Restrict network access to port 5000 — place behind a reverse proxy (nginx, Caddy) with authentication if the app is internet-facing
+- Back up the `database/` folder regularly
+
+---
 
 ## 🔧 Maintenance
 
-### Backup Database
-
-```bash
-cp database/bank_of_tina.db database/bank_of_tina_backup_$(date +%Y%m%d).db
-```
-
-### View Logs
-
+### View logs
 ```bash
 docker compose logs -f web
-# OR
-docker-compose logs -f web
 ```
 
-### Update the Application
+### Backup the database
+```bash
+cp database/bank_of_tina.db database/bank_of_tina_$(date +%Y%m%d).db
+```
 
+### Update after code changes
+```bash
+docker compose build && docker compose up -d
+```
+
+### Reset everything ⚠️ (deletes all data)
 ```bash
 docker compose down
-docker compose build
+rm -rf database/* uploads/*/
 docker compose up -d
-# OR use docker-compose if you have the standalone version
 ```
 
-### Reset Everything (⚠️ WARNING: Deletes all data)
-
-```bash
-docker compose down  # or docker-compose down
-rm -rf database/* uploads/*
-docker compose up -d  # or docker-compose up -d
-```
+---
 
 ## 🐛 Troubleshooting
 
-### Emails not sending?
+| Problem | Steps |
+|---------|-------|
+| Emails not sending | Check Settings → Email; verify SMTP credentials; check logs |
+| Receipt upload fails | Check `chmod 755 uploads/`; verify file is JPG/PNG/PDF and < 16 MB |
+| Port 5000 in use | Change the host port in `docker-compose.yml` (`"8080:5000"`) |
+| Database locked | `docker compose restart web` |
 
-1. Check your SMTP credentials in `.env`
-2. For Gmail, ensure you're using an App Password
-3. Check the logs: `docker-compose logs web`
-4. Test manually: `./send_emails.sh`
+---
 
-### Can't upload receipts?
+## 💡 Future Ideas
 
-1. Check file permissions: `chmod 777 uploads/`
-2. Ensure the uploads volume is mounted correctly
-3. Check file size (max 16MB)
-
-### Database locked?
-
-1. Restart the container: `docker compose restart web` (or `docker-compose restart web`)
-2. Check file permissions: `chmod 666 database/bank_of_tina.db`
-
-### Port 5000 already in use?
-
-Edit `docker-compose.yml` and change the port:
-```yaml
-ports:
-  - "8000:5000"  # Use port 8000 instead
-```
-
-## 🎨 Customization
-
-### Change the Port
-
-Edit `docker-compose.yml`:
-```yaml
-ports:
-  - "YOUR_PORT:5000"
-```
-
-### Change Email Schedule
-
-Edit `crontab` file:
-```
-# Every Friday at 5 PM
-0 17 * * 5 cd /app && /usr/local/bin/python send_weekly_email.py >> /var/log/cron.log 2>&1
-```
-
-### Customize Email Template
-
-Edit `app/send_weekly_email.py` and modify the `create_balance_email()` function.
-
-## 💡 Tips for Tina
-
-### Workflow for Recording Expenses
-
-1. **During the day**: Collect receipts from teammates
-2. **End of day**: Log into the app and record each expense
-3. **Upload receipts**: Keep digital copies for reference
-4. **Review**: Check the dashboard to see everyone's balance
-
-### Best Practices
-
-- Enter transactions on the same day they occur
-- Always upload receipts for larger expenses
-- Use clear descriptions (e.g., "Lunch - Italian Restaurant" instead of just "Food")
-- Encourage users to settle up when balances get high
-- Run the weekly email on Monday mornings to start the week fresh
-
-### Encouraging Adoption
-
-- Show teammates the dashboard - it's satisfying to see balances!
-- The email notifications keep everyone informed without manual work
-- Receipt photos make expense tracking transparent
-- It's much easier than manual spreadsheets or cash handling
-
-## 📊 Improvements & Future Ideas
-
-Potential enhancements you could add:
-
-- [ ] OCR for automatic receipt parsing
-- [ ] Split expenses among multiple people (percentage-based)
-- [ ] Export transactions to CSV/Excel
+- [ ] CSV / Excel export of transactions
 - [ ] User authentication and login system
-- [ ] Mobile app
-- [ ] Integration with Slack/Teams for notifications
-- [ ] Charts and analytics
+- [ ] Charts and analytics dashboard
 - [ ] Support for multiple currencies
-- [ ] Recurring expenses (monthly lunch subscription, etc.)
-
-## 🤝 Support
-
-Need help? Things to try:
-
-1. Check this README thoroughly
-2. Look at the example workflows above
-3. Check Docker logs: `docker-compose logs -f`
-4. Ensure all environment variables are set correctly
-
-## 📄 License
-
-This is a personal tool created to help Tina manage office expenses. Feel free to modify and adapt it to your needs!
+- [ ] OCR for automatic receipt parsing
 
 ---
 
