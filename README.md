@@ -51,6 +51,7 @@ A lightweight, self-hosted web application for managing shared expenses and bala
 - **Restore** from any listed backup with one click — receipts are restored first so the database is never touched if the file copy fails
 - **Upload** a backup from another instance — large files are sent in 5 MB chunks with a progress bar, so there is no effective size limit
 - **Auto-prune** — configure how many backups to keep; older ones are deleted automatically after each scheduled run
+- **Backup status email** — when a site admin is configured, an optional email is sent after each *scheduled* backup with the result (success or failure), filename, backups kept, and number pruned; manual backups never trigger this email
 - **Debug log** — when debug mode is on, every backup step is written to the database and shown in the Settings UI
 
 ### Settings (web UI — no `.env` editing needed)
@@ -61,7 +62,7 @@ The Settings page is split into five tabs:
 | **General** | Default number of blank item rows in the Add Transaction form; number of recent transactions shown on the dashboard (0 hides the section); timezone; site admin (used for admin summary emails) |
 | **Email** | SMTP credentials; enable/disable email sending; debug mode (logs runs to DB, surfaces SMTP errors in the UI); admin summary email toggle; send balance emails on demand; set a recurring auto-schedule |
 | **Common** | Global autocomplete toggle; manually manage item names, descriptions, and prices (each with its own blacklist); configure the auto-collect scheduled job and view its debug log |
-| **Backup** | Create/download/delete backups; restore from any backup or an uploaded file; configure an automatic backup schedule with auto-prune; debug log |
+| **Backup** | Create/download/delete backups; restore from any backup or an uploaded file; configure an automatic backup schedule with auto-prune; backup status email to site admin (scheduled runs only); debug log |
 | **Users** | Add new users; view all users with their status and balance; deactivate or reactivate any user |
 
 ### Email Notifications
