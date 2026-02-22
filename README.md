@@ -46,8 +46,8 @@ The Settings page is split into four tabs:
 
 | Tab | What you configure |
 |-----|--------------------|
-| **General** | Default number of blank item rows in the Add Transaction form; number of recent transactions shown on the dashboard (0 hides the section); timezone; enable/disable email sending; debug mode (surfaces SMTP errors in the UI) |
-| **Email** | SMTP credentials, send balance emails on demand, set a recurring auto-schedule |
+| **General** | Default number of blank item rows in the Add Transaction form; number of recent transactions shown on the dashboard (0 hides the section); timezone |
+| **Email** | SMTP credentials; enable/disable email sending; debug mode (logs runs to DB, surfaces SMTP errors in the UI); send balance emails on demand; set a recurring auto-schedule |
 | **Common** | Global autocomplete toggle; manually manage item names, descriptions, and prices (each with its own blacklist); configure the auto-collect scheduled job and view its debug log |
 | **Users** | Add new users; view all users with their status and balance; deactivate or reactivate any user |
 
