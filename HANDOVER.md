@@ -45,6 +45,7 @@ bank-of-tina/
 │       ├── transactions.html     # Month-by-month view
 │       ├── search.html           # Cross-month search with advanced filters
 │       ├── user_detail.html
+│       ├── analytics.html        # Charts & Statistics page (5-tab Chart.js dashboard)
 │       └── settings.html         # All settings tabs (General/Email/Common/Backup/Templates/Users)
 ├── uploads/                      # Receipts — bind-mounted; YYYY/MM/DD/Buyer_file.ext
 ├── backups/                      # Backup archives — bind-mounted; bot_backup_*.tar.gz
@@ -96,17 +97,17 @@ The `settings()` view builds a `cfg` dict from all keys and passes it to `settin
 | Key | Default | Notes |
 |-----|---------|-------|
 | `default_item_rows` | `3` | Pre-filled rows in Add Transaction |
-| `recent_transactions_count` | `10` | Dashboard recent transactions (0 = hide) |
+| `recent_transactions_count` | `5` | Dashboard recent transactions (0 = hide) |
 | `timezone` | `UTC` | pytz name; applied to all display dates, email subjects, backup filenames |
 | `site_admin_id` | — | User ID (string) of the admin; used for summary/backup emails |
 | `smtp_server/port/username/password` | — | SMTP credentials |
 | `from_email`, `from_name` | — | Sender identity |
-| `email_enabled` | `0` | Master email on/off switch |
+| `email_enabled` | `1` | Master email on/off switch |
 | `email_debug` | `0` | Logs every send to `EmailLog` |
 | `admin_summary_email` | `0` | Send admin summary after each email run |
 | `admin_summary_include_emails` | `0` | Include email addresses in the admin summary table; `'1'` shows the Email column |
 | `schedule_enabled` | `0` | Email auto-schedule on/off |
-| `schedule_day/hour/minute` | `*, 9, 0` | APScheduler cron values |
+| `schedule_day/hour/minute` | `mon, 9, 0` | APScheduler cron values |
 | `common_enabled` | `1` | Global autocomplete toggle |
 | `common_auto_enabled` | `0` | Auto-collect scheduled job |
 | `common_auto_debug` | `0` | Log auto-collect decisions |
@@ -171,6 +172,25 @@ save_receipt(file, buyer_name)
 # Saves an uploaded FileStorage to /uploads/YYYY/MM/DD/BuyerName_filename.ext
 # Returns relative path for DB storage, or None if file invalid.
 
+delete_receipt_file(receipt_path, exclude_transaction_id)
+# Deletes a receipt file from disk only when no other transaction still references the same
+# path (shared-receipt safety check). Silently ignores missing files.
+
+parse_submitted_date(date_str)
+# Parses a datetime-local string (from a form input in the app timezone) and returns a
+# naive UTC datetime. Accepts '%Y-%m-%dT%H:%M' and '%Y-%m-%d'; falls back to utcnow().
+
+get_app_tz()
+# Returns the configured pytz timezone, cached on Flask g for the duration of the request.
+# Use now_local() in scheduler/background jobs instead (g is not available there).
+
+to_local(dt)
+# Converts a naive UTC datetime to the configured local timezone (using get_app_tz()).
+
+@app.template_filter('localdt')
+# Jinja filter: {{ dt|localdt }} — calls to_local(dt).strftime('%Y-%m-%d %H:%M').
+# Used in all templates to display stored UTC datetimes in the configured timezone.
+
 @app.context_processor inject_theme()
 # Injects theme_navbar, theme_navbar_rgb, theme_balance_positive, theme_balance_negative,
 # and decimal_sep into every template. base.html uses the theme values in an inline
@@ -198,8 +218,8 @@ A single `BackgroundScheduler` instance is created at module level. Three job sl
 
 | Job ID | Trigger | What it does |
 |--------|---------|-------------|
-| `weekly_email` | cron (day/hour/minute) | `send_all_emails()` |
-| `auto_collect` | cron | scans transactions, promotes common values |
+| `email_job` | cron (day/hour/minute) | `send_all_emails()` |
+| `common_job` | cron | scans transactions, promotes common values |
 | `backup_job` | cron | `run_backup()`, prunes old backups, emails admin if configured |
 
 Jobs are restored from the DB on startup via `_restore_schedule()`. The scheduler is shut down on process exit via `atexit`.

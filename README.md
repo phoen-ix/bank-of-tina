@@ -220,6 +220,7 @@ bank-of-tina/
 │   │   ├── transactions.html     # Month-by-month transactions list
 │   │   ├── search.html           # Cross-month search with advanced filters
 │   │   ├── user_detail.html
+│   │   ├── analytics.html        # Charts & Statistics page
 │   │   └── settings.html         # Settings (General / Email / Common / Backup / Templates / Users)
 │   └── static/
 ├── uploads/                      # Receipts — organised as YYYY/MM/DD/
