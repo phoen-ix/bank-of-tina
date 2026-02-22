@@ -1085,15 +1085,16 @@ def view_transactions():
 
 @app.route('/search')
 def search():
-    q          = request.args.get('q', '').strip()
-    tx_type    = request.args.get('type', '')
-    user_id    = request.args.get('user', None, type=int)
-    date_from  = request.args.get('date_from', '')
-    date_to    = request.args.get('date_to', '')
-    amount_min = request.args.get('amount_min', '')
-    amount_max = request.args.get('amount_max', '')
+    q           = request.args.get('q', '').strip()
+    tx_type     = request.args.get('type', '')
+    user_id     = request.args.get('user', None, type=int)
+    date_from   = request.args.get('date_from', '')
+    date_to     = request.args.get('date_to', '')
+    amount_min  = request.args.get('amount_min', '')
+    amount_max  = request.args.get('amount_max', '')
+    has_receipt = request.args.get('has_receipt', '')
 
-    searched = any([q, tx_type, user_id, date_from, date_to, amount_min, amount_max])
+    searched = any([q, tx_type, user_id, date_from, date_to, amount_min, amount_max, has_receipt])
     results  = []
 
     if searched:
@@ -1134,15 +1135,19 @@ def search():
                 qry = qry.filter(Transaction.amount <= float(amount_max))
             except ValueError:
                 pass
+        if has_receipt:
+            qry = qry.filter(Transaction.receipt_path.isnot(None),
+                             Transaction.receipt_path != '')
 
         results = qry.order_by(Transaction.date.desc()).all()
 
-    all_users = User.query.order_by(User.name).all()
+    all_users = User.query.filter_by(is_active=True).order_by(User.name).all()
     return render_template('search.html',
         results=results, searched=searched, all_users=all_users,
         q=q, tx_type=tx_type, user_id=user_id,
         date_from=date_from, date_to=date_to,
-        amount_min=amount_min, amount_max=amount_max)
+        amount_min=amount_min, amount_max=amount_max,
+        has_receipt=has_receipt)
 
 
 @app.route('/user/<int:user_id>')
