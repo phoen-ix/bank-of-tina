@@ -331,6 +331,7 @@ Sample-point granularity: weekly if date range ≤ 90 days, monthly otherwise.
 - All charts use `maintainAspectRatio: false` inside fixed-height wrapper `<div>`s
 - Chart instances are stored in `_charts{}` map; `mkChart(id, cfg)` destroys the old instance before creating a new one
 - Tab-switch resize: Bootstrap's `shown.bs.tab` event triggers `chart.resize()` on every canvas in the newly visible tab — fixes the zero-dimension bug that occurs when Chart.js initialises inside a hidden (`display:none`) tab pane
+- **Decimal separator**: `DECIMAL_SEP` constant (from `inject_theme`) and a `fmtMoney(v)` helper (`toFixed(2).replace('.', DECIMAL_SEP)`) are used in all tooltip callbacks and axis tick formatters for monetary values
 
 ### Print / PDF
 
@@ -358,7 +359,7 @@ All features are fully implemented and committed. Recent work in order:
 9. `.dockerignore` updated (excludes `backups/`, `mariadb-data/`, `*.tar.gz`)
 10. **Per-user email preferences** — `email_opt_in` and `email_transactions` fields on `User`; `_migrate_db()` for existing installs; opt-in filtering in `send_all_emails()`; preference-driven transaction query in `build_email_html()`; controls in Add User form (settings.html) and Edit User modal (user_detail.html)
 11. **Charts & Statistics page** — `/analytics` + `/analytics/data` JSON endpoint; 5-tab Chart.js dashboard (Balances, History, Volume, Top Items, Breakdown); shared filter bar (date range + user multi-select + quick presets); A4 landscape print/PDF with per-tab canvas resize via `beforeprint`
-12. **Decimal separator setting** — `decimal_separator` key in `Setting` (`.` or `,`); configured in Settings → General; `parse_amount()` helper normalises all user input; `fmt_amount()` / `|money` Jinja filter applied to all monetary display; `DECIMAL_SEP` JS constant injected via `inject_theme` context processor and used in `add_transaction.html` and `edit_transaction.html` for live total display and item serialisation; all monetary inputs changed from `type="number"` to `type="text" inputmode="decimal"`
+12. **Decimal separator setting** — `decimal_separator` key in `Setting` (`.` or `,`); configured in Settings → General; `parse_amount()` helper normalises all user input; `fmt_amount()` / `|money` Jinja filter applied to all monetary display; `DECIMAL_SEP` JS constant injected via `inject_theme` context processor and used in `add_transaction.html` and `edit_transaction.html` for live total display and item serialisation; all monetary inputs changed from `type="number"` to `type="text" inputmode="decimal"`; Charts page uses the same `DECIMAL_SEP` constant via a `fmtMoney()` JS helper applied to all tooltip labels and axis ticks
 
 ---
 
