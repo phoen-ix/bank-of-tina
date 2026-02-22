@@ -33,6 +33,12 @@
         </button>
     </li>
     <li class="nav-item">
+        <button class="nav-link" id="tab-btn-templates"
+                data-bs-toggle="tab" data-bs-target="#tab-templates" type="button">
+            <i class="bi bi-palette"></i> Templates
+        </button>
+    </li>
+    <li class="nav-item">
         <button class="nav-link" id="tab-btn-users"
                 data-bs-toggle="tab" data-bs-target="#tab-users" type="button">
             <i class="bi bi-people"></i> Users
@@ -968,6 +974,206 @@
 
     </div><!-- /tab-backup -->
 
+    <!-- ── Templates tab ── -->
+    <div class="tab-pane fade" id="tab-templates">
+        <form method="POST" action="{{ url_for('settings_templates') }}">
+
+            <!-- Colors / Theme -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-palette"></i> Colors &amp; Theme
+                </div>
+                <div class="card-body">
+                    <!-- Preset selector -->
+                    <div class="mb-4">
+                        <label class="form-label">Preset theme</label>
+                        <select class="form-select" id="theme_preset" style="max-width: 220px"
+                                onchange="applyThemePreset(this.value)">
+                            <option value="custom" {% if current_theme == 'custom' %}selected{% endif %}>— Custom —</option>
+                            {% for key, theme in themes.items() %}
+                            <option value="{{ key }}" {% if current_theme == key %}selected{% endif %}>{{ theme.label }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Selecting a preset fills all color pickers below. Changing any picker switches to Custom.</div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-sm-6 col-lg-4">
+                            <label for="color_navbar" class="form-label">Navbar color</label>
+                            <div class="input-group" style="max-width: 240px">
+                                <input type="color" class="form-control form-control-color"
+                                       id="color_navbar" name="color_navbar"
+                                       value="{{ cfg.color_navbar }}"
+                                       onchange="setCustomTheme()">
+                                <input type="text" class="form-control font-monospace"
+                                       id="color_navbar_hex" value="{{ cfg.color_navbar }}"
+                                       maxlength="7" style="max-width: 90px"
+                                       oninput="syncHexInput(this, 'color_navbar')">
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-lg-4">
+                            <label for="color_email_grad_start" class="form-label">Email gradient start</label>
+                            <div class="input-group" style="max-width: 240px">
+                                <input type="color" class="form-control form-control-color"
+                                       id="color_email_grad_start" name="color_email_grad_start"
+                                       value="{{ cfg.color_email_grad_start }}"
+                                       onchange="setCustomTheme()">
+                                <input type="text" class="form-control font-monospace"
+                                       id="color_email_grad_start_hex" value="{{ cfg.color_email_grad_start }}"
+                                       maxlength="7" style="max-width: 90px"
+                                       oninput="syncHexInput(this, 'color_email_grad_start')">
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-lg-4">
+                            <label for="color_email_grad_end" class="form-label">Email gradient end</label>
+                            <div class="input-group" style="max-width: 240px">
+                                <input type="color" class="form-control form-control-color"
+                                       id="color_email_grad_end" name="color_email_grad_end"
+                                       value="{{ cfg.color_email_grad_end }}"
+                                       onchange="setCustomTheme()">
+                                <input type="text" class="form-control font-monospace"
+                                       id="color_email_grad_end_hex" value="{{ cfg.color_email_grad_end }}"
+                                       maxlength="7" style="max-width: 90px"
+                                       oninput="syncHexInput(this, 'color_email_grad_end')">
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-lg-4">
+                            <label for="color_balance_positive" class="form-label">Positive balance color</label>
+                            <div class="input-group" style="max-width: 240px">
+                                <input type="color" class="form-control form-control-color"
+                                       id="color_balance_positive" name="color_balance_positive"
+                                       value="{{ cfg.color_balance_positive }}"
+                                       onchange="setCustomTheme()">
+                                <input type="text" class="form-control font-monospace"
+                                       id="color_balance_positive_hex" value="{{ cfg.color_balance_positive }}"
+                                       maxlength="7" style="max-width: 90px"
+                                       oninput="syncHexInput(this, 'color_balance_positive')">
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-lg-4">
+                            <label for="color_balance_negative" class="form-label">Negative balance color</label>
+                            <div class="input-group" style="max-width: 240px">
+                                <input type="color" class="form-control form-control-color"
+                                       id="color_balance_negative" name="color_balance_negative"
+                                       value="{{ cfg.color_balance_negative }}"
+                                       onchange="setCustomTheme()">
+                                <input type="text" class="form-control font-monospace"
+                                       id="color_balance_negative_hex" value="{{ cfg.color_balance_negative }}"
+                                       maxlength="7" style="max-width: 90px"
+                                       oninput="syncHexInput(this, 'color_balance_negative')">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Weekly Email template -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-envelope"></i> Weekly Balance Email</span>
+                    <a href="{{ url_for('preview_email') }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-eye"></i> Preview
+                    </a>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">
+                        Available placeholders: <code>[Name]</code> <code>[Balance]</code> <code>[BalanceStatus]</code> <code>[Date]</code>
+                        &nbsp;— Leave a field blank to omit that line from the email.
+                    </p>
+                    <div class="mb-3">
+                        <label for="tpl_email_greeting" class="form-label">Greeting</label>
+                        <input type="text" class="form-control" id="tpl_email_greeting"
+                               name="tpl_email_greeting" value="{{ cfg.tpl_email_greeting }}"
+                               placeholder="Hi [Name],">
+                        <div class="form-text">First line of the email body.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="tpl_email_intro" class="form-label">Intro line</label>
+                        <input type="text" class="form-control" id="tpl_email_intro"
+                               name="tpl_email_intro" value="{{ cfg.tpl_email_intro }}"
+                               placeholder="Here's your weekly update from the Bank of Tina:">
+                    </div>
+                    <div class="mb-3">
+                        <label for="tpl_email_footer1" class="form-label">Footer line 1</label>
+                        <input type="text" class="form-control" id="tpl_email_footer1"
+                               name="tpl_email_footer1" value="{{ cfg.tpl_email_footer1 }}"
+                               placeholder="This is an automated weekly update from the Bank of Tina system.">
+                    </div>
+                    <div class="mb-3">
+                        <label for="tpl_email_footer2" class="form-label">Footer line 2</label>
+                        <input type="text" class="form-control" id="tpl_email_footer2"
+                               name="tpl_email_footer2" value="{{ cfg.tpl_email_footer2 }}"
+                               placeholder="Making office lunches easier! 🥗">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Summary Email template -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-person-badge"></i> Admin Summary Email</span>
+                    <a href="{{ url_for('preview_admin_summary') }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-eye"></i> Preview
+                    </a>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">
+                        Available placeholders: <code>[Date]</code> <code>[UserCount]</code>
+                        &nbsp;— Leave a field blank to omit that line.
+                    </p>
+                    <div class="mb-3">
+                        <label for="tpl_admin_intro" class="form-label">Intro line</label>
+                        <input type="text" class="form-control" id="tpl_admin_intro"
+                               name="tpl_admin_intro" value="{{ cfg.tpl_admin_intro }}"
+                               placeholder="(optional intro above the table)">
+                    </div>
+                    <div class="mb-3">
+                        <label for="tpl_admin_footer" class="form-label">Footer</label>
+                        <input type="text" class="form-control" id="tpl_admin_footer"
+                               name="tpl_admin_footer" value="{{ cfg.tpl_admin_footer }}"
+                               placeholder="This is an automated admin summary from the Bank of Tina system.">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Backup Status Email template -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-archive"></i> Backup Status Email</span>
+                    <a href="{{ url_for('preview_backup') }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-eye"></i> Preview
+                    </a>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">
+                        Available placeholders: <code>[Date]</code>
+                        &nbsp;— Leave blank to omit the footer.
+                    </p>
+                    <div class="mb-3">
+                        <label for="tpl_backup_footer" class="form-label">Footer</label>
+                        <input type="text" class="form-control" id="tpl_backup_footer"
+                               name="tpl_backup_footer" value="{{ cfg.tpl_backup_footer }}"
+                               placeholder="This is an automated backup report from the Bank of Tina system.">
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-floppy"></i> Save Templates
+                </button>
+                <button type="button" class="btn btn-outline-secondary"
+                        onclick="if(confirm('Reset all templates and colors to defaults?')) { document.getElementById('reset-templates-form').submit(); }">
+                    <i class="bi bi-arrow-counterclockwise"></i> Reset to Defaults
+                </button>
+            </div>
+        </form>
+
+        <form id="reset-templates-form" method="POST"
+              action="{{ url_for('settings_templates_reset') }}" class="d-none"></form>
+
+    </div><!-- /tab-templates -->
+
     <!-- ── Users tab ── -->
     <div class="tab-pane fade" id="tab-users">
 
@@ -1162,5 +1368,38 @@ document.querySelectorAll('[data-bs-toggle="tab"]').forEach(btn => {
 
 // Restore on load
 activateTab(sessionStorage.getItem(STORAGE_KEY) || defaultTab);
+
+// ── Templates: theme preset / color picker logic ───────────────────────────
+
+const THEMES = {{ themes | tojson }};
+
+function applyThemePreset(key) {
+    if (key === 'custom') return;
+    const t = THEMES[key];
+    if (!t) return;
+    const colorFields = ['color_navbar', 'color_email_grad_start', 'color_email_grad_end',
+                         'color_balance_positive', 'color_balance_negative'];
+    colorFields.forEach(function(field) {
+        const picker = document.getElementById(field);
+        const hex    = document.getElementById(field + '_hex');
+        if (picker && t[field]) { picker.value = t[field]; }
+        if (hex    && t[field]) { hex.value    = t[field]; }
+    });
+}
+
+function setCustomTheme() {
+    const sel = document.getElementById('theme_preset');
+    if (sel) sel.value = 'custom';
+}
+
+function syncHexInput(hexInput, pickerName) {
+    // When user types a valid hex value into the text box, update the color picker
+    const val = hexInput.value.trim();
+    if (/^#[0-9a-fA-F]{6}$/.test(val)) {
+        const picker = document.getElementById(pickerName);
+        if (picker) picker.value = val;
+        setCustomTheme();
+    }
+}
 </script>
 {% endblock %}

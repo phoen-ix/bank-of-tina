@@ -7,8 +7,28 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <style>
-        .balance-positive { color: #28a745; }
-        .balance-negative { color: #dc3545; }
+        :root {
+            --bs-primary: {{ theme_navbar }};
+            --bs-primary-rgb: {{ theme_navbar_rgb }};
+        }
+        .btn-primary, .btn-primary:hover, .btn-primary:focus,
+        .btn-primary:active, .btn-primary.active {
+            background-color: {{ theme_navbar }};
+            border-color: {{ theme_navbar }};
+        }
+        .btn-outline-primary {
+            color: {{ theme_navbar }};
+            border-color: {{ theme_navbar }};
+        }
+        .btn-outline-primary:hover {
+            background-color: {{ theme_navbar }};
+            border-color: {{ theme_navbar }};
+        }
+        .bg-primary { background-color: {{ theme_navbar }} !important; }
+        .text-primary { color: {{ theme_navbar }} !important; }
+        .nav-tabs .nav-link.active { color: {{ theme_navbar }}; border-color: {{ theme_navbar }} transparent; }
+        .balance-positive { color: {{ theme_balance_positive }}; }
+        .balance-negative { color: {{ theme_balance_negative }}; }
         .navbar-brand { font-weight: bold; }
         .card-header { background-color: #f8f9fa; font-weight: bold; }
         .receipt-preview { max-width: 100px; cursor: pointer; }

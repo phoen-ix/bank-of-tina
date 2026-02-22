@@ -57,8 +57,16 @@ A lightweight, self-hosted web application for managing shared expenses and bala
 ### UI
 - Flash notifications (success/error banners) auto-dismiss after 4 seconds; can still be closed manually at any time
 
+### Templates & Theming
+- **Color palette** — navbar color, email header gradient (start + end), positive and negative balance colors; each has a color picker paired with a hex text field
+- **Preset themes** — choose from Default, Ocean, Forest, Sunset, or Slate via a dropdown; selecting a preset fills all pickers instantly; manually changing any picker switches to "Custom"
+- **Email text templates** — edit the greeting, intro, footer line 1, and footer line 2 of the weekly balance email; set the intro and footer of the admin summary email; set the footer of the backup status email
+- **Placeholders** — use `[Name]`, `[Balance]`, `[BalanceStatus]`, `[Date]`, `[UserCount]` inside any text field; the values are substituted when the email is sent; leave a field blank to omit that line entirely
+- **Live preview** — each email template card has a **Preview** button that opens the rendered HTML in a new tab using real data (or sample data when no users exist)
+- All theme settings are stored in the database and applied immediately with no restart
+
 ### Settings (web UI — no `.env` editing needed)
-The Settings page is split into five tabs:
+The Settings page is split into six tabs:
 
 | Tab | What you configure |
 |-----|--------------------|
@@ -66,6 +74,7 @@ The Settings page is split into five tabs:
 | **Email** | SMTP credentials; enable/disable email sending; debug mode (logs runs to DB, surfaces SMTP errors in the UI); admin summary email toggle; send balance emails on demand; set a recurring auto-schedule |
 | **Common** | Global autocomplete toggle; manually manage item names, descriptions, and prices (each with its own blacklist); configure the auto-collect scheduled job and view its debug log |
 | **Backup** | Create/download/delete backups; restore from any backup or an uploaded file; configure an automatic backup schedule with auto-prune; backup status email to site admin (scheduled runs only); debug log |
+| **Templates** | Color palette + preset themes; editable text for all three email types (balance, admin summary, backup status); preview buttons for each email |
 | **Users** | Add new users; view all users with their status and balance; deactivate or reactivate any user |
 
 ### Email Notifications

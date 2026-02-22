@@ -34,6 +34,66 @@ BACKUP_DIR = '/backups'
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'}
 
+# ── Theme / template constants ─────────────────────────────────────────────
+
+THEMES = {
+    'default': {
+        'label': 'Default',
+        'color_navbar': '#0d6efd',
+        'color_email_grad_start': '#667eea',
+        'color_email_grad_end': '#764ba2',
+        'color_balance_positive': '#28a745',
+        'color_balance_negative': '#dc3545',
+    },
+    'ocean': {
+        'label': 'Ocean',
+        'color_navbar': '#0077b6',
+        'color_email_grad_start': '#0077b6',
+        'color_email_grad_end': '#00b4d8',
+        'color_balance_positive': '#2ec4b6',
+        'color_balance_negative': '#e76f51',
+    },
+    'forest': {
+        'label': 'Forest',
+        'color_navbar': '#2d6a4f',
+        'color_email_grad_start': '#2d6a4f',
+        'color_email_grad_end': '#52b788',
+        'color_balance_positive': '#52b788',
+        'color_balance_negative': '#e63946',
+    },
+    'sunset': {
+        'label': 'Sunset',
+        'color_navbar': '#c94b4b',
+        'color_email_grad_start': '#c94b4b',
+        'color_email_grad_end': '#4b134f',
+        'color_balance_positive': '#28a745',
+        'color_balance_negative': '#dc3545',
+    },
+    'slate': {
+        'label': 'Slate',
+        'color_navbar': '#343a40',
+        'color_email_grad_start': '#343a40',
+        'color_email_grad_end': '#6c757d',
+        'color_balance_positive': '#28a745',
+        'color_balance_negative': '#dc3545',
+    },
+}
+
+TEMPLATE_DEFAULTS = {
+    'color_navbar':             '#0d6efd',
+    'color_email_grad_start':   '#667eea',
+    'color_email_grad_end':     '#764ba2',
+    'color_balance_positive':   '#28a745',
+    'color_balance_negative':   '#dc3545',
+    'tpl_email_greeting':  'Hi [Name],',
+    'tpl_email_intro':     "Here's your weekly update from the Bank of Tina:",
+    'tpl_email_footer1':   'This is an automated weekly update from the Bank of Tina system.',
+    'tpl_email_footer2':   'Making office lunches easier! 🥗',
+    'tpl_admin_intro':     '',
+    'tpl_admin_footer':    'This is an automated admin summary from the Bank of Tina system.',
+    'tpl_backup_footer':   'This is an automated backup report from the Bank of Tina system.',
+}
+
 db = SQLAlchemy(app)
 
 # Database Models
@@ -172,6 +232,47 @@ def now_local():
         tz = pytz.UTC
     return datetime.now(tz)
 
+def get_tpl(key):
+    """Get a template/theme setting, falling back to TEMPLATE_DEFAULTS."""
+    return get_setting(key, TEMPLATE_DEFAULTS.get(key, ''))
+
+def apply_template(text, **kwargs):
+    """Replace [Key] placeholders in text with provided values."""
+    for key, value in kwargs.items():
+        text = text.replace(f'[{key}]', str(value) if value is not None else '')
+    return text
+
+def hex_to_rgb(hex_color):
+    """Convert #rrggbb to 'r, g, b' string for CSS custom properties."""
+    try:
+        h = hex_color.lstrip('#')
+        return f'{int(h[0:2],16)}, {int(h[2:4],16)}, {int(h[4:6],16)}'
+    except Exception:
+        return '0, 0, 0'
+
+def detect_theme():
+    """Return the key of the active preset theme, or 'custom'."""
+    color_keys = ['color_navbar', 'color_email_grad_start', 'color_email_grad_end',
+                  'color_balance_positive', 'color_balance_negative']
+    current = {k: get_tpl(k) for k in color_keys}
+    for theme_key, theme in THEMES.items():
+        if all(current[k] == theme[k] for k in color_keys):
+            return theme_key
+    return 'custom'
+
+@app.context_processor
+def inject_theme():
+    """Inject theme colors into every template for dynamic CSS."""
+    navbar  = get_tpl('color_navbar')
+    pos     = get_tpl('color_balance_positive')
+    neg     = get_tpl('color_balance_negative')
+    return dict(
+        theme_navbar=navbar,
+        theme_navbar_rgb=hex_to_rgb(navbar),
+        theme_balance_positive=pos,
+        theme_balance_negative=neg,
+    )
+
 # Email logic
 def build_email_html(user):
     recent_transactions = Transaction.query.filter(
@@ -227,6 +328,21 @@ def build_email_html(user):
         </tr>
         """
 
+    grad_start = get_tpl('color_email_grad_start')
+    grad_end   = get_tpl('color_email_grad_end')
+    tpl_vars   = dict(Name=user.name, Balance=f'€{user.balance:.2f}',
+                      BalanceStatus=balance_status, Date=now_local().strftime('%Y-%m-%d'))
+
+    greeting = apply_template(get_tpl('tpl_email_greeting'), **tpl_vars)
+    intro    = apply_template(get_tpl('tpl_email_intro'),    **tpl_vars)
+    footer1  = apply_template(get_tpl('tpl_email_footer1'),  **tpl_vars)
+    footer2  = apply_template(get_tpl('tpl_email_footer2'),  **tpl_vars)
+
+    greeting_html = f'<p style="font-size: 16px; margin-bottom: 20px;">{greeting}</p>' if greeting.strip() else ''
+    intro_html    = f'<p>{intro}</p>' if intro.strip() else ''
+    footer1_html  = f'<p>{footer1}</p>' if footer1.strip() else ''
+    footer2_html  = f'<p style="margin-top: 10px;">{footer2}</p>' if footer2.strip() else ''
+
     html = f"""
     <!DOCTYPE html>
     <html>
@@ -235,15 +351,14 @@ def build_email_html(user):
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
     </head>
     <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+        <div style="background: linear-gradient(135deg, {grad_start} 0%, {grad_end} 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
             <h1 style="margin: 0; font-size: 28px;">🏦 Bank of Tina</h1>
             <p style="margin: 10px 0 0 0; opacity: 0.9;">Weekly Balance Update</p>
         </div>
 
         <div style="background: white; padding: 30px; border: 1px solid #dee2e6; border-top: none; border-radius: 0 0 10px 10px;">
-            <p style="font-size: 16px; margin-bottom: 20px;">Hi {user.name},</p>
-
-            <p>Here's your weekly update from the Bank of Tina:</p>
+            {greeting_html}
+            {intro_html}
 
             <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
                 <p style="margin: 0 0 10px 0; color: #6c757d; text-transform: uppercase; font-size: 12px; font-weight: bold;">Current Balance</p>
@@ -267,8 +382,8 @@ def build_email_html(user):
             </table>
 
             <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6; text-align: center; color: #6c757d; font-size: 14px;">
-                <p>This is an automated weekly update from the Bank of Tina system.</p>
-                <p style="margin-top: 10px;">Making office lunches easier! 🥗</p>
+                {footer1_html}
+                {footer2_html}
             </div>
         </div>
     </body>
@@ -277,10 +392,22 @@ def build_email_html(user):
     return html
 
 def build_admin_summary_email(users):
-    date_str = now_local().strftime('%Y-%m-%d')
+    date_str   = now_local().strftime('%Y-%m-%d')
+    grad_start = get_tpl('color_email_grad_start')
+    grad_end   = get_tpl('color_email_grad_end')
+    tpl_vars   = dict(Date=date_str, UserCount=len(users))
+
+    intro  = apply_template(get_tpl('tpl_admin_intro'),  **tpl_vars)
+    footer = apply_template(get_tpl('tpl_admin_footer'), **tpl_vars)
+
+    intro_html  = f'<p style="margin-bottom:20px;">{intro}</p>' if intro.strip() else ''
+    footer_html = f'<p>{footer}</p>' if footer.strip() else ''
+
+    pos_color = get_tpl('color_balance_positive')
+    neg_color = get_tpl('color_balance_negative')
     rows_html = ''
     for user in users:
-        color = '#dc3545' if user.balance < 0 else ('#28a745' if user.balance > 0 else '#6c757d')
+        color = neg_color if user.balance < 0 else (pos_color if user.balance > 0 else '#6c757d')
         rows_html += f"""
             <tr>
                 <td style="padding: 10px 8px; border-bottom: 1px solid #dee2e6;">{user.name}</td>
@@ -292,11 +419,12 @@ def build_admin_summary_email(users):
 <html>
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 700px; margin: 0 auto; padding: 20px;">
-    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+    <div style="background: linear-gradient(135deg, {grad_start} 0%, {grad_end} 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
         <h1 style="margin: 0; font-size: 28px;">🏦 Bank of Tina</h1>
         <p style="margin: 10px 0 0 0; opacity: 0.9;">Admin Summary — {date_str}</p>
     </div>
     <div style="background: white; padding: 30px; border: 1px solid #dee2e6; border-top: none; border-radius: 0 0 10px 10px;">
+        {intro_html}
         <h3 style="color: #495057; margin-top: 0;">All Active Users</h3>
         <table style="width: 100%; border-collapse: collapse;">
             <thead>
@@ -310,7 +438,7 @@ def build_admin_summary_email(users):
             </tbody>
         </table>
         <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #dee2e6; text-align: center; color: #6c757d; font-size: 13px;">
-            <p>This is an automated admin summary from the Bank of Tina system.</p>
+            {footer_html}
         </div>
     </div>
 </body>
@@ -613,12 +741,17 @@ def _add_common_job():
 
 
 def build_backup_status_email(ok, result, kept, pruned):
-    date_str = now_local().strftime('%Y-%m-%d %H:%M')
+    date_str   = now_local().strftime('%Y-%m-%d %H:%M')
+    grad_start = get_tpl('color_email_grad_start')
+    grad_end   = get_tpl('color_email_grad_end')
+    footer     = apply_template(get_tpl('tpl_backup_footer'), Date=date_str)
+    footer_html = f'<p>{footer}</p>' if footer.strip() else ''
+
     if ok:
-        status_color  = '#28a745'
-        status_icon   = '✔'
-        status_text   = 'Backup completed successfully'
-        detail_rows   = f"""
+        status_color = '#28a745'
+        status_icon  = '✔'
+        status_text  = 'Backup completed successfully'
+        detail_rows  = f"""
             <tr><td style="padding:8px;color:#6c757d;width:140px;">File</td>
                 <td style="padding:8px;font-family:monospace;">{result}</td></tr>
             <tr><td style="padding:8px;color:#6c757d;">Backups kept</td>
@@ -639,7 +772,7 @@ def build_backup_status_email(ok, result, kept, pruned):
 <html>
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height:1.6; color:#333; max-width:600px; margin:0 auto; padding:20px;">
-    <div style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%); color:white; padding:30px; border-radius:10px 10px 0 0; text-align:center;">
+    <div style="background:linear-gradient(135deg,{grad_start} 0%,{grad_end} 100%); color:white; padding:30px; border-radius:10px 10px 0 0; text-align:center;">
         <h1 style="margin:0; font-size:28px;">🏦 Bank of Tina</h1>
         <p style="margin:10px 0 0 0; opacity:0.9;">Scheduled Backup Report — {date_str}</p>
     </div>
@@ -652,7 +785,7 @@ def build_backup_status_email(ok, result, kept, pruned):
             </tbody>
         </table>
         <div style="margin-top:24px; padding-top:16px; border-top:1px solid #dee2e6; text-align:center; color:#6c757d; font-size:13px;">
-            <p>This is an automated backup report from the Bank of Tina system.</p>
+            {footer_html}
         </div>
     </div>
 </body>
@@ -1168,6 +1301,20 @@ def settings():
         'common_descriptions_threshold': get_setting('common_descriptions_threshold', '5'),
         'common_prices_auto':            get_setting('common_prices_auto', '0'),
         'common_prices_threshold':       get_setting('common_prices_threshold', '5'),
+        # Templates
+        'color_navbar':             get_tpl('color_navbar'),
+        'color_email_grad_start':   get_tpl('color_email_grad_start'),
+        'color_email_grad_end':     get_tpl('color_email_grad_end'),
+        'color_balance_positive':   get_tpl('color_balance_positive'),
+        'color_balance_negative':   get_tpl('color_balance_negative'),
+        'tpl_email_greeting':  get_tpl('tpl_email_greeting'),
+        'tpl_email_intro':     get_tpl('tpl_email_intro'),
+        'tpl_email_footer1':   get_tpl('tpl_email_footer1'),
+        'tpl_email_footer2':   get_tpl('tpl_email_footer2'),
+        'tpl_admin_intro':     get_tpl('tpl_admin_intro'),
+        'tpl_admin_footer':    get_tpl('tpl_admin_footer'),
+        'tpl_backup_footer':   get_tpl('tpl_backup_footer'),
+        # Backup
         'backup_enabled':      get_setting('backup_enabled',      '0'),
         'backup_debug':        get_setting('backup_debug',        '0'),
         'backup_admin_email':  get_setting('backup_admin_email',  '0'),
@@ -1193,7 +1340,8 @@ def settings():
                            common_descriptions=common_descriptions, common_prices=common_prices,
                            common_blacklist=common_blacklist, auto_collect_logs=auto_collect_logs,
                            email_logs=email_logs, backup_logs=backup_logs, backups=backups,
-                           all_users=all_users, timezone_groups=timezone_groups)
+                           all_users=all_users, timezone_groups=timezone_groups,
+                           themes=THEMES, current_theme=detect_theme())
 
 @app.route('/settings/email', methods=['POST'])
 def settings_email():
@@ -1457,6 +1605,66 @@ def settings_common_auto_clear_log():
     db.session.commit()
     flash('Debug log cleared.', 'success')
     return redirect(url_for('settings'))
+
+
+# ── Templates routes ──────────────────────────────────────────────────────
+
+@app.route('/settings/templates', methods=['POST'])
+def settings_templates():
+    color_keys = ['color_navbar', 'color_email_grad_start', 'color_email_grad_end',
+                  'color_balance_positive', 'color_balance_negative']
+    for key in color_keys:
+        val = request.form.get(key, '').strip()
+        if re.match(r'^#[0-9a-fA-F]{6}$', val):
+            set_setting(key, val)
+
+    text_keys = ['tpl_email_greeting', 'tpl_email_intro', 'tpl_email_footer1',
+                 'tpl_email_footer2', 'tpl_admin_intro', 'tpl_admin_footer', 'tpl_backup_footer']
+    for key in text_keys:
+        set_setting(key, request.form.get(key, '')[:500])
+
+    flash('Templates saved.', 'success')
+    return redirect(url_for('settings'))
+
+
+@app.route('/settings/templates/reset', methods=['POST'])
+def settings_templates_reset():
+    for key, val in TEMPLATE_DEFAULTS.items():
+        set_setting(key, val)
+    flash('Templates reset to defaults.', 'success')
+    return redirect(url_for('settings'))
+
+
+@app.route('/settings/templates/preview/email')
+def preview_email():
+    user = User.query.filter_by(is_active=True).order_by(User.name).first()
+    if not user:
+        class _Dummy:
+            name = 'Jane Doe'; email = 'jane@example.com'; balance = 12.50; id = 0
+            from_user_id = None; to_user_id = None
+        user = _Dummy()
+        # patch recent_transactions query to return empty list
+        user._dummy = True
+    html = build_email_html(user)
+    return html
+
+
+@app.route('/settings/templates/preview/admin-summary')
+def preview_admin_summary():
+    users = User.query.filter_by(is_active=True).order_by(User.name).all()
+    if not users:
+        class _D:
+            def __init__(self, n, e, b): self.name=n; self.email=e; self.balance=b
+        users = [_D('Alice Smith','alice@example.com',24.50),
+                 _D('Bob Jones','bob@example.com',-12.00),
+                 _D('Carol White','carol@example.com',0.00)]
+    return build_admin_summary_email(users)
+
+
+@app.route('/settings/templates/preview/backup')
+def preview_backup():
+    return build_backup_status_email(
+        True, f'bot_backup_{now_local().strftime("%Y_%m_%d")}_03-00-00.tar.gz', 5, 1)
 
 
 # ── Backup / Restore routes ────────────────────────────────────────────────
