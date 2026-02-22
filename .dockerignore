@@ -5,7 +5,6 @@ mariadb-data/
 
 # Environment & secrets
 .env
-.env.example
 
 # Repo / project files
 .git/
