@@ -353,17 +353,11 @@ def run_backup():
         with tempfile.TemporaryDirectory() as tmp:
             # 1. SQL dump written directly to file (no memory buffering)
             dump_path = os.path.join(tmp, 'dump.sql')
-            db_host = os.environ.get('DB_HOST', 'db')
-            db_port = os.environ.get('DB_PORT', '3306')
-            db_user = os.environ.get('DB_USER', 'tina')
-            db_pass = os.environ.get('DB_PASSWORD', 'tina')
-            db_name = os.environ.get('DB_NAME', 'bank_of_tina')
-
             with open(dump_path, 'wb') as dump_file:
                 result = subprocess.run(
-                    ['mysqldump', '-h', db_host, '-P', db_port,
-                     f'-u{db_user}', f'-p{db_pass}',
-                     '--add-drop-table', db_name],
+                    ['mysqldump', '-h', _db_host, '-P', _db_port,
+                     f'-u{_db_user}', f'-p{_db_pass}',
+                     '--add-drop-table', _db_name],
                     stdout=dump_file, stderr=subprocess.PIPE, timeout=300
                 )
             if result.returncode != 0:
@@ -1469,15 +1463,10 @@ def backup_restore(filename):
             # 1. Restore database
             dump_path = os.path.join(tmp, 'dump.sql')
             if os.path.exists(dump_path):
-                db_host = os.environ.get('DB_HOST', 'db')
-                db_port = os.environ.get('DB_PORT', '3306')
-                db_user = os.environ.get('DB_USER', 'tina')
-                db_pass = os.environ.get('DB_PASSWORD', 'tina')
-                db_name = os.environ.get('DB_NAME', 'bank_of_tina')
                 with open(dump_path, 'rb') as f:
                     result = subprocess.run(
-                        ['mysql', '-h', db_host, '-P', db_port,
-                         f'-u{db_user}', f'-p{db_pass}', db_name],
+                        ['mysql', '-h', _db_host, '-P', _db_port,
+                         f'-u{_db_user}', f'-p{_db_pass}', _db_name],
                         stdin=f, stderr=subprocess.PIPE, timeout=300
                     )
                 if result.returncode != 0:
