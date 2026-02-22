@@ -2,16 +2,47 @@
 
 {% block content %}
 <div class="card">
-    <div class="card-header">
-        <i class="bi bi-list-ul"></i> All Transactions
+    <div class="card-header d-flex flex-wrap align-items-center gap-2">
+        <i class="bi bi-list-ul me-1"></i>
+        <span class="me-auto">Transactions</span>
+
+        <!-- Prev / Next navigation -->
+        <a href="{{ url_for('view_transactions', year=prev_year, month=prev_month) }}"
+           class="btn btn-sm btn-outline-secondary">
+            &#9664;
+        </a>
+        <strong class="px-1">{{ month_name }} {{ year }}</strong>
+        {% if is_current_month %}
+            <button class="btn btn-sm btn-outline-secondary" disabled aria-disabled="true">&#9654;</button>
+        {% else %}
+            <a href="{{ url_for('view_transactions', year=next_year, month=next_month) }}"
+               class="btn btn-sm btn-outline-secondary">
+                &#9654;
+            </a>
+        {% endif %}
+
+        <!-- Jump-to picker -->
+        <select id="jump-month" class="form-select form-select-sm w-auto">
+            {% set month_names = ['January','February','March','April','May','June',
+                                  'July','August','September','October','November','December'] %}
+            {% for i in range(1, 13) %}
+            <option value="{{ i }}" {% if i == month %}selected{% endif %}>{{ month_names[i-1] }}</option>
+            {% endfor %}
+        </select>
+        <select id="jump-year" class="form-select form-select-sm w-auto">
+            {% for y in year_range %}
+            <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+            {% endfor %}
+        </select>
     </div>
-    <div class="card-body">
-        {% if transactions %}
+
+    <div class="card-body p-0">
+        {% if grouped %}
             <div class="table-responsive">
-                <table class="table table-hover">
+                <table class="table table-hover mb-0">
                     <thead>
                         <tr>
-                            <th>Date</th>
+                            <th>Time</th>
                             <th>Type</th>
                             <th>Description</th>
                             <th>From</th>
@@ -21,12 +52,21 @@
                             <th></th>
                         </tr>
                     </thead>
+
+                    {% for day, txs in grouped %}
                     <tbody>
-                        {% for trans in transactions %}
+                        <tr class="table-secondary">
+                            <td colspan="8" class="py-1 px-3">
+                                <h6 class="mb-0 fw-semibold">
+                                    {{ day.strftime('%A, %-d %B') }}
+                                </h6>
+                            </td>
+                        </tr>
+                        {% for trans in txs %}
                         <tr>
-                            <td>{{ trans.date.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td class="text-nowrap">{{ trans.date.strftime('%H:%M') }}</td>
                             <td>
-                                <span class="badge 
+                                <span class="badge
                                     {% if trans.transaction_type == 'deposit' %}bg-success
                                     {% elif trans.transaction_type == 'withdrawal' %}bg-danger
                                     {% elif trans.transaction_type == 'expense' %}bg-primary
@@ -79,7 +119,7 @@
                         </tr>
                         {% if trans.items %}
                             <tr class="table-light">
-                                <td colspan="7">
+                                <td colspan="8">
                                     <small class="ms-4">
                                         <strong>Items:</strong>
                                         {% for item in trans.items %}
@@ -91,11 +131,32 @@
                         {% endif %}
                         {% endfor %}
                     </tbody>
+                    {% endfor %}
                 </table>
             </div>
         {% else %}
-            <p class="text-muted">No transactions recorded yet.</p>
+            <p class="text-muted p-4 mb-0">No transactions recorded in {{ month_name }} {{ year }}.</p>
         {% endif %}
     </div>
+
+    {% if tx_count %}
+    <div class="card-footer text-muted small">
+        {{ tx_count }} transaction{{ 's' if tx_count != 1 else '' }} &middot; Total: €{{ "%.2f"|format(tx_total) }}
+    </div>
+    {% endif %}
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    function jump() {
+        var m = document.getElementById('jump-month').value;
+        var y = document.getElementById('jump-year').value;
+        window.location = '{{ url_for("view_transactions") }}?year=' + y + '&month=' + m;
+    }
+    document.getElementById('jump-month').addEventListener('change', jump);
+    document.getElementById('jump-year').addEventListener('change', jump);
+})();
+</script>
 {% endblock %}

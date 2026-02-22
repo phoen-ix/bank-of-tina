@@ -18,6 +18,7 @@ A lightweight, self-hosted web application for managing shared expenses and bala
 - **Withdrawal** — deduct money from a user's balance
 - **Edit** any saved transaction: description, amount, date, from/to user
 - **Delete** any transaction (balances are automatically reversed)
+- **Month-by-month view** — transactions grouped by day with ◀ ▶ navigation and a month/year jump picker; defaults to the current month
 
 ### Expense Items
 - Add line items per expense (name + price)
@@ -36,7 +37,7 @@ The Settings page is split into four tabs:
 
 | Tab | What you configure |
 |-----|--------------------|
-| **General** | Default number of blank item rows in the Add Transaction form |
+| **General** | Default number of blank item rows in the Add Transaction form; number of recent transactions shown on the dashboard (0 hides the section) |
 | **Email** | SMTP credentials, send balance emails on demand, set a recurring auto-schedule |
 | **Common Items** | Add / remove common item names used for autocomplete |
 | **Deactivated Users** | View and reactivate deactivated users |
@@ -96,6 +97,11 @@ That's it. SMTP credentials and the email schedule are configured from the **Set
 3. Enter a description (optional: upload a receipt)
 4. Fill in item rows (pre-filled based on your General setting)
 5. **Record Expense**
+
+### Browsing Transactions by Month
+1. **All Transactions** in the nav → defaults to the current month
+2. Use ◀ / ▶ to move one month at a time (▶ is disabled on the current month)
+3. Use the **Month** and **Year** dropdowns to jump directly to any past period
 
 ### Editing a Transaction
 1. **All Transactions** (or a user's detail page) → pencil icon

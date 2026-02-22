@@ -6,6 +6,7 @@ import os
 import re
 import json
 import smtplib
+import calendar as cal_mod
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -281,8 +282,9 @@ def _restore_schedule():
 @app.route('/')
 def index():
     users = User.query.filter_by(is_active=True).order_by(User.name).all()
-    recent_transactions = Transaction.query.order_by(Transaction.date.desc()).limit(10).all()
-    return render_template('index.html', users=users, transactions=recent_transactions)
+    count = int(get_setting('recent_transactions_count', '5'))
+    recent = Transaction.query.order_by(Transaction.date.desc()).limit(count).all() if count else []
+    return render_template('index.html', users=users, transactions=recent, show_recent=count > 0)
 
 @app.route('/user/add', methods=['POST'])
 def add_user():
@@ -442,8 +444,42 @@ def add_transaction():
 
 @app.route('/transactions')
 def view_transactions():
-    transactions = Transaction.query.order_by(Transaction.date.desc()).all()
-    return render_template('transactions.html', transactions=transactions)
+    from collections import defaultdict
+    today = datetime.today()
+    year  = max(2000, min(2100, int(request.args.get('year',  today.year))))
+    month = max(1,    min(12,   int(request.args.get('month', today.month))))
+
+    _, last = cal_mod.monthrange(year, month)
+    transactions = Transaction.query.filter(
+        Transaction.date >= datetime(year, month, 1),
+        Transaction.date <= datetime(year, month, last, 23, 59, 59),
+    ).order_by(Transaction.date.desc()).all()
+
+    by_day = defaultdict(list)
+    for t in transactions:
+        by_day[t.date.date()].append(t)
+    grouped = sorted(by_day.items(), reverse=True)
+
+    prev_month = month - 1 or 12
+    prev_year  = year - (1 if month == 1 else 0)
+    next_month = (month % 12) + 1
+    next_year  = year + (1 if month == 12 else 0)
+
+    first = Transaction.query.order_by(Transaction.date.asc()).first()
+    start_year = first.date.year if first else today.year
+    year_range = list(range(start_year, today.year + 1))
+
+    return render_template('transactions.html',
+        grouped=grouped,
+        year=year, month=month,
+        month_name=datetime(year, month, 1).strftime('%B'),
+        prev_year=prev_year, prev_month=prev_month,
+        next_year=next_year, next_month=next_month,
+        is_current_month=(year == today.year and month == today.month),
+        year_range=year_range,
+        tx_count=len(transactions),
+        tx_total=sum(t.amount for t in transactions),
+    )
 
 @app.route('/user/<int:user_id>')
 def user_detail(user_id):
@@ -583,6 +619,7 @@ def settings():
         'schedule_hour': get_setting('schedule_hour', '9'),
         'schedule_minute':   get_setting('schedule_minute', '0'),
         'default_item_rows': get_setting('default_item_rows', '3'),
+        'recent_transactions_count': get_setting('recent_transactions_count', '5'),
     }
     common_items = CommonItem.query.order_by(CommonItem.name).all()
     inactive_users = User.query.filter_by(is_active=False).order_by(User.name).all()
@@ -643,6 +680,11 @@ def settings_general():
     except ValueError:
         rows = 3
     set_setting('default_item_rows', str(rows))
+    try:
+        count = max(0, min(50, int(request.form.get('recent_transactions_count', '5'))))
+    except ValueError:
+        count = 5
+    set_setting('recent_transactions_count', str(count))
     flash('General settings saved.', 'success')
     return redirect(url_for('settings'))
 
