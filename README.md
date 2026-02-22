@@ -16,10 +16,10 @@ A lightweight, self-hosted web application for managing shared expenses and bala
 - **Expense** — record who paid and assign items to individuals
 - **Deposit** — add money to a user's balance
 - **Withdrawal** — deduct money from a user's balance
-- **Edit** any saved transaction: description, amount, date, from/to user
+- **Edit** any saved transaction: description, amount, date, from/to user, expense items, and receipt
 - **Delete** any transaction (balances are automatically reversed)
 - **Month-by-month view** — transactions grouped by day with ◀ ▶ navigation and a month/year jump picker; defaults to the current month
-- **Search** — free-text search across descriptions and expense items; advanced filters for type, user, date range, and amount range
+- **Search** — free-text search across descriptions and expense items; advanced filters for type, user, date range, amount range, and a "Has attachment / receipt" toggle; only active users appear in the user filter
 
 ### Expense Items
 - Add line items per expense (name + price)
@@ -36,7 +36,8 @@ A lightweight, self-hosted web application for managing shared expenses and bala
 - **Debug log** — when debug mode is on, every auto-collect decision (added / skipped / summary) is written to the database and shown in the Settings UI; log is capped at 500 entries
 
 ### Receipts
-- Upload JPG, PNG, or PDF receipts
+- Upload JPG, PNG, or PDF receipts when recording a transaction
+- Upload, replace, or remove a receipt on any existing transaction — the old file is deleted from disk automatically
 - Files are saved in an organised directory tree:
   `uploads/YYYY/MM/DD/BuyerName_filename.ext`
 - Filenames are sanitised (special characters removed) before saving
@@ -60,10 +61,21 @@ A lightweight, self-hosted web application for managing shared expenses and bala
 ### Templates & Theming
 - **Color palette** — navbar color, email header gradient (start + end), positive and negative balance colors; each has a color picker paired with a hex text field
 - **Preset themes** — choose from Default, Ocean, Forest, Sunset, or Slate via a dropdown; selecting a preset fills all pickers instantly; manually changing any picker switches to "Custom"
-- **Email text templates** — edit the greeting, intro, footer line 1, and footer line 2 of the weekly balance email; set the intro and footer of the admin summary email; set the footer of the backup status email
-- **Placeholders** — use `[Name]`, `[Balance]`, `[BalanceStatus]`, `[Date]`, `[UserCount]` inside any text field; the values are substituted when the email is sent; leave a field blank to omit that line entirely
+- **Email subjects** — editable subject line for each of the three email types
+- **Email body templates** — edit the greeting, intro, footer line 1, and footer line 2 of the weekly balance email; set the intro and footer of the admin summary email; set the footer of the backup status email; leave any field blank to omit that line
+- **Placeholders** — substituted at send time:
+
+  | Placeholder | Available in |
+  |-------------|--------------|
+  | `[Name]` | Weekly email subject & body |
+  | `[Balance]` | Weekly email body |
+  | `[BalanceStatus]` | Weekly email body |
+  | `[Date]` | All three email subjects & bodies |
+  | `[UserCount]` | Admin summary subject & body |
+  | `[BackupStatus]` | Backup status email subject |
+
 - **Live preview** — each email template card has a **Preview** button that opens the rendered HTML in a new tab using real data (or sample data when no users exist)
-- All theme settings are stored in the database and applied immediately with no restart
+- All theme and template settings are stored in the database and applied immediately with no restart
 
 ### Settings (web UI — no `.env` editing needed)
 The Settings page is split into six tabs:
@@ -74,7 +86,7 @@ The Settings page is split into six tabs:
 | **Email** | SMTP credentials; enable/disable email sending; debug mode (logs runs to DB, surfaces SMTP errors in the UI); admin summary email toggle; send balance emails on demand; set a recurring auto-schedule |
 | **Common** | Global autocomplete toggle; manually manage item names, descriptions, and prices (each with its own blacklist); configure the auto-collect scheduled job and view its debug log |
 | **Backup** | Create/download/delete backups; restore from any backup or an uploaded file; configure an automatic backup schedule with auto-prune; backup status email to site admin (scheduled runs only); debug log |
-| **Templates** | Color palette + preset themes; editable text for all three email types (balance, admin summary, backup status); preview buttons for each email |
+| **Templates** | Color palette + preset themes; editable subjects and body text for all three email types (balance, admin summary, backup status); preview buttons for each email |
 | **Users** | Add new users; view all users with their status and balance; deactivate or reactivate any user |
 
 ### Email Notifications
@@ -142,14 +154,15 @@ That's it. SMTP credentials and the email schedule are configured from the **Set
 ### Searching Transactions
 1. Use the search bar in the navbar (any page) for a quick keyword search
 2. Or navigate to `/search` directly for more control
-3. Click **Advanced filters** to filter by type, user, date range, and/or amount range — filters can be combined
+3. Click **Advanced filters** to filter by type, user, date range, amount range, and/or the **Has attachment / receipt** toggle — filters can be combined
 4. Results span all months and show the full date (`YYYY-MM-DD HH:MM`)
 
 ### Editing a Transaction
 1. **All Transactions** (or a user's detail page) → pencil icon
 2. Adjust any field — description, amount, date, from/to user
 3. Add, edit, or remove expense items (the total auto-updates the Amount field)
-4. **Save Changes** — balances are recalculated automatically
+4. Upload a new receipt, replace an existing one, or tick **Remove receipt** to delete it
+5. **Save Changes** — balances are recalculated automatically
 
 ### Deleting a Transaction
 - Trash icon on any transaction row — balances are reversed automatically
@@ -159,6 +172,13 @@ That's it. SMTP credentials and the email schedule are configured from the **Set
 2. Fill in SMTP credentials and click **Save Settings**
 3. Use **Send Emails Now** to test, or configure a recurring schedule under **Auto-Schedule**
 4. Optionally enable **Send admin summary email** — requires a site admin to be set in the General tab first
+
+### Customising Email Templates
+1. **Settings** → **Templates** tab
+2. Pick a colour preset or adjust individual colour pickers
+3. Edit the subject and body text for each email type; use placeholders like `[Name]`, `[Balance]`, `[Date]`
+4. Click **Preview** to open the rendered email in a new tab before saving
+5. **Save Templates** — changes take effect on the next send
 
 ### Creating a Backup
 1. **Settings** → **Backup** tab → **Create Backup Now**
@@ -184,14 +204,14 @@ bank-of-tina/
 │   ├── app.py                    # Flask application (routes, models, scheduler)
 │   ├── send_weekly_email.py      # Standalone email script (uses env vars)
 │   ├── templates/
-│   │   ├── base.html
+│   │   ├── base.html             # Shared layout with dynamic theme CSS
 │   │   ├── index.html            # Dashboard (active users only)
 │   │   ├── add_transaction.html
-│   │   ├── edit_transaction.html # Edit transactions & items
+│   │   ├── edit_transaction.html # Edit transactions, items, and receipts
 │   │   ├── transactions.html     # Month-by-month transactions list
 │   │   ├── search.html           # Cross-month search with advanced filters
 │   │   ├── user_detail.html
-│   │   └── settings.html         # Settings (General / Email / Common / Users)
+│   │   └── settings.html         # Settings (General / Email / Common / Backup / Templates / Users)
 │   └── static/
 ├── uploads/                      # Receipts — organised as YYYY/MM/DD/
 ├── backups/                      # Backup archives (bot_backup_*.tar.gz)
