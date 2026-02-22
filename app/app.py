@@ -1460,7 +1460,21 @@ def backup_restore(filename):
                         if not m.name.startswith('/') and '..' not in m.name]
                 tar.extractall(tmp, members=safe)
 
-            # 1. Restore database
+            # 1. Restore receipts FIRST — so if this fails, the DB is still untouched
+            receipts_src = os.path.join(tmp, 'receipts')
+            upload_folder = app.config['UPLOAD_FOLDER']
+            if os.path.exists(receipts_src):
+                # Clear contents without removing the directory itself
+                # (it may be a bind-mount and can't be deleted)
+                for item in os.listdir(upload_folder):
+                    item_path = os.path.join(upload_folder, item)
+                    if os.path.isdir(item_path):
+                        shutil.rmtree(item_path)
+                    else:
+                        os.remove(item_path)
+                shutil.copytree(receipts_src, upload_folder, dirs_exist_ok=True)
+
+            # 2. Restore database
             dump_path = os.path.join(tmp, 'dump.sql')
             if os.path.exists(dump_path):
                 with open(dump_path, 'rb') as f:
@@ -1473,14 +1487,6 @@ def backup_restore(filename):
                     err = result.stderr.decode(errors='replace')[:300]
                     flash(f'Database restore failed: {err}', 'error')
                     return redirect(url_for('settings'))
-
-            # 2. Restore receipts
-            receipts_src = os.path.join(tmp, 'receipts')
-            upload_folder = app.config['UPLOAD_FOLDER']
-            if os.path.exists(receipts_src):
-                if os.path.exists(upload_folder):
-                    shutil.rmtree(upload_folder)
-                shutil.copytree(receipts_src, upload_folder)
 
         flash(f'Restore from {filename} completed successfully. '
               f'Check the .env file inside the backup if credentials changed.', 'success')
