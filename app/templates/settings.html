@@ -570,7 +570,7 @@
 
                 <hr>
                 <h6 class="text-muted mb-1">Blacklist</h6>
-                <p class="text-muted small mb-2">Prices listed here are never auto-collected, even if they meet the threshold. Enter as decimal (e.g. 3.50).</p>
+                <p class="text-muted small mb-2">Prices listed here are never auto-collected, even if they meet the threshold. Enter as decimal (e.g. 3{{ cfg.decimal_separator }}50).</p>
                 <form method="POST" action="{{ url_for('add_common_blacklist') }}" class="d-flex gap-2 mb-3">
                     <input type="hidden" name="type" value="price">
                     <input type="text" inputmode="decimal" class="form-control" name="value" placeholder="Price to blacklist (e.g. 3{{ cfg.decimal_separator }}50)"
