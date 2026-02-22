@@ -70,6 +70,36 @@
                             Set to 0 to hide the section entirely.
                         </div>
                     </div>
+                    <hr>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch"
+                                   id="email_enabled" name="email_enabled" value="1"
+                                   {% if cfg.email_enabled == '1' %}checked{% endif %}>
+                            <label class="form-check-label" for="email_enabled">
+                                Enable email sending
+                            </label>
+                        </div>
+                        <div class="form-text">
+                            When off, both manual "Send Now" and the auto-schedule will do nothing.
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch"
+                                   id="email_debug" name="email_debug" value="1"
+                                   {% if cfg.email_debug == '1' %}checked{% endif %}>
+                            <label class="form-check-label" for="email_debug">
+                                Debug mode — show error details in the UI
+                            </label>
+                        </div>
+                        <div class="form-text">
+                            When on, any SMTP error message is shown as a flash notification after "Send Now".
+                        </div>
+                    </div>
+
                     <button type="submit" class="btn btn-primary">
                         <i class="bi bi-floppy"></i> Save
                     </button>

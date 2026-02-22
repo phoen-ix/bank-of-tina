@@ -38,7 +38,7 @@ The Settings page is split into four tabs:
 
 | Tab | What you configure |
 |-----|--------------------|
-| **General** | Default number of blank item rows in the Add Transaction form; number of recent transactions shown on the dashboard (0 hides the section) |
+| **General** | Default number of blank item rows in the Add Transaction form; number of recent transactions shown on the dashboard (0 hides the section); enable/disable email sending; debug mode (surfaces SMTP errors in the UI) |
 | **Email** | SMTP credentials, send balance emails on demand, set a recurring auto-schedule |
 | **Common Items** | Add / remove common item names used for autocomplete |
 | **Users** | Add new users; view all users with their status and balance; deactivate or reactivate any user |

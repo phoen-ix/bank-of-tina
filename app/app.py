@@ -249,22 +249,28 @@ def send_single_email(to_email, to_name, subject, html):
         server.login(smtp_username, smtp_password)
         server.send_message(msg)
         server.quit()
-        return True
+        return True, None
     except Exception as e:
         app.logger.error(f"Error sending email to {to_email}: {e}")
-        return False
+        return False, str(e)
 
 def send_all_emails():
+    if get_setting('email_enabled', '1') != '1':
+        return 0, 0, ['Email sending is disabled in General settings.']
+
     users = User.query.filter_by(is_active=True).all()
     success, fail = 0, 0
+    errors = []
     subject = f"Bank of Tina - Weekly Balance Update ({datetime.now().strftime('%Y-%m-%d')})"
     for user in users:
         html = build_email_html(user)
-        if send_single_email(user.email, user.name, subject, html):
+        ok, err = send_single_email(user.email, user.name, subject, html)
+        if ok:
             success += 1
         else:
             fail += 1
-    return success, fail
+            errors.append(f"{user.name} <{user.email}>: {err}")
+    return success, fail, errors
 
 # APScheduler
 scheduler = BackgroundScheduler(daemon=True)
@@ -689,6 +695,8 @@ def settings():
         'schedule_minute':   get_setting('schedule_minute', '0'),
         'default_item_rows': get_setting('default_item_rows', '3'),
         'recent_transactions_count': get_setting('recent_transactions_count', '5'),
+        'email_enabled': get_setting('email_enabled', '1'),
+        'email_debug': get_setting('email_debug', '0'),
     }
     common_items = CommonItem.query.order_by(CommonItem.name).all()
     all_users = User.query.order_by(User.name).all()
@@ -712,8 +720,11 @@ def settings_email():
 
 @app.route('/settings/send-now', methods=['POST'])
 def settings_send_now():
-    success, fail = send_all_emails()
+    success, fail, errors = send_all_emails()
     flash(f'{success} email(s) sent, {fail} failed.', 'success' if fail == 0 else 'error')
+    if errors and get_setting('email_debug', '0') == '1':
+        for err in errors:
+            flash(f'Debug: {err}', 'error')
     return redirect(url_for('settings'))
 
 @app.route('/settings/schedule', methods=['POST'])
@@ -754,6 +765,10 @@ def settings_general():
     except ValueError:
         count = 5
     set_setting('recent_transactions_count', str(count))
+    email_enabled = '1' if request.form.get('email_enabled') else '0'
+    set_setting('email_enabled', email_enabled)
+    email_debug = '1' if request.form.get('email_debug') else '0'
+    set_setting('email_debug', email_debug)
     flash('General settings saved.', 'success')
     return redirect(url_for('settings'))
 
