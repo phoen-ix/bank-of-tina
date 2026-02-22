@@ -451,7 +451,6 @@ def build_email_html(user):
             <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
                 <p style="margin: 0 0 10px 0; color: #6c757d; text-transform: uppercase; font-size: 12px; font-weight: bold;">Current Balance</p>
                 <h2 style="margin: 0; font-size: 36px; {balance_class}">€{fmt_amount(user.balance)}</h2>
-                <p style="margin: 10px 0 0 0; {balance_class}">{balance_status}</p>
             </div>
 
             {transactions_section_html}
@@ -466,7 +465,7 @@ def build_email_html(user):
     """
     return html
 
-def build_admin_summary_email(users):
+def build_admin_summary_email(users, include_emails=False):
     date_str   = now_local().strftime('%Y-%m-%d')
     grad_start = get_tpl('color_email_grad_start')
     grad_end   = get_tpl('color_email_grad_end')
@@ -483,12 +482,15 @@ def build_admin_summary_email(users):
     rows_html = ''
     for user in users:
         color = neg_color if user.balance < 0 else (pos_color if user.balance > 0 else '#6c757d')
+        email_cell = f'<td style="padding: 10px 8px; border-bottom: 1px solid #dee2e6; color: #6c757d; font-size: 0.9em;">{user.email}</td>' if include_emails else ''
         rows_html += f"""
             <tr>
                 <td style="padding: 10px 8px; border-bottom: 1px solid #dee2e6;">{user.name}</td>
-                <td style="padding: 10px 8px; border-bottom: 1px solid #dee2e6; color: #6c757d; font-size: 0.9em;">{user.email}</td>
+                {email_cell}
                 <td style="padding: 10px 8px; border-bottom: 1px solid #dee2e6; text-align: right; font-weight: bold; color: {color};">€{fmt_amount(user.balance)}</td>
             </tr>"""
+
+    email_header = '<th style="padding: 10px 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Email</th>' if include_emails else ''
 
     return f"""<!DOCTYPE html>
 <html>
@@ -505,7 +507,7 @@ def build_admin_summary_email(users):
             <thead>
                 <tr style="background: #f8f9fa;">
                     <th style="padding: 10px 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Name</th>
-                    <th style="padding: 10px 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Email</th>
+                    {email_header}
                     <th style="padding: 10px 8px; text-align: right; border-bottom: 2px solid #dee2e6;">Balance</th>
                 </tr>
             </thead>
@@ -583,7 +585,7 @@ def send_all_emails():
             summary_subject = apply_template(get_tpl('tpl_admin_subject'),
                                              Date=now_local().strftime('%Y-%m-%d'),
                                              UserCount=len(all_active_users))
-            summary_html = build_admin_summary_email(all_active_users)
+            summary_html = build_admin_summary_email(all_active_users, include_emails=get_setting('admin_summary_include_emails', '0') == '1')
             ok, err = send_single_email(admin.email, admin.name, summary_subject, summary_html)
             if debug:
                 if ok:
@@ -1458,6 +1460,7 @@ def settings():
         'tpl_admin_subject':   get_tpl('tpl_admin_subject'),
         'tpl_admin_intro':     get_tpl('tpl_admin_intro'),
         'tpl_admin_footer':    get_tpl('tpl_admin_footer'),
+        'admin_summary_include_emails': get_setting('admin_summary_include_emails', '0'),
         'tpl_backup_subject':  get_tpl('tpl_backup_subject'),
         'tpl_backup_footer':   get_tpl('tpl_backup_footer'),
         # Backup
@@ -1778,6 +1781,8 @@ def settings_templates():
     for key in text_keys:
         set_setting(key, request.form.get(key, '')[:500])
 
+    set_setting('admin_summary_include_emails', '1' if request.form.get('admin_summary_include_emails') else '0')
+
     flash('Templates saved.', 'success')
     return redirect(url_for('settings'))
 
@@ -1813,7 +1818,7 @@ def preview_admin_summary():
         users = [_D('Alice Smith','alice@example.com',24.50),
                  _D('Bob Jones','bob@example.com',-12.00),
                  _D('Carol White','carol@example.com',0.00)]
-    return build_admin_summary_email(users)
+    return build_admin_summary_email(users, include_emails=get_setting('admin_summary_include_emails', '0') == '1')
 
 
 @app.route('/settings/templates/preview/backup')

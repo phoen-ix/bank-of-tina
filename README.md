@@ -66,6 +66,7 @@ A lightweight, self-hosted web application for managing shared expenses and bala
 - **Preset themes** — choose from Default, Ocean, Forest, Sunset, or Slate via a dropdown; selecting a preset fills all pickers instantly; manually changing any picker switches to "Custom"
 - **Email subjects** — editable subject line for each of the three email types
 - **Email body templates** — edit the greeting, intro, footer line 1, and footer line 2 of the weekly balance email; set the intro and footer of the admin summary email; set the footer of the backup status email; leave any field blank to omit that line
+- **Include email addresses toggle** — admin summary email card has an "Include email addresses in summary table" switch (default off); when off, only names and balances are shown
 - **Placeholders** — substituted at send time:
 
   | Placeholder | Available in |

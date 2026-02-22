@@ -1174,6 +1174,17 @@
                                name="tpl_admin_footer" value="{{ cfg.tpl_admin_footer }}"
                                placeholder="This is an automated admin summary from the Bank of Tina system.">
                     </div>
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch"
+                                   id="admin_summary_include_emails" name="admin_summary_include_emails" value="1"
+                                   {% if cfg.admin_summary_include_emails == '1' %}checked{% endif %}>
+                            <label class="form-check-label" for="admin_summary_include_emails">
+                                Include email addresses in summary table
+                            </label>
+                        </div>
+                        <div class="form-text">When off, only names and balances are shown. Default: off.</div>
+                    </div>
                 </div>
             </div>
 

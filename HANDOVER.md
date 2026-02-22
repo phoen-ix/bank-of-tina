@@ -104,6 +104,7 @@ The `settings()` view builds a `cfg` dict from all keys and passes it to `settin
 | `email_enabled` | `0` | Master email on/off switch |
 | `email_debug` | `0` | Logs every send to `EmailLog` |
 | `admin_summary_email` | `0` | Send admin summary after each email run |
+| `admin_summary_include_emails` | `0` | Include email addresses in the admin summary table; `'1'` shows the Email column |
 | `schedule_enabled` | `0` | Email auto-schedule on/off |
 | `schedule_day/hour/minute` | `*, 9, 0` | APScheduler cron values |
 | `common_enabled` | `1` | Global autocomplete toggle |
@@ -212,7 +213,7 @@ Three email types, each with editable subject + body via the Templates tab:
 | Function | Recipient | Triggered by |
 |----------|-----------|-------------|
 | `build_email_html(user)` | Individual opted-in active users | Manual "Send Now" or auto-schedule |
-| `build_admin_summary_email(users)` | Site admin | After each email run, if `admin_summary_email=1` |
+| `build_admin_summary_email(users, include_emails=False)` | Site admin | After each email run, if `admin_summary_email=1` |
 | `build_backup_status_email(ok, result, kept, pruned)` | Site admin | After each **scheduled** backup only |
 
 `send_single_email(to_email, to_name, subject, html)` handles the SMTP connection. All subjects and body fields go through `apply_template()` with the appropriate placeholder dict.
@@ -363,6 +364,7 @@ All features are fully implemented and committed. Recent work in order:
 12. **Decimal separator setting** — `decimal_separator` key in `Setting` (`.` or `,`); configured in Settings → General; `parse_amount()` helper normalises all user input; `fmt_amount()` / `|money` Jinja filter applied to all monetary display; `DECIMAL_SEP` JS constant injected via `inject_theme` context processor and used in `add_transaction.html` and `edit_transaction.html` for live total display and item serialisation; all monetary inputs changed from `type="number"` to `type="text" inputmode="decimal"`; Charts page uses the same `DECIMAL_SEP` constant via a `fmtMoney()` JS helper applied to all tooltip labels and axis ticks
 13. **Dashboard & user detail polish** — Actions column and redundant View button removed from dashboard (user name is a link); email column hidden by default, toggled via `show_email_on_dashboard` setting; user detail transaction history capped at 5 most recent; Settings page `?tab=<name>` URL parameter added so external links can open a specific tab directly
 14. **Transaction notes field** — optional `notes` (Text) column on `Transaction`; registered in `_migrate_db()` for existing installs; textarea on add (all three tabs) and edit forms; displayed inline on transactions, search, and user detail pages; included in free-text search alongside description and item names
+15. **Email template tweaks** — (a) removed the hardcoded "You owe €X" / "You are owed €X" line from the weekly balance email HTML (the `[BalanceStatus]` placeholder remains available for custom template fields); (b) `build_admin_summary_email` gains an `include_emails=False` parameter — when `False` the Email column is omitted entirely from the summary table; controlled by the `admin_summary_include_emails` setting (default `0`), saved via a toggle in Settings → Templates → Admin Summary Email card and passed through by both `send_all_emails()` and `preview_admin_summary()`
 
 ---
 
