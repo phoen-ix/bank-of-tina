@@ -80,6 +80,27 @@ class CommonItem(db.Model):
     id   = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False, unique=True)
 
+class CommonDescription(db.Model):
+    id    = db.Column(db.Integer, primary_key=True)
+    value = db.Column(db.String(500), nullable=False, unique=True)
+
+class CommonPrice(db.Model):
+    id    = db.Column(db.Integer, primary_key=True)
+    value = db.Column(db.Float, nullable=False, unique=True)
+
+class CommonBlacklist(db.Model):
+    id    = db.Column(db.Integer, primary_key=True)
+    type  = db.Column(db.String(20), nullable=False)   # 'item' | 'description' | 'price'
+    value = db.Column(db.String(500), nullable=False)
+    __table_args__ = (db.UniqueConstraint('type', 'value'),)
+
+class AutoCollectLog(db.Model):
+    id       = db.Column(db.Integer, primary_key=True)
+    ran_at   = db.Column(db.DateTime, default=datetime.utcnow)
+    level    = db.Column(db.String(10), nullable=False)   # 'INFO' | 'ADDED' | 'SKIP' | 'ERROR'
+    category = db.Column(db.String(20), nullable=False)   # 'item' | 'description' | 'price' | 'system'
+    message  = db.Column(db.String(500), nullable=False)
+
 # Helper Functions
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -293,9 +314,107 @@ def _add_email_job():
     scheduler.add_job(job, 'cron', day_of_week=day, hour=hour, minute=minute,
                       timezone=tz, id='email_job', replace_existing=True)
 
+def auto_collect_common():
+    from sqlalchemy import func
+    debug = get_setting('common_auto_debug', '0') == '1'
+    added_count = 0
+    skip_count = 0
+
+    if get_setting('common_items_auto', '0') == '1':
+        threshold = int(get_setting('common_items_threshold', '5'))
+        blacklisted = {b.value.lower() for b in CommonBlacklist.query.filter_by(type='item').all()}
+        rows = (db.session.query(ExpenseItem.item_name, func.count(ExpenseItem.id))
+                          .group_by(ExpenseItem.item_name)
+                          .having(func.count(ExpenseItem.id) >= threshold).all())
+        for name, _ in rows:
+            if name.lower() in blacklisted:
+                if debug:
+                    db.session.add(AutoCollectLog(level='SKIP', category='item',
+                                                  message=f'"{name}" (blacklist)'))
+                skip_count += 1
+            elif not CommonItem.query.filter_by(name=name).first():
+                db.session.add(CommonItem(name=name))
+                if debug:
+                    db.session.add(AutoCollectLog(level='ADDED', category='item',
+                                                  message=f'Added "{name}"'))
+                added_count += 1
+
+    if get_setting('common_descriptions_auto', '0') == '1':
+        threshold = int(get_setting('common_descriptions_threshold', '5'))
+        blacklisted = {b.value.lower() for b in CommonBlacklist.query.filter_by(type='description').all()}
+        rows = (db.session.query(Transaction.description, func.count(Transaction.id))
+                          .group_by(Transaction.description)
+                          .having(func.count(Transaction.id) >= threshold).all())
+        for desc, _ in rows:
+            if desc.lower() in blacklisted:
+                if debug:
+                    db.session.add(AutoCollectLog(level='SKIP', category='description',
+                                                  message=f'"{desc}" (blacklist)'))
+                skip_count += 1
+            elif not CommonDescription.query.filter_by(value=desc).first():
+                db.session.add(CommonDescription(value=desc))
+                if debug:
+                    db.session.add(AutoCollectLog(level='ADDED', category='description',
+                                                  message=f'Added "{desc}"'))
+                added_count += 1
+
+    if get_setting('common_prices_auto', '0') == '1':
+        threshold = int(get_setting('common_prices_threshold', '5'))
+        blacklisted = {b.value for b in CommonBlacklist.query.filter_by(type='price').all()}
+        rows = (db.session.query(ExpenseItem.price, func.count(ExpenseItem.id))
+                          .group_by(ExpenseItem.price)
+                          .having(func.count(ExpenseItem.id) >= threshold).all())
+        for price, _ in rows:
+            price_str = f"{price:.2f}"
+            if price_str in blacklisted:
+                if debug:
+                    db.session.add(AutoCollectLog(level='SKIP', category='price',
+                                                  message=f'€{price_str} (blacklist)'))
+                skip_count += 1
+            elif not CommonPrice.query.filter_by(value=price).first():
+                db.session.add(CommonPrice(value=price))
+                if debug:
+                    db.session.add(AutoCollectLog(level='ADDED', category='price',
+                                                  message=f'Added €{price_str}'))
+                added_count += 1
+
+    if debug:
+        db.session.add(AutoCollectLog(level='INFO', category='system',
+                                      message=f'Run complete: {added_count} added, {skip_count} skipped'))
+    db.session.commit()
+
+    # Prune log table to last 500 entries
+    if debug:
+        oldest_kept = (AutoCollectLog.query
+                       .order_by(AutoCollectLog.id.desc())
+                       .offset(500).first())
+        if oldest_kept:
+            AutoCollectLog.query.filter(AutoCollectLog.id <= oldest_kept.id).delete()
+        db.session.commit()
+
+
+def _add_common_job():
+    day    = get_setting('common_auto_day', '*')
+    hour   = int(get_setting('common_auto_hour', '2'))
+    minute = int(get_setting('common_auto_minute', '0'))
+    try:
+        tz = pytz.timezone(get_setting('timezone', 'UTC'))
+    except pytz.exceptions.UnknownTimeZoneError:
+        tz = pytz.UTC
+
+    def job():
+        with app.app_context():
+            auto_collect_common()
+
+    scheduler.add_job(job, 'cron', day_of_week=day, hour=hour, minute=minute,
+                      timezone=tz, id='common_job', replace_existing=True)
+
+
 def _restore_schedule():
     if get_setting('schedule_enabled') == '1':
         _add_email_job()
+    if get_setting('common_auto_enabled', '0') == '1':
+        _add_common_job()
 
 def parse_submitted_date(date_str):
     """Parse a datetime-local string entered in the app timezone and return a naive UTC datetime."""
@@ -752,14 +871,32 @@ def settings():
         'email_enabled': get_setting('email_enabled', '1'),
         'email_debug': get_setting('email_debug', '0'),
         'timezone': get_setting('timezone', 'UTC'),
+        'common_enabled':                get_setting('common_enabled', '1'),
+        'common_auto_enabled':           get_setting('common_auto_enabled', '0'),
+        'common_auto_debug':             get_setting('common_auto_debug', '0'),
+        'common_auto_day':               get_setting('common_auto_day', '*'),
+        'common_auto_hour':              get_setting('common_auto_hour', '2'),
+        'common_auto_minute':            get_setting('common_auto_minute', '0'),
+        'common_items_auto':             get_setting('common_items_auto', '0'),
+        'common_items_threshold':        get_setting('common_items_threshold', '5'),
+        'common_descriptions_auto':      get_setting('common_descriptions_auto', '0'),
+        'common_descriptions_threshold': get_setting('common_descriptions_threshold', '5'),
+        'common_prices_auto':            get_setting('common_prices_auto', '0'),
+        'common_prices_threshold':       get_setting('common_prices_threshold', '5'),
     }
-    common_items = CommonItem.query.order_by(CommonItem.name).all()
+    common_items        = CommonItem.query.order_by(CommonItem.name).all()
+    common_descriptions = CommonDescription.query.order_by(CommonDescription.value).all()
+    common_prices       = CommonPrice.query.order_by(CommonPrice.value).all()
+    common_blacklist    = CommonBlacklist.query.order_by(CommonBlacklist.type, CommonBlacklist.value).all()
+    auto_collect_logs   = AutoCollectLog.query.order_by(AutoCollectLog.id.desc()).limit(500).all()
     all_users = User.query.order_by(User.name).all()
     timezone_groups = {}
     for tz in pytz.common_timezones:
         region = tz.split('/')[0]
         timezone_groups.setdefault(region, []).append(tz)
     return render_template('settings.html', cfg=cfg, common_items=common_items,
+                           common_descriptions=common_descriptions, common_prices=common_prices,
+                           common_blacklist=common_blacklist, auto_collect_logs=auto_collect_logs,
                            all_users=all_users, timezone_groups=timezone_groups)
 
 @app.route('/settings/email', methods=['POST'])
@@ -834,14 +971,32 @@ def settings_general():
         set_setting('timezone', timezone)
         if get_setting('schedule_enabled') == '1':
             _add_email_job()
+        if get_setting('common_auto_enabled', '0') == '1':
+            _add_common_job()
     flash('General settings saved.', 'success')
     return redirect(url_for('settings'))
 
 
 @app.route('/api/common-items')
 def api_common_items():
+    if get_setting('common_enabled', '1') != '1':
+        return jsonify([])
     items = CommonItem.query.order_by(CommonItem.name).all()
     return jsonify([{'id': i.id, 'name': i.name} for i in items])
+
+@app.route('/api/common-descriptions')
+def api_common_descriptions():
+    if get_setting('common_enabled', '1') != '1':
+        return jsonify([])
+    items = CommonDescription.query.order_by(CommonDescription.value).all()
+    return jsonify([{'id': i.id, 'value': i.value} for i in items])
+
+@app.route('/api/common-prices')
+def api_common_prices():
+    if get_setting('common_enabled', '1') != '1':
+        return jsonify([])
+    items = CommonPrice.query.order_by(CommonPrice.value).all()
+    return jsonify([{'id': i.id, 'value': i.value} for i in items])
 
 @app.route('/settings/common-items/add', methods=['POST'])
 def add_common_item():
@@ -862,6 +1017,139 @@ def delete_common_item(item_id):
     db.session.delete(item)
     db.session.commit()
     flash(f'"{name}" removed from common items.', 'success')
+    return redirect(url_for('settings'))
+
+@app.route('/settings/common-descriptions/add', methods=['POST'])
+def add_common_description():
+    value = request.form.get('value', '').strip()
+    if not value:
+        flash('Description is required.', 'error')
+        return redirect(url_for('settings'))
+    if not CommonDescription.query.filter_by(value=value).first():
+        db.session.add(CommonDescription(value=value))
+        db.session.commit()
+    flash(f'"{value}" added to common descriptions.', 'success')
+    return redirect(url_for('settings'))
+
+@app.route('/settings/common-descriptions/<int:item_id>/delete', methods=['POST'])
+def delete_common_description(item_id):
+    item = CommonDescription.query.get_or_404(item_id)
+    value = item.value
+    db.session.delete(item)
+    db.session.commit()
+    flash(f'"{value}" removed from common descriptions.', 'success')
+    return redirect(url_for('settings'))
+
+@app.route('/settings/common-prices/add', methods=['POST'])
+def add_common_price():
+    try:
+        value = float(request.form.get('value', ''))
+    except (ValueError, TypeError):
+        flash('Valid price is required.', 'error')
+        return redirect(url_for('settings'))
+    if not CommonPrice.query.filter_by(value=value).first():
+        db.session.add(CommonPrice(value=value))
+        db.session.commit()
+    flash(f'€{value:.2f} added to common prices.', 'success')
+    return redirect(url_for('settings'))
+
+@app.route('/settings/common-prices/<int:item_id>/delete', methods=['POST'])
+def delete_common_price(item_id):
+    item = CommonPrice.query.get_or_404(item_id)
+    value = item.value
+    db.session.delete(item)
+    db.session.commit()
+    flash(f'€{value:.2f} removed from common prices.', 'success')
+    return redirect(url_for('settings'))
+
+@app.route('/settings/common-blacklist/add', methods=['POST'])
+def add_common_blacklist():
+    bl_type = request.form.get('type', '').strip()
+    value   = request.form.get('value', '').strip()
+    if bl_type not in ('item', 'description', 'price') or not value:
+        flash('Invalid blacklist entry.', 'error')
+        return redirect(url_for('settings'))
+    if not CommonBlacklist.query.filter_by(type=bl_type, value=value).first():
+        db.session.add(CommonBlacklist(type=bl_type, value=value))
+        db.session.commit()
+    flash(f'"{value}" added to {bl_type} blacklist.', 'success')
+    return redirect(url_for('settings'))
+
+@app.route('/settings/common-blacklist/<int:item_id>/delete', methods=['POST'])
+def delete_common_blacklist(item_id):
+    item = CommonBlacklist.query.get_or_404(item_id)
+    value, bl_type = item.value, item.type
+    db.session.delete(item)
+    db.session.commit()
+    flash(f'"{value}" removed from {bl_type} blacklist.', 'success')
+    return redirect(url_for('settings'))
+
+@app.route('/settings/common', methods=['POST'])
+def settings_common():
+    enabled = '1' if request.form.get('common_enabled') else '0'
+    set_setting('common_enabled', enabled)
+    flash('Common autocomplete settings saved.', 'success')
+    return redirect(url_for('settings'))
+
+@app.route('/settings/common-auto', methods=['POST'])
+def settings_common_auto():
+    enabled = '1' if request.form.get('common_auto_enabled') else '0'
+    debug   = '1' if request.form.get('common_auto_debug')   else '0'
+    day     = request.form.get('common_auto_day', '*')
+    try:
+        hour   = str(max(0, min(23, int(request.form.get('common_auto_hour',   '2')))))
+        minute = str(max(0, min(55, int(request.form.get('common_auto_minute', '0')))))
+    except ValueError:
+        hour, minute = '2', '0'
+    items_auto = '1' if request.form.get('common_items_auto') else '0'
+    try:
+        items_threshold = str(max(1, int(request.form.get('common_items_threshold', '5'))))
+    except ValueError:
+        items_threshold = '5'
+    descriptions_auto = '1' if request.form.get('common_descriptions_auto') else '0'
+    try:
+        descriptions_threshold = str(max(1, int(request.form.get('common_descriptions_threshold', '5'))))
+    except ValueError:
+        descriptions_threshold = '5'
+    prices_auto = '1' if request.form.get('common_prices_auto') else '0'
+    try:
+        prices_threshold = str(max(1, int(request.form.get('common_prices_threshold', '5'))))
+    except ValueError:
+        prices_threshold = '5'
+
+    set_setting('common_auto_enabled',           enabled)
+    set_setting('common_auto_debug',             debug)
+    set_setting('common_auto_day',               day)
+    set_setting('common_auto_hour',              hour)
+    set_setting('common_auto_minute',            minute)
+    set_setting('common_items_auto',             items_auto)
+    set_setting('common_items_threshold',        items_threshold)
+    set_setting('common_descriptions_auto',      descriptions_auto)
+    set_setting('common_descriptions_threshold', descriptions_threshold)
+    set_setting('common_prices_auto',            prices_auto)
+    set_setting('common_prices_threshold',       prices_threshold)
+
+    if enabled == '1':
+        _add_common_job()
+        flash('Auto-collect schedule saved and enabled.', 'success')
+    else:
+        if scheduler.get_job('common_job'):
+            scheduler.remove_job('common_job')
+        flash('Auto-collect schedule disabled.', 'success')
+
+    return redirect(url_for('settings'))
+
+@app.route('/settings/common-auto/run', methods=['POST'])
+def settings_common_auto_run():
+    auto_collect_common()
+    flash('Auto-collect job ran successfully.', 'success')
+    return redirect(url_for('settings'))
+
+@app.route('/settings/common-auto/clear-log', methods=['POST'])
+def settings_common_auto_clear_log():
+    AutoCollectLog.query.delete()
+    db.session.commit()
+    flash('Debug log cleared.', 'success')
     return redirect(url_for('settings'))
 
 

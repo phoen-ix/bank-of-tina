@@ -23,7 +23,7 @@
     <li class="nav-item">
         <button class="nav-link" id="tab-btn-common-items"
                 data-bs-toggle="tab" data-bs-target="#tab-common-items" type="button">
-            <i class="bi bi-bookmark-star"></i> Common Items
+            <i class="bi bi-bookmark-star"></i> Common
         </button>
     </li>
     <li class="nav-item">
@@ -279,26 +279,51 @@
         </div>
     </div><!-- /tab-email -->
 
-    <!-- ── Common Items tab ── -->
+    <!-- ── Common tab ── -->
     <div class="tab-pane fade" id="tab-common-items">
-        <div class="card">
+
+        <!-- Card 1 — Global toggle -->
+        <div class="card mb-4">
             <div class="card-header">
-                <i class="bi bi-bookmark-star"></i> Common Items
+                <i class="bi bi-toggle-on"></i> Common Autocomplete
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('settings_common') }}">
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" role="switch"
+                               id="common_enabled" name="common_enabled" value="1"
+                               {% if cfg.common_enabled == '1' %}checked{% endif %}>
+                        <label class="form-check-label" for="common_enabled">
+                            Enable Common autocomplete feature
+                        </label>
+                    </div>
+                    <div class="form-text mb-3">
+                        When off, all autocomplete suggestions (item names, descriptions, prices) are disabled across the app.
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-floppy"></i> Save
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Card 2 — Item Names -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-bookmark-star"></i> Item Names
             </div>
             <div class="card-body">
                 <p class="text-muted mb-3">
-                    Items saved here appear as autocomplete suggestions when adding expense items to a transaction.
+                    These appear as autocomplete suggestions in expense item name fields.
                 </p>
-
-                <form method="POST" action="{{ url_for('add_common_item') }}" class="d-flex gap-2 mb-4">
+                <form method="POST" action="{{ url_for('add_common_item') }}" class="d-flex gap-2 mb-3">
                     <input type="text" class="form-control" name="name" placeholder="New item name" required>
                     <button type="submit" class="btn btn-success text-nowrap">
                         <i class="bi bi-plus"></i> Add
                     </button>
                 </form>
-
                 {% if common_items %}
-                <div class="d-flex flex-wrap gap-2">
+                <div class="d-flex flex-wrap gap-2 mb-4">
                     {% for item in common_items %}
                     <div class="badge bg-light text-dark border d-inline-flex align-items-center gap-1 px-2 py-2 fs-6 fw-normal">
                         {{ item.name }}
@@ -312,10 +337,335 @@
                     {% endfor %}
                 </div>
                 {% else %}
-                <p class="text-muted small mb-0">No common items saved yet.</p>
+                <p class="text-muted small mb-4">No common items saved yet.</p>
+                {% endif %}
+
+                <hr>
+                <h6 class="text-muted mb-1">Blacklist</h6>
+                <p class="text-muted small mb-2">Values listed here are never auto-collected, even if they meet the threshold.</p>
+                <form method="POST" action="{{ url_for('add_common_blacklist') }}" class="d-flex gap-2 mb-3">
+                    <input type="hidden" name="type" value="item">
+                    <input type="text" class="form-control" name="value" placeholder="Item name to blacklist" required>
+                    <button type="submit" class="btn btn-outline-secondary text-nowrap">
+                        <i class="bi bi-plus"></i> Add to blacklist
+                    </button>
+                </form>
+                {% set item_blacklist = common_blacklist | selectattr('type', 'equalto', 'item') | list %}
+                {% if item_blacklist %}
+                <div class="d-flex flex-wrap gap-2">
+                    {% for bl in item_blacklist %}
+                    <div class="badge bg-warning text-dark border d-inline-flex align-items-center gap-1 px-2 py-2 fs-6 fw-normal">
+                        {{ bl.value }}
+                        <form method="POST" action="{{ url_for('delete_common_blacklist', item_id=bl.id) }}" class="d-inline m-0">
+                            <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent text-dark lh-1"
+                                    title="Remove" onclick="return confirm('Remove \'{{ bl.value }}\' from item blacklist?')">
+                                <i class="bi bi-x-lg" style="font-size:0.75rem"></i>
+                            </button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted small mb-0">No blacklisted item names.</p>
                 {% endif %}
             </div>
         </div>
+
+        <!-- Card 3 — Descriptions -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-chat-left-text"></i> Descriptions
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">
+                    These appear as autocomplete suggestions in the transaction description field.
+                </p>
+                <form method="POST" action="{{ url_for('add_common_description') }}" class="d-flex gap-2 mb-3">
+                    <input type="text" class="form-control" name="value" placeholder="New description" required>
+                    <button type="submit" class="btn btn-success text-nowrap">
+                        <i class="bi bi-plus"></i> Add
+                    </button>
+                </form>
+                {% if common_descriptions %}
+                <div class="d-flex flex-wrap gap-2 mb-4">
+                    {% for desc in common_descriptions %}
+                    <div class="badge bg-light text-dark border d-inline-flex align-items-center gap-1 px-2 py-2 fs-6 fw-normal">
+                        {{ desc.value }}
+                        <form method="POST" action="{{ url_for('delete_common_description', item_id=desc.id) }}" class="d-inline m-0">
+                            <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent text-danger lh-1"
+                                    title="Remove" onclick="return confirm('Remove \'{{ desc.value }}\' from common descriptions?')">
+                                <i class="bi bi-x-lg" style="font-size:0.75rem"></i>
+                            </button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted small mb-4">No common descriptions saved yet.</p>
+                {% endif %}
+
+                <hr>
+                <h6 class="text-muted mb-1">Blacklist</h6>
+                <p class="text-muted small mb-2">Values listed here are never auto-collected, even if they meet the threshold.</p>
+                <form method="POST" action="{{ url_for('add_common_blacklist') }}" class="d-flex gap-2 mb-3">
+                    <input type="hidden" name="type" value="description">
+                    <input type="text" class="form-control" name="value" placeholder="Description to blacklist" required>
+                    <button type="submit" class="btn btn-outline-secondary text-nowrap">
+                        <i class="bi bi-plus"></i> Add to blacklist
+                    </button>
+                </form>
+                {% set desc_blacklist = common_blacklist | selectattr('type', 'equalto', 'description') | list %}
+                {% if desc_blacklist %}
+                <div class="d-flex flex-wrap gap-2">
+                    {% for bl in desc_blacklist %}
+                    <div class="badge bg-warning text-dark border d-inline-flex align-items-center gap-1 px-2 py-2 fs-6 fw-normal">
+                        {{ bl.value }}
+                        <form method="POST" action="{{ url_for('delete_common_blacklist', item_id=bl.id) }}" class="d-inline m-0">
+                            <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent text-dark lh-1"
+                                    title="Remove" onclick="return confirm('Remove \'{{ bl.value }}\' from description blacklist?')">
+                                <i class="bi bi-x-lg" style="font-size:0.75rem"></i>
+                            </button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted small mb-0">No blacklisted descriptions.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Card 4 — Prices -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-currency-euro"></i> Prices
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">
+                    These appear as autocomplete suggestions in the expense item price fields.
+                </p>
+                <form method="POST" action="{{ url_for('add_common_price') }}" class="d-flex gap-2 mb-3">
+                    <input type="number" class="form-control" name="value" placeholder="Price (e.g. 3.50)"
+                           step="0.01" min="0.01" required style="max-width: 200px">
+                    <button type="submit" class="btn btn-success text-nowrap">
+                        <i class="bi bi-plus"></i> Add
+                    </button>
+                </form>
+                {% if common_prices %}
+                <div class="d-flex flex-wrap gap-2 mb-4">
+                    {% for price in common_prices %}
+                    <div class="badge bg-light text-dark border d-inline-flex align-items-center gap-1 px-2 py-2 fs-6 fw-normal">
+                        €{{ "%.2f"|format(price.value) }}
+                        <form method="POST" action="{{ url_for('delete_common_price', item_id=price.id) }}" class="d-inline m-0">
+                            <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent text-danger lh-1"
+                                    title="Remove" onclick="return confirm('Remove €{{ '%.2f'|format(price.value) }} from common prices?')">
+                                <i class="bi bi-x-lg" style="font-size:0.75rem"></i>
+                            </button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted small mb-4">No common prices saved yet.</p>
+                {% endif %}
+
+                <hr>
+                <h6 class="text-muted mb-1">Blacklist</h6>
+                <p class="text-muted small mb-2">Prices listed here are never auto-collected, even if they meet the threshold. Enter as decimal (e.g. 3.50).</p>
+                <form method="POST" action="{{ url_for('add_common_blacklist') }}" class="d-flex gap-2 mb-3">
+                    <input type="hidden" name="type" value="price">
+                    <input type="number" class="form-control" name="value" placeholder="Price to blacklist (e.g. 3.50)"
+                           step="0.01" min="0.01" required style="max-width: 200px">
+                    <button type="submit" class="btn btn-outline-secondary text-nowrap">
+                        <i class="bi bi-plus"></i> Add to blacklist
+                    </button>
+                </form>
+                {% set price_blacklist = common_blacklist | selectattr('type', 'equalto', 'price') | list %}
+                {% if price_blacklist %}
+                <div class="d-flex flex-wrap gap-2">
+                    {% for bl in price_blacklist %}
+                    <div class="badge bg-warning text-dark border d-inline-flex align-items-center gap-1 px-2 py-2 fs-6 fw-normal">
+                        {{ bl.value }}
+                        <form method="POST" action="{{ url_for('delete_common_blacklist', item_id=bl.id) }}" class="d-inline m-0">
+                            <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent text-dark lh-1"
+                                    title="Remove" onclick="return confirm('Remove {{ bl.value }} from price blacklist?')">
+                                <i class="bi bi-x-lg" style="font-size:0.75rem"></i>
+                            </button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted small mb-0">No blacklisted prices.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Card 5 — Auto-Collect Schedule -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-clock-history"></i> Auto-Collect Schedule
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('settings_common_auto') }}">
+
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" role="switch"
+                               id="common_auto_enabled" name="common_auto_enabled" value="1"
+                               {% if cfg.common_auto_enabled == '1' %}checked{% endif %}
+                               onchange="toggleCommonAutoFields(this)">
+                        <label class="form-check-label" for="common_auto_enabled">
+                            Enable auto-collect
+                        </label>
+                    </div>
+                    <div class="form-text mb-3">
+                        Automatically promote frequently-used values to the common lists on a schedule.
+                    </div>
+
+                    <div class="form-check form-switch mb-4">
+                        <input class="form-check-input" type="checkbox" role="switch"
+                               id="common_auto_debug" name="common_auto_debug" value="1"
+                               {% if cfg.common_auto_debug == '1' %}checked{% endif %}>
+                        <label class="form-check-label" for="common_auto_debug">
+                            Debug mode — log all decisions to database
+                        </label>
+                    </div>
+
+                    <div id="common_auto_fields" {% if cfg.common_auto_enabled != '1' %}style="display:none"{% endif %}>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center gap-3 mb-2">
+                                    <div class="form-check form-switch mb-0">
+                                        <input class="form-check-input" type="checkbox" role="switch"
+                                               id="common_items_auto" name="common_items_auto" value="1"
+                                               {% if cfg.common_items_auto == '1' %}checked{% endif %}>
+                                        <label class="form-check-label" for="common_items_auto">Item names</label>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <label class="form-label mb-0 text-muted small">Min occurrences:</label>
+                                        <input type="number" class="form-control form-control-sm"
+                                               name="common_items_threshold"
+                                               value="{{ cfg.common_items_threshold }}"
+                                               min="1" max="999" style="width: 70px">
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center gap-3 mb-2">
+                                    <div class="form-check form-switch mb-0">
+                                        <input class="form-check-input" type="checkbox" role="switch"
+                                               id="common_descriptions_auto" name="common_descriptions_auto" value="1"
+                                               {% if cfg.common_descriptions_auto == '1' %}checked{% endif %}>
+                                        <label class="form-check-label" for="common_descriptions_auto">Descriptions</label>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <label class="form-label mb-0 text-muted small">Min occurrences:</label>
+                                        <input type="number" class="form-control form-control-sm"
+                                               name="common_descriptions_threshold"
+                                               value="{{ cfg.common_descriptions_threshold }}"
+                                               min="1" max="999" style="width: 70px">
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="form-check form-switch mb-0">
+                                        <input class="form-check-input" type="checkbox" role="switch"
+                                               id="common_prices_auto" name="common_prices_auto" value="1"
+                                               {% if cfg.common_prices_auto == '1' %}checked{% endif %}>
+                                        <label class="form-check-label" for="common_prices_auto">Prices</label>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <label class="form-label mb-0 text-muted small">Min occurrences:</label>
+                                        <input type="number" class="form-control form-control-sm"
+                                               name="common_prices_threshold"
+                                               value="{{ cfg.common_prices_threshold }}"
+                                               min="1" max="999" style="width: 70px">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Run</label>
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <select class="form-select w-auto" name="common_auto_day">
+                                    <option value="*"   {% if cfg.common_auto_day == '*'   %}selected{% endif %}>Every day</option>
+                                    <option value="mon" {% if cfg.common_auto_day == 'mon' %}selected{% endif %}>Monday</option>
+                                    <option value="tue" {% if cfg.common_auto_day == 'tue' %}selected{% endif %}>Tuesday</option>
+                                    <option value="wed" {% if cfg.common_auto_day == 'wed' %}selected{% endif %}>Wednesday</option>
+                                    <option value="thu" {% if cfg.common_auto_day == 'thu' %}selected{% endif %}>Thursday</option>
+                                    <option value="fri" {% if cfg.common_auto_day == 'fri' %}selected{% endif %}>Friday</option>
+                                    <option value="sat" {% if cfg.common_auto_day == 'sat' %}selected{% endif %}>Saturday</option>
+                                    <option value="sun" {% if cfg.common_auto_day == 'sun' %}selected{% endif %}>Sunday</option>
+                                </select>
+                                <span class="text-muted">at</span>
+                                <select class="form-select w-auto" name="common_auto_hour">
+                                    {% for h in range(24) %}
+                                    <option value="{{ h }}" {% if cfg.common_auto_hour|int == h %}selected{% endif %}>
+                                        {{ '%02d'|format(h) }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <span class="fw-bold fs-5">:</span>
+                                <select class="form-select w-auto" name="common_auto_minute">
+                                    {% set stored_min = (cfg.common_auto_minute|int // 5) * 5 %}
+                                    {% for m in range(0, 60, 5) %}
+                                    <option value="{{ m }}" {% if stored_min == m %}selected{% endif %}>
+                                        {{ '%02d'|format(m) }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        {% if cfg.common_auto_enabled == '1' %}
+                        {% set auto_day_labels = {'*': 'every day', 'mon': 'every Monday',
+                                                  'tue': 'every Tuesday', 'wed': 'every Wednesday',
+                                                  'thu': 'every Thursday', 'fri': 'every Friday',
+                                                  'sat': 'every Saturday', 'sun': 'every Sunday'} %}
+                        <div class="alert alert-success py-2 mb-3">
+                            <i class="bi bi-check-circle"></i>
+                            Auto-collect runs <strong>{{ auto_day_labels.get(cfg.common_auto_day, cfg.common_auto_day) }}</strong>
+                            at <strong>{{ '%02d:%02d'|format(cfg.common_auto_hour|int, cfg.common_auto_minute|int) }}</strong>
+                            <span class="text-muted">({{ cfg.timezone }})</span>.
+                        </div>
+                        {% endif %}
+
+                    </div><!-- /common_auto_fields -->
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-floppy"></i> Save Auto-Collect
+                        </button>
+                    </div>
+                </form>
+
+                <form method="POST" action="{{ url_for('settings_common_auto_run') }}" class="mt-2">
+                    <button type="submit" class="btn btn-outline-secondary">
+                        <i class="bi bi-play-fill"></i> Run Now
+                    </button>
+                </form>
+
+                {% if cfg.common_auto_debug == '1' %}
+                <hr class="mt-4">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="mb-0 text-muted">Debug Log</h6>
+                    <form method="POST" action="{{ url_for('settings_common_auto_clear_log') }}">
+                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                                onclick="return confirm('Clear the entire debug log?')">
+                            <i class="bi bi-trash"></i> Clear Log
+                        </button>
+                    </form>
+                </div>
+                {% if auto_collect_logs %}
+                <pre class="bg-dark text-light p-3 rounded small" style="max-height: 400px; overflow-y: auto; font-size: 0.78rem;">{% for log in auto_collect_logs %}{{ log.ran_at.strftime('%Y-%m-%d %H:%M') }} [{{ log.level|upper }}] {{ '%-12s'|format(log.category) }} {{ log.message }}
+{% endfor %}</pre>
+                {% else %}
+                <p class="text-muted small">No log entries yet. Run auto-collect to generate log entries.</p>
+                {% endif %}
+                {% endif %}
+
+            </div>
+        </div>
+
     </div><!-- /tab-common-items -->
 
     <!-- ── Users tab ── -->
@@ -418,6 +768,10 @@
 <script>
 function toggleScheduleFields(checkbox) {
     document.getElementById('schedule_fields').style.display = checkbox.checked ? '' : 'none';
+}
+
+function toggleCommonAutoFields(checkbox) {
+    document.getElementById('common_auto_fields').style.display = checkbox.checked ? '' : 'none';
 }
 
 // Persist active tab across redirects (e.g. after saving common items)

@@ -24,8 +24,16 @@ A lightweight, self-hosted web application for managing shared expenses and bala
 ### Expense Items
 - Add line items per expense (name + price)
 - Edit, add, or remove items on saved transactions
-- **Common Items** — save frequently used item names and get autocomplete suggestions when adding new items
 - Configurable number of pre-filled blank rows when opening the Add Transaction form
+
+### Common Autocomplete
+- **Item names** — save frequently used expense item names; get autocomplete suggestions when adding items
+- **Descriptions** — save frequently used transaction descriptions; autocomplete appears on all description fields (expense, deposit, withdrawal)
+- **Prices** — save frequently used prices; autocomplete appears on expense item price fields
+- **Global toggle** — enable or disable all autocomplete with a single switch
+- **Blacklist** — per-type blacklists prevent specific values from ever being auto-collected
+- **Auto-collect** — optional scheduled job that scans the transaction history and promotes values that appear at or above a configurable threshold; separate on/off switches and thresholds for item names, descriptions, and prices
+- **Debug log** — when debug mode is on, every auto-collect decision (added / skipped / summary) is written to the database and shown in the Settings UI; log is capped at 500 entries
 
 ### Receipts
 - Upload JPG, PNG, or PDF receipts (max 16 MB)
@@ -38,9 +46,9 @@ The Settings page is split into four tabs:
 
 | Tab | What you configure |
 |-----|--------------------|
-| **General** | Default number of blank item rows in the Add Transaction form; number of recent transactions shown on the dashboard (0 hides the section); enable/disable email sending; debug mode (surfaces SMTP errors in the UI) |
+| **General** | Default number of blank item rows in the Add Transaction form; number of recent transactions shown on the dashboard (0 hides the section); timezone; enable/disable email sending; debug mode (surfaces SMTP errors in the UI) |
 | **Email** | SMTP credentials, send balance emails on demand, set a recurring auto-schedule |
-| **Common Items** | Add / remove common item names used for autocomplete |
+| **Common** | Global autocomplete toggle; manually manage item names, descriptions, and prices (each with its own blacklist); configure the auto-collect scheduled job and view its debug log |
 | **Users** | Add new users; view all users with their status and balance; deactivate or reactivate any user |
 
 ### Email Notifications
@@ -146,7 +154,7 @@ bank-of-tina/
 │   │   ├── transactions.html     # Month-by-month transactions list
 │   │   ├── search.html           # Cross-month search with advanced filters
 │   │   ├── user_detail.html
-│   │   └── settings.html         # Settings (General / Email / Common Items / Users)
+│   │   └── settings.html         # Settings (General / Email / Common / Users)
 │   └── static/
 ├── uploads/                      # Receipts — organised as YYYY/MM/DD/
 ├── mariadb-data/                 # MariaDB data directory (created on first run)
