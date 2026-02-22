@@ -1,0 +1,732 @@
+{% extends "base.html" %}
+{% block title %}Charts & Statistics - Bank of Tina{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2><i class="bi bi-bar-chart-line"></i> Charts &amp; Statistics</h2>
+</div>
+
+<!-- Print-only header (hidden on screen) -->
+<div id="print-header">
+    <h4>Bank of Tina &mdash; Charts &amp; Statistics</h4>
+    <p id="print-meta" class="text-muted"></p>
+    <hr>
+</div>
+
+<!-- Filter bar -->
+<div class="card mb-4" id="filter-card">
+    <div class="card-body py-2">
+        <div class="row g-2 align-items-end flex-wrap">
+
+            <div class="col-auto">
+                <label class="form-label mb-1 small fw-semibold">From</label>
+                <input type="date" id="filter-from" class="form-control form-control-sm"
+                       value="{{ default_from }}">
+            </div>
+
+            <div class="col-auto">
+                <label class="form-label mb-1 small fw-semibold">To</label>
+                <input type="date" id="filter-to" class="form-control form-control-sm"
+                       value="{{ default_to }}">
+            </div>
+
+            <div class="col-auto">
+                <label class="form-label mb-1 small fw-semibold">Users</label>
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle"
+                            id="user-dropdown-btn"
+                            data-bs-toggle="dropdown" data-bs-auto-close="outside"
+                            type="button">
+                        All users
+                    </button>
+                    <ul class="dropdown-menu p-2" style="min-width:190px;">
+                        {% for user in users %}
+                        <li>
+                            <div class="form-check mb-1">
+                                <input class="form-check-input user-checkbox" type="checkbox"
+                                       id="uchk{{ user.id }}" value="{{ user.id }}" checked>
+                                <label class="form-check-label" for="uchk{{ user.id }}">
+                                    {{ user.name }}
+                                </label>
+                            </div>
+                        </li>
+                        {% endfor %}
+                        <li><hr class="dropdown-divider my-1"></li>
+                        <li>
+                            <a class="dropdown-item small py-1" href="#"
+                               onclick="toggleAllUsers(true);return false;">Select all</a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item small py-1" href="#"
+                               onclick="toggleAllUsers(false);return false;">Clear all</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="col-auto">
+                <label class="form-label mb-1 small fw-semibold">Quick range</label>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-secondary" onclick="setPreset(30)">30 d</button>
+                    <button class="btn btn-outline-secondary" onclick="setPreset(90)">90 d</button>
+                    <button class="btn btn-outline-secondary" onclick="setPreset(365)">1 yr</button>
+                    <button class="btn btn-outline-secondary" onclick="setPreset(0)">All</button>
+                </div>
+            </div>
+
+            <div class="col-auto ms-auto d-flex gap-2">
+                <button class="btn btn-primary btn-sm" onclick="loadData()">
+                    <i class="bi bi-funnel"></i> Apply
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" onclick="window.print()">
+                    <i class="bi bi-printer"></i> Print / PDF
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Loading indicator -->
+<div id="loading-bar" style="display:none;" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status"></div>
+    <p class="text-muted mt-2 mb-0">Loading data&hellip;</p>
+</div>
+
+<!-- Chart tabs -->
+<ul class="nav nav-tabs mb-0" id="chartTabs">
+    <li class="nav-item">
+        <button class="nav-link active" data-bs-toggle="tab"
+                data-bs-target="#tab-balances" type="button">
+            <i class="bi bi-bar-chart-horizontal"></i> Balances
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab"
+                data-bs-target="#tab-history" type="button">
+            <i class="bi bi-graph-up"></i> History
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab"
+                data-bs-target="#tab-volume" type="button">
+            <i class="bi bi-calendar3"></i> Volume
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab"
+                data-bs-target="#tab-items" type="button">
+            <i class="bi bi-list-ol"></i> Top Items
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab"
+                data-bs-target="#tab-breakdown" type="button">
+            <i class="bi bi-pie-chart"></i> Breakdown
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content border border-top-0 rounded-bottom p-3 bg-white mb-4"
+     id="chartTabContent">
+
+    <!-- ── Tab 1: Current Balances ────────────────────────────────────── -->
+    <div class="tab-pane fade show active" id="tab-balances">
+        <p class="text-muted small mb-3">
+            Current balance for each user. Reflects all-time transactions &mdash;
+            not limited to the selected date range.
+        </p>
+        <div id="wrap-balances" style="position:relative; height:300px;">
+            <canvas id="chart-balances"></canvas>
+        </div>
+        <p id="empty-balances" class="text-center text-muted py-4" style="display:none;">
+            No users to display.
+        </p>
+    </div>
+
+    <!-- ── Tab 2: Balance History ─────────────────────────────────────── -->
+    <div class="tab-pane fade" id="tab-history">
+        <p class="text-muted small mb-3">
+            Each user's running balance sampled at regular intervals across the
+            selected date range.
+        </p>
+        <div id="wrap-history" style="position:relative; height:380px;">
+            <canvas id="chart-history"></canvas>
+        </div>
+        <p id="empty-history" class="text-center text-muted py-4" style="display:none;">
+            No data in this period.
+        </p>
+    </div>
+
+    <!-- ── Tab 3: Transaction Volume ─────────────────────────────────── -->
+    <div class="tab-pane fade" id="tab-volume">
+        <p class="text-muted small mb-3">
+            Number of transactions (bars, left axis) and total amount (line, right axis)
+            grouped by week (ranges &le; 90 days) or month (longer ranges).
+        </p>
+        <div id="wrap-volume" style="position:relative; height:360px;">
+            <canvas id="chart-volume"></canvas>
+        </div>
+        <p id="empty-volume" class="text-center text-muted py-4" style="display:none;">
+            No transactions in this period.
+        </p>
+    </div>
+
+    <!-- ── Tab 4: Top Expense Items ──────────────────────────────────── -->
+    <div class="tab-pane fade" id="tab-items">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <p class="text-muted small mb-0">Top 15 expense line items in the selected period.</p>
+            <div class="btn-group btn-group-sm" role="group">
+                <button class="btn btn-outline-secondary active" id="btn-items-amount"
+                        onclick="switchItemMode('amount')">By Amount</button>
+                <button class="btn btn-outline-secondary" id="btn-items-count"
+                        onclick="switchItemMode('count')">By Count</button>
+            </div>
+        </div>
+        <div id="wrap-items" style="position:relative;">
+            <canvas id="chart-items"></canvas>
+        </div>
+        <p id="empty-items" class="text-center text-muted py-4" style="display:none;">
+            No expense items in this period.
+        </p>
+    </div>
+
+    <!-- ── Tab 5: Type Breakdown ──────────────────────────────────────── -->
+    <div class="tab-pane fade" id="tab-breakdown">
+        <p class="text-muted small mb-3">
+            How transactions split across types &mdash; by count and by total amount.
+        </p>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <h6 class="text-center text-muted">By number of transactions</h6>
+                <div style="position:relative; height:300px;">
+                    <canvas id="chart-bd-count"></canvas>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <h6 class="text-center text-muted">By total amount (€)</h6>
+                <div style="position:relative; height:300px;">
+                    <canvas id="chart-bd-amount"></canvas>
+                </div>
+            </div>
+        </div>
+        <p id="empty-breakdown" class="text-center text-muted py-4" style="display:none;">
+            No transactions in this period.
+        </p>
+    </div>
+
+</div><!-- /tab-content -->
+{% endblock %}
+
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<style>
+/* ── Print styles ──────────────────────────────────────────────────────── */
+#print-header { display: none; }
+
+@media print {
+    /* A4 landscape: 297 × 210 mm. 10 mm top/bottom, 12 mm left/right margins
+       → usable area ≈ 273 × 190 mm.
+       Print header takes ≈ 22 mm → chart area ≈ 165 mm tall. */
+    @page { size: A4 landscape; margin: 10mm 12mm; }
+
+    nav.navbar, footer, #filter-card, #chartTabs,
+    .btn, .btn-group, #loading-bar,
+    .tab-pane > p.text-muted,
+    .tab-pane .d-flex > p.text-muted { display: none !important; }
+
+    #print-header    { display: block !important; }
+    #chartTabContent { border: none !important; padding: 0 !important; }
+
+    /* Only the active tab pane is printed — Bootstrap keeps inactive ones
+       at display:none already; we just reinforce the active one. */
+    .tab-pane.show.active {
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+
+    /* Single-chart tabs: fill the landscape page below the header.
+       155 mm leaves comfortable breathing room on all sides. */
+    #wrap-balances,
+    #wrap-history,
+    #wrap-volume,
+    #wrap-items {
+        height: 155mm !important;
+        width:  100%  !important;
+    }
+
+    /* Breakdown tab: two donuts side-by-side, each ≈ half the page width */
+    #tab-breakdown .col-md-6       { width: 50% !important; float: left; }
+    #tab-breakdown .row::after     { content: ''; display: table; clear: both; }
+    #tab-breakdown .col-md-6 > div { height: 138mm !important; }
+    #tab-breakdown h6              { margin-bottom: 3mm; }
+}
+</style>
+
+<script>
+// ── Theme colours injected from Flask ─────────────────────────────────────
+const CLR_POS  = '{{ theme_balance_positive }}';
+const CLR_NEG  = '{{ theme_balance_negative }}';
+const CLR_PRI  = '{{ theme_navbar }}';
+
+// ── Colour palette for multi-series charts ────────────────────────────────
+const PALETTE = [
+    '#4e79a7','#f28e2b','#e15759','#76b7b2',
+    '#59a14f','#edc948','#b07aa1','#ff9da7',
+    '#9c755f','#bab0ac'
+];
+
+const TYPE_CLR = {
+    expense:    '#f28e2b',
+    deposit:    '#59a14f',
+    withdrawal: '#e15759',
+    transfer:   '#4e79a7',
+    other:      '#76b7b2',
+};
+
+// ── Chart instance registry ───────────────────────────────────────────────
+const _charts = {};
+function mkChart(id, cfg) {
+    if (_charts[id]) { _charts[id].destroy(); }
+    const el = document.getElementById(id);
+    if (!el) return;
+    _charts[id] = new Chart(el, cfg);
+}
+
+// ── State ─────────────────────────────────────────────────────────────────
+let _data      = null;
+let _itemsMode = 'amount'; // 'amount' | 'count'
+
+// ── Filter helpers ────────────────────────────────────────────────────────
+function toggleAllUsers(state) {
+    document.querySelectorAll('.user-checkbox').forEach(cb => cb.checked = state);
+    _syncDropdownLabel();
+}
+
+function _syncDropdownLabel() {
+    const all     = document.querySelectorAll('.user-checkbox').length;
+    const checked = document.querySelectorAll('.user-checkbox:checked').length;
+    const btn     = document.getElementById('user-dropdown-btn');
+    btn.textContent = checked === 0     ? 'No users'
+                    : checked === all   ? 'All users'
+                    :                    `${checked} of ${all} users`;
+}
+
+function setPreset(days) {
+    const pad = n => String(n).padStart(2, '0');
+    const fmt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    const to  = new Date();
+    document.getElementById('filter-to').value   = fmt(to);
+    if (days === 0) {
+        document.getElementById('filter-from').value = '2000-01-01';
+    } else {
+        const from = new Date(to);
+        from.setDate(from.getDate() - days);
+        document.getElementById('filter-from').value = fmt(from);
+    }
+    loadData();
+}
+
+function switchItemMode(mode) {
+    _itemsMode = mode;
+    document.getElementById('btn-items-amount').classList.toggle('active', mode === 'amount');
+    document.getElementById('btn-items-count').classList.toggle('active', mode === 'count');
+    if (_data) _renderItems(_data.top_items);
+}
+
+// ── Load & render ─────────────────────────────────────────────────────────
+async function loadData() {
+    const from  = document.getElementById('filter-from').value;
+    const to    = document.getElementById('filter-to').value;
+    const uids  = [...document.querySelectorAll('.user-checkbox:checked')]
+                    .map(cb => cb.value).join(',');
+    _syncDropdownLabel();
+
+    const params = new URLSearchParams();
+    if (from) params.set('date_from', from);
+    if (to)   params.set('date_to',   to);
+    if (uids) params.set('users',     uids);
+
+    document.getElementById('loading-bar').style.display    = 'block';
+    document.getElementById('chartTabContent').style.opacity = '0.35';
+
+    try {
+        const res = await fetch('/analytics/data?' + params.toString());
+        if (!res.ok) throw new Error(res.statusText);
+        _data = await res.json();
+        _renderAll(_data);
+    } catch (e) {
+        console.error('Analytics fetch failed:', e);
+    } finally {
+        document.getElementById('loading-bar').style.display    = 'none';
+        document.getElementById('chartTabContent').style.opacity = '1';
+    }
+}
+
+function _renderAll(d) {
+    _renderBalances(d.balances);
+    _renderHistory(d.balance_history);
+    _renderVolume(d.transaction_volume);
+    _renderItems(d.top_items);
+    _renderBreakdown(d.type_breakdown);
+
+    // Update print header
+    const m = d.meta;
+    document.getElementById('print-meta').textContent =
+        `${m.date_from} → ${m.date_to}  ·  ${m.transaction_count} transactions  ·  ${m.user_count} users`;
+}
+
+// ── Chart 1: Current Balances ─────────────────────────────────────────────
+function _renderBalances(balances) {
+    const wrap  = document.getElementById('wrap-balances');
+    const empty = document.getElementById('empty-balances');
+
+    if (!balances || !balances.length) {
+        wrap.style.display  = 'none';
+        empty.style.display = 'block';
+        return;
+    }
+    wrap.style.display  = 'block';
+    empty.style.display = 'none';
+
+    // Sort highest balance first (most positive at top)
+    const sorted = [...balances].sort((a, b) => b.balance - a.balance);
+    const labels = sorted.map(u => u.name);
+    const values = sorted.map(u => u.balance);
+    const colors = values.map(v => v >= 0 ? CLR_POS : CLR_NEG);
+
+    // Expand wrap height based on user count
+    wrap.style.height = Math.max(200, labels.length * 42 + 60) + 'px';
+
+    mkChart('chart-balances', {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Balance (€)',
+                data: values,
+                backgroundColor: colors.map(c => c + 'cc'),
+                borderColor: colors,
+                borderWidth: 1,
+                borderRadius: 4,
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ` €${ctx.parsed.x.toFixed(2)}`
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { color: '#e9ecef' },
+                    ticks: { callback: v => '€' + v.toFixed(2) }
+                },
+                y: { grid: { display: false } }
+            }
+        }
+    });
+}
+
+// ── Chart 2: Balance History ──────────────────────────────────────────────
+function _renderHistory(hist) {
+    const wrap  = document.getElementById('wrap-history');
+    const empty = document.getElementById('empty-history');
+    const names = Object.keys(hist.datasets);
+
+    if (!names.length || !hist.labels.length) {
+        wrap.style.display  = 'none';
+        empty.style.display = 'block';
+        return;
+    }
+    wrap.style.display  = 'block';
+    empty.style.display = 'none';
+
+    const ptRadius = hist.labels.length > 24 ? 2 : 4;
+
+    const datasets = names.map((name, i) => ({
+        label: name,
+        data:  hist.datasets[name],
+        borderColor:     PALETTE[i % PALETTE.length],
+        backgroundColor: PALETTE[i % PALETTE.length] + '18',
+        tension: 0.35,
+        pointRadius: ptRadius,
+        pointHoverRadius: ptRadius + 2,
+        fill: false,
+        borderWidth: 2,
+    }));
+
+    mkChart('chart-history', {
+        type: 'line',
+        data: { labels: hist.labels, datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: names.length > 1, position: 'bottom' },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ` ${ctx.dataset.label}: €${ctx.parsed.y.toFixed(2)}`
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { color: '#e9ecef' },
+                    ticks: { maxTicksLimit: 14, maxRotation: 40 }
+                },
+                y: {
+                    grid: { color: '#e9ecef' },
+                    ticks: { callback: v => '€' + v.toFixed(2) }
+                }
+            }
+        }
+    });
+}
+
+// ── Chart 3: Transaction Volume ───────────────────────────────────────────
+function _renderVolume(vol) {
+    const wrap  = document.getElementById('wrap-volume');
+    const empty = document.getElementById('empty-volume');
+
+    if (!vol.labels || !vol.labels.length) {
+        wrap.style.display  = 'none';
+        empty.style.display = 'block';
+        return;
+    }
+    wrap.style.display  = 'block';
+    empty.style.display = 'none';
+
+    mkChart('chart-volume', {
+        type: 'bar',
+        data: {
+            labels: vol.labels,
+            datasets: [
+                {
+                    type: 'bar',
+                    label: 'Transactions',
+                    data: vol.counts,
+                    backgroundColor: CLR_PRI + 'aa',
+                    borderColor:     CLR_PRI,
+                    borderWidth: 1,
+                    borderRadius: 3,
+                    yAxisID: 'y-count',
+                },
+                {
+                    type: 'line',
+                    label: 'Total (€)',
+                    data: vol.amounts,
+                    borderColor:     '#e15759',
+                    backgroundColor: '#e1575920',
+                    tension: 0.35,
+                    pointRadius: vol.labels.length > 20 ? 2 : 4,
+                    borderWidth: 2,
+                    fill: false,
+                    yAxisID: 'y-amount',
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: true, position: 'bottom' },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ctx.datasetIndex === 0
+                            ? ` ${ctx.raw} transactions`
+                            : ` €${ctx.raw.toFixed(2)}`
+                    }
+                }
+            },
+            scales: {
+                x: { grid: { color: '#e9ecef' } },
+                'y-count': {
+                    type: 'linear',
+                    position: 'left',
+                    grid: { color: '#e9ecef' },
+                    ticks: { precision: 0 },
+                    title: { display: true, text: 'Transactions' }
+                },
+                'y-amount': {
+                    type: 'linear',
+                    position: 'right',
+                    grid: { drawOnChartArea: false },
+                    ticks: { callback: v => '€' + v },
+                    title: { display: true, text: 'Amount (€)' }
+                }
+            }
+        }
+    });
+}
+
+// ── Chart 4: Top Items ────────────────────────────────────────────────────
+function _renderItems(items) {
+    const wrap  = document.getElementById('wrap-items');
+    const empty = document.getElementById('empty-items');
+
+    if (!items || !items.names || !items.names.length) {
+        wrap.style.display  = 'none';
+        empty.style.display = 'block';
+        if (_charts['chart-items']) { _charts['chart-items'].destroy(); delete _charts['chart-items']; }
+        return;
+    }
+    wrap.style.display  = 'block';
+    empty.style.display = 'none';
+
+    const byAmt  = _itemsMode === 'amount';
+    const values = byAmt ? items.totals : items.counts;
+    const label  = byAmt ? 'Total Amount (€)' : 'Times ordered';
+    const labels = items.names.map(n => n.length > 32 ? n.slice(0, 30) + '…' : n);
+    const colors = PALETTE.slice(0, values.length);
+
+    // Grow canvas height proportionally to number of items
+    wrap.style.height = Math.max(250, items.names.length * 36 + 60) + 'px';
+
+    mkChart('chart-items', {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label,
+                data: values,
+                backgroundColor: colors.map(c => c + 'cc'),
+                borderColor: colors,
+                borderWidth: 1,
+                borderRadius: 3,
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => byAmt
+                            ? ` €${ctx.parsed.x.toFixed(2)}  (${items.counts[ctx.dataIndex]}×)`
+                            : ` ${ctx.parsed.x}×  (€${items.totals[ctx.dataIndex].toFixed(2)} total)`
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { color: '#e9ecef' },
+                    ticks: { callback: v => byAmt ? '€' + v : v }
+                },
+                y: { grid: { display: false } }
+            }
+        }
+    });
+}
+
+// ── Chart 5: Type Breakdown ───────────────────────────────────────────────
+function _renderBreakdown(bd) {
+    const empty = document.getElementById('empty-breakdown');
+    const types = Object.keys(bd);
+
+    if (!types.length) {
+        empty.style.display = 'block';
+        return;
+    }
+    empty.style.display = 'none';
+
+    const labels = types.map(t => t.charAt(0).toUpperCase() + t.slice(1));
+    const colors = types.map(t => TYPE_CLR[t] || '#76b7b2');
+    const counts  = types.map(t => bd[t].count);
+    const amounts = types.map(t => bd[t].amount);
+
+    const donutOpts = (data, fmtFn) => ({
+        type: 'doughnut',
+        data: {
+            labels,
+            datasets: [{
+                data,
+                backgroundColor: colors,
+                borderColor: '#fff',
+                borderWidth: 2,
+                hoverOffset: 6,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '62%',
+            plugins: {
+                legend: { position: 'bottom' },
+                tooltip: {
+                    callbacks: { label: ctx => ' ' + fmtFn(ctx) }
+                }
+            }
+        }
+    });
+
+    mkChart('chart-bd-count',  donutOpts(counts,  ctx => `${ctx.label}: ${ctx.raw} transactions`));
+    mkChart('chart-bd-amount', donutOpts(amounts, ctx => `${ctx.label}: €${ctx.raw.toFixed(2)}`));
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.user-checkbox').forEach(cb => {
+        cb.addEventListener('change', _syncDropdownLabel);
+    });
+
+    // Chart.js global defaults
+    Chart.defaults.font.family =
+        "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif";
+    Chart.defaults.font.size = 12;
+    Chart.defaults.color     = '#495057';
+
+    // Resize charts when their tab becomes visible.
+    // Chart.js measures canvas size at render time; if the tab was hidden the
+    // dimensions are 0, so a resize() call after the tab opens fixes the layout.
+    document.querySelectorAll('[data-bs-toggle="tab"]').forEach(btn => {
+        btn.addEventListener('shown.bs.tab', e => {
+            const sel = e.target.getAttribute('data-bs-target');
+            document.querySelectorAll(sel + ' canvas').forEach(canvas => {
+                if (_charts[canvas.id]) _charts[canvas.id].resize();
+            });
+        });
+    });
+
+    // Before printing: resize the charts in the active tab so the canvas
+    // has the correct pixel dimensions at the moment the browser captures it.
+    // Also append the active tab's name to the print header meta line.
+    window.addEventListener('beforeprint', () => {
+        const activeBtn = document.querySelector('[data-bs-toggle="tab"].active');
+        // Bootstrap Icons render via CSS ::before — no text in the DOM — so
+        // textContent.trim() already gives just the label ("Balances" etc.).
+        const tabTitle  = activeBtn ? activeBtn.textContent.trim() : '';
+        const metaEl = document.getElementById('print-meta');
+        metaEl.dataset.orig = metaEl.textContent;
+        if (tabTitle) metaEl.textContent += '  ·  ' + tabTitle;
+
+        document.querySelectorAll('.tab-pane.active canvas').forEach(canvas => {
+            if (_charts[canvas.id]) _charts[canvas.id].resize();
+        });
+    });
+
+    // After printing: restore the meta text to its pre-print state.
+    window.addEventListener('afterprint', () => {
+        const metaEl = document.getElementById('print-meta');
+        if (metaEl.dataset.orig !== undefined) {
+            metaEl.textContent  = metaEl.dataset.orig;
+            delete metaEl.dataset.orig;
+        }
+    });
+
+    loadData();
+});
+</script>
+{% endblock %}

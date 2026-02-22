@@ -282,11 +282,27 @@ docker compose up -d
 
 ---
 
+### Charts & Statistics
+A dedicated **Charts** page (nav bar → Charts) with a shared filter bar and five tabs, each showing a different view of the data:
+
+| Tab | Chart type | What it shows |
+|-----|-----------|---------------|
+| **Balances** | Horizontal bar | Current balance per user; green/red per sign; sorted highest → lowest |
+| **History** | Multi-line | Each user's running balance over time, reconstructed from the transaction log; weekly or monthly sample points depending on the selected range |
+| **Volume** | Bar + line combo | Transaction count (bars, left axis) and total amount (line, right axis) grouped by week or month |
+| **Top Items** | Horizontal bar | Top 15 expense line items by total amount or count; toggle between the two modes |
+| **Breakdown** | Two donuts | Transaction type split (expense / deposit / withdrawal) by count and by total amount, side by side |
+
+**Filter bar** — date range pickers, quick presets (30 d / 90 d / 1 yr / All time), multi-select user dropdown, Apply button.
+
+**Print / PDF** — prints only the currently active tab, formatted for A4 landscape; chart canvas is resized to fill the page before the browser captures it. Open browser print dialog → Save as PDF.
+
+---
+
 ## 💡 Future Ideas
 
 - [ ] CSV / Excel export of transactions
 - [ ] User authentication and login system
-- [ ] Charts and analytics dashboard
 - [ ] Support for multiple currencies
 - [ ] OCR for automatic receipt parsing
 - [ ] Saved/pinned searches

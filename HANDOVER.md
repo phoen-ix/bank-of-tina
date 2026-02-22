@@ -276,6 +276,58 @@ Route: `GET /search` — parameters: `q`, `type`, `user`, `date_from`, `date_to`
 
 ---
 
+## Analytics / Charts (`app/app.py` + `app/templates/analytics.html`)
+
+Two new routes, no new DB tables — all data is derived from existing `Transaction` and `ExpenseItem` rows.
+
+### Routes
+
+| Route | Purpose |
+|-------|---------|
+| `GET /analytics` | Renders `analytics.html`; passes user list and default date range (last 90 days) |
+| `GET /analytics/data` | JSON API; accepts `date_from`, `date_to`, `users` (comma-separated IDs); returns all chart data in one response |
+
+### `/analytics/data` response shape
+
+```json
+{
+  "balances":           [{"name": "Alice", "balance": 12.50}, ...],
+  "balance_history":    {"labels": ["2025-01-06", ...], "datasets": {"Alice": [0, 5.0, ...], ...}},
+  "transaction_volume": {"labels": ["Jan 06", ...], "counts": [3, ...], "amounts": [45.0, ...]},
+  "top_items":          {"names": ["Coffee", ...], "counts": [12, ...], "totals": [48.0, ...]},
+  "type_breakdown":     {"expense": {"count": 30, "amount": 150.0}, ...},
+  "meta":               {"date_from": "...", "date_to": "...", "transaction_count": 45, "user_count": 5}
+}
+```
+
+### Balance history computation
+
+`User.balance` is the *current* balance. Historical balance at date T is computed by starting from `user.balance` and reversing every transaction that occurred *after* T:
+- `tx.to_user_id == user.id` and `tx.date > T` → subtract `tx.amount`
+- `tx.from_user_id == user.id` and `tx.date > T` → add `tx.amount`
+
+This requires fetching **all** of a user's transactions (not filtered by date range) for each user. One DB query per user — acceptable for the app's scale.
+
+Sample-point granularity: weekly if date range ≤ 90 days, monthly otherwise.
+
+### Chart.js notes
+
+- Version 4.4.0 loaded from CDN (no npm/build step)
+- All charts use `maintainAspectRatio: false` inside fixed-height wrapper `<div>`s
+- Chart instances are stored in `_charts{}` map; `mkChart(id, cfg)` destroys the old instance before creating a new one
+- Tab-switch resize: Bootstrap's `shown.bs.tab` event triggers `chart.resize()` on every canvas in the newly visible tab — fixes the zero-dimension bug that occurs when Chart.js initialises inside a hidden (`display:none`) tab pane
+
+### Print / PDF
+
+- `window.print()` → browser "Save as PDF"
+- `@page { size: A4 landscape; margin: 10mm 12mm; }` sets the page geometry
+- `@media print` hides nav, filter bar, tab strip, buttons, and description text; only the active tab pane is shown (inactive panes remain `display:none` via Bootstrap's `.active` class — we do **not** force-show all panes)
+- Chart wrapper heights are overridden to `155mm` (`138mm` for the breakdown donuts) so Chart.js fills the landscape page
+- `beforeprint` event calls `chart.resize()` so Chart.js redraws at the print dimensions before the browser captures the canvas; also appends the active tab label to the print-header meta line
+- `afterprint` restores the meta line text
+
+---
+
 ## Current State (as of last commit)
 
 All features are fully implemented and committed. Recent work in order:
@@ -290,6 +342,7 @@ All features are fully implemented and committed. Recent work in order:
 8. Edit transaction: receipt upload / replace / remove
 9. `.dockerignore` updated (excludes `backups/`, `mariadb-data/`, `*.tar.gz`)
 10. **Per-user email preferences** — `email_opt_in` and `email_transactions` fields on `User`; `_migrate_db()` for existing installs; opt-in filtering in `send_all_emails()`; preference-driven transaction query in `build_email_html()`; controls in Add User form (settings.html) and Edit User modal (user_detail.html)
+11. **Charts & Statistics page** — `/analytics` + `/analytics/data` JSON endpoint; 5-tab Chart.js dashboard (Balances, History, Volume, Top Items, Breakdown); shared filter bar (date range + user multi-select + quick presets); A4 landscape print/PDF with per-tab canvas resize via `beforeprint`
 
 ---
 
