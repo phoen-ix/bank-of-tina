@@ -36,19 +36,32 @@ A lightweight, self-hosted web application for managing shared expenses and bala
 - **Debug log** — when debug mode is on, every auto-collect decision (added / skipped / summary) is written to the database and shown in the Settings UI; log is capped at 500 entries
 
 ### Receipts
-- Upload JPG, PNG, or PDF receipts (max 16 MB)
+- Upload JPG, PNG, or PDF receipts
 - Files are saved in an organised directory tree:
   `uploads/YYYY/MM/DD/BuyerName_filename.ext`
 - Filenames are sanitised (special characters removed) before saving
 
+### Backup & Restore
+- **Create backup** on demand or on a recurring schedule (same day/time picker as email and auto-collect)
+- Each backup is a single `bot_backup_YYYY_MM_DD_HH-mm-ss.tar.gz` containing:
+  - `dump.sql` — full MariaDB dump with `DROP TABLE IF EXISTS` (streamed to disk, no memory limit)
+  - `receipts/` — complete copy of all uploaded receipt images
+  - `.env` — credentials reconstructed from the container's environment variables
+- **Download** any backup directly from the browser
+- **Restore** from any listed backup with one click — receipts are restored first so the database is never touched if the file copy fails
+- **Upload** a backup from another instance — large files are sent in 5 MB chunks with a progress bar, so there is no effective size limit
+- **Auto-prune** — configure how many backups to keep; older ones are deleted automatically after each scheduled run
+- **Debug log** — when debug mode is on, every backup step is written to the database and shown in the Settings UI
+
 ### Settings (web UI — no `.env` editing needed)
-The Settings page is split into four tabs:
+The Settings page is split into five tabs:
 
 | Tab | What you configure |
 |-----|--------------------|
 | **General** | Default number of blank item rows in the Add Transaction form; number of recent transactions shown on the dashboard (0 hides the section); timezone |
 | **Email** | SMTP credentials; enable/disable email sending; debug mode (logs runs to DB, surfaces SMTP errors in the UI); send balance emails on demand; set a recurring auto-schedule |
 | **Common** | Global autocomplete toggle; manually manage item names, descriptions, and prices (each with its own blacklist); configure the auto-collect scheduled job and view its debug log |
+| **Backup** | Create/download/delete backups; restore from any backup or an uploaded file; configure an automatic backup schedule with auto-prune; debug log |
 | **Users** | Add new users; view all users with their status and balance; deactivate or reactivate any user |
 
 ### Email Notifications
@@ -132,6 +145,15 @@ That's it. SMTP credentials and the email schedule are configured from the **Set
 2. Fill in SMTP credentials and click **Save Settings**
 3. Use **Send Emails Now** to test, or configure a recurring schedule under **Auto-Schedule**
 
+### Creating a Backup
+1. **Settings** → **Backup** tab → **Create Backup Now**
+2. The backup appears in the list instantly — click **Download** to save it locally
+3. To schedule automatic backups, enable **Auto-Backup Schedule**, pick a day/time and how many backups to keep, then **Save Schedule**
+
+### Restoring a Backup
+- **From the list**: click **Restore** next to any existing backup and confirm
+- **From a file**: use the **Upload Backup** section — select a `bot_backup_*.tar.gz` file and click **Upload**; the file is uploaded in chunks (no size limit) and appears in the list when done, ready to restore
+
 ### Managing Users
 1. **Settings** → **Users** tab
 2. All users are listed with their status (Active / Inactive) and current balance
@@ -157,6 +179,7 @@ bank-of-tina/
 │   │   └── settings.html         # Settings (General / Email / Common / Users)
 │   └── static/
 ├── uploads/                      # Receipts — organised as YYYY/MM/DD/
+├── backups/                      # Backup archives (bot_backup_*.tar.gz)
 ├── mariadb-data/                 # MariaDB data directory (created on first run)
 ├── Dockerfile
 ├── docker-compose.yml
@@ -172,7 +195,7 @@ bank-of-tina/
 - Never commit your `.env` file (it is in `.gitignore`)
 - Use an **App Password** for Gmail rather than your main account password
 - Restrict network access to port 5000 — place behind a reverse proxy (nginx, Caddy) with authentication if the app is internet-facing
-- Back up the `mariadb-data/` directory regularly (or use `mysqldump` — see Maintenance below)
+- Back up the `mariadb-data/` directory regularly, or use the built-in **Backup** feature (Settings → Backup tab)
 
 ---
 
@@ -184,14 +207,12 @@ docker compose logs -f web
 docker compose logs -f db
 ```
 
-### Backup the database
+### Backup & restore
+Use the built-in **Settings → Backup** tab for creating, downloading, uploading, and restoring backups.
+
+For a manual database-only dump:
 ```bash
 docker compose exec db mysqldump -u tina -ptina bank_of_tina > backup_$(date +%Y%m%d).sql
-```
-
-### Restore a backup
-```bash
-docker compose exec -T db mysql -u tina -ptina bank_of_tina < backup_YYYYMMDD.sql
 ```
 
 ### Update after code changes
@@ -213,7 +234,7 @@ docker compose up -d
 | Problem | Steps |
 |---------|-------|
 | Emails not sending | Check Settings → Email; verify SMTP credentials; check logs |
-| Receipt upload fails | Check `chmod 755 uploads/`; verify file is JPG/PNG/PDF and < 16 MB |
+| Receipt upload fails | Check `chmod 755 uploads/`; verify file is JPG/PNG/PDF |
 | Port 5000 in use | Change the host port in `docker-compose.yml` (`"8080:5000"`) |
 | Web container won't start | `docker compose logs db` — db may still be initialising; it will retry automatically |
 | DB connection refused | Ensure `mariadb-data/` is writable; `docker compose restart db` |
