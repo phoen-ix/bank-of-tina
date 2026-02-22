@@ -84,6 +84,9 @@
                                     {% endif %}
                                 {% endif %}
                             </p>
+                            {% if trans.notes %}
+                                <p class="mb-1 text-muted fst-italic small"><i class="bi bi-sticky"></i> {{ trans.notes }}</p>
+                            {% endif %}
                             {% if trans.items %}
                                 <small class="text-muted">
                                     <strong>Items:</strong>

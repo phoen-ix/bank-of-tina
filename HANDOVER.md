@@ -65,7 +65,7 @@ bank-of-tina/
 | Model | Key fields | Notes |
 |-------|-----------|-------|
 | `User` | `id`, `name`, `email`, `balance` (Float), `is_active`, `email_opt_in` (Bool, default `True`), `email_transactions` (String, default `'last3'`) | Deactivated users are hidden from dashboard/search filter; `email_opt_in` controls whether the weekly email is sent; `email_transactions` values: `'none'` \| `'last3'` \| `'this_week'` \| `'this_month'` |
-| `Transaction` | `id`, `date`, `description`, `amount`, `from_user_id`, `to_user_id`, `transaction_type`, `receipt_path` | Types: `expense`, `deposit`, `withdrawal`, `transfer` |
+| `Transaction` | `id`, `date`, `description`, `amount`, `from_user_id`, `to_user_id`, `transaction_type`, `receipt_path`, `notes` (Text, nullable) | Types: `expense`, `deposit`, `withdrawal`, `transfer` |
 | `ExpenseItem` | `id`, `transaction_id`, `item_name`, `price`, `buyer_id` | Child rows of an expense transaction |
 | `Setting` | `key` (PK), `value` | Key/value store for all configuration |
 | `CommonItem` | `id`, `name` | Autocomplete item names |
@@ -76,7 +76,7 @@ bank-of-tina/
 | `EmailLog` | `id`, `sent_at`, `level`, `recipient`, `message` | Capped at 500 rows |
 | `BackupLog` | `id`, `ran_at`, `level`, `message` | Capped at 500 rows |
 
-Schema is created by `db.create_all()` at startup. A lightweight `_migrate_db()` function (called immediately after `db.create_all()`) issues `ALTER TABLE … ADD COLUMN` for any columns added since initial install, swallowing duplicate-column errors. New columns must be registered there for existing installs to pick them up automatically.
+Schema is created by `db.create_all()` at startup. A lightweight `_migrate_db()` function (called immediately after `db.create_all()`) issues `ALTER TABLE … ADD COLUMN` for any columns added since initial install, swallowing duplicate-column errors. New columns must be registered there for existing installs to pick them up automatically. Note: `transaction` is a reserved word in MariaDB — use backtick-quoting (`\`transaction\``) in raw SQL inside `_migrate_db()`.
 
 ---
 
@@ -362,6 +362,7 @@ All features are fully implemented and committed. Recent work in order:
 11. **Charts & Statistics page** — `/analytics` + `/analytics/data` JSON endpoint; 5-tab Chart.js dashboard (Balances, History, Volume, Top Items, Breakdown); shared filter bar (date range + user multi-select + quick presets); A4 landscape print/PDF with per-tab canvas resize via `beforeprint`
 12. **Decimal separator setting** — `decimal_separator` key in `Setting` (`.` or `,`); configured in Settings → General; `parse_amount()` helper normalises all user input; `fmt_amount()` / `|money` Jinja filter applied to all monetary display; `DECIMAL_SEP` JS constant injected via `inject_theme` context processor and used in `add_transaction.html` and `edit_transaction.html` for live total display and item serialisation; all monetary inputs changed from `type="number"` to `type="text" inputmode="decimal"`; Charts page uses the same `DECIMAL_SEP` constant via a `fmtMoney()` JS helper applied to all tooltip labels and axis ticks
 13. **Dashboard & user detail polish** — Actions column and redundant View button removed from dashboard (user name is a link); email column hidden by default, toggled via `show_email_on_dashboard` setting; user detail transaction history capped at 5 most recent; Settings page `?tab=<name>` URL parameter added so external links can open a specific tab directly
+14. **Transaction notes field** — optional `notes` (Text) column on `Transaction`; registered in `_migrate_db()` for existing installs; textarea on add (all three tabs) and edit forms; displayed inline on transactions, search, and user detail pages; included in free-text search alongside description and item names
 
 ---
 

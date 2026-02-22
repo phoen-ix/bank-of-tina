@@ -80,6 +80,11 @@
                                        name="date" value="{{ default_date }}">
                             </div>
 
+                            <div class="mb-3">
+                                <label for="expense_notes" class="form-label">Notes <span class="text-muted fw-normal">(optional)</span></label>
+                                <textarea class="form-control" id="expense_notes" name="notes" rows="2" placeholder="Any additional context or justification…"></textarea>
+                            </div>
+
                             <button type="submit" class="btn btn-primary w-100">
                                 <i class="bi bi-check-circle"></i> Record Expense
                             </button>
@@ -117,6 +122,11 @@
                                        name="date" value="{{ default_date }}">
                             </div>
 
+                            <div class="mb-3">
+                                <label for="deposit_notes" class="form-label">Notes <span class="text-muted fw-normal">(optional)</span></label>
+                                <textarea class="form-control" id="deposit_notes" name="notes" rows="2" placeholder="Any additional context or justification…"></textarea>
+                            </div>
+
                             <button type="submit" class="btn btn-success w-100">
                                 <i class="bi bi-check-circle"></i> Add Money
                             </button>
@@ -152,6 +162,11 @@
                                 <label for="withdrawal_date" class="form-label">Date &amp; time</label>
                                 <input type="datetime-local" class="form-control" id="withdrawal_date"
                                        name="date" value="{{ default_date }}">
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="withdrawal_notes" class="form-label">Notes <span class="text-muted fw-normal">(optional)</span></label>
+                                <textarea class="form-control" id="withdrawal_notes" name="notes" rows="2" placeholder="Any additional context or justification…"></textarea>
                             </div>
 
                             <button type="submit" class="btn btn-danger w-100">

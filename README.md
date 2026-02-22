@@ -18,7 +18,8 @@ A lightweight, self-hosted web application for managing shared expenses and bala
 - **Expense** — record who paid and assign items to individuals
 - **Deposit** — add money to a user's balance
 - **Withdrawal** — deduct money from a user's balance
-- **Edit** any saved transaction: description, amount, date, from/to user, expense items, and receipt
+- **Edit** any saved transaction: description, notes, amount, date, from/to user, expense items, and receipt
+- **Notes field** — optional free-text notes on any transaction for longer context or justification; shown inline on all transaction lists and included in search
 - **Delete** any transaction (balances are automatically reversed)
 - **Month-by-month view** — transactions grouped by day with ◀ ▶ navigation and a month/year jump picker; defaults to the current month
 - **Search** — free-text search across descriptions and expense items; advanced filters for type, user, date range, amount range, and a "Has attachment / receipt" toggle; only active users appear in the user filter

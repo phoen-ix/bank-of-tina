@@ -117,14 +117,20 @@
                                 </form>
                             </td>
                         </tr>
-                        {% if trans.items %}
+                        {% if trans.items or trans.notes %}
                             <tr class="table-light">
                                 <td colspan="8">
                                     <small class="ms-4">
-                                        <strong>Items:</strong>
-                                        {% for item in trans.items %}
-                                            {{ item.item_name }} (€{{ item.price|money }}){% if not loop.last %}, {% endif %}
-                                        {% endfor %}
+                                        {% if trans.items %}
+                                            <strong>Items:</strong>
+                                            {% for item in trans.items %}
+                                                {{ item.item_name }} (€{{ item.price|money }}){% if not loop.last %}, {% endif %}
+                                            {% endfor %}
+                                        {% endif %}
+                                        {% if trans.notes %}
+                                            {% if trans.items %}&ensp;·&ensp;{% endif %}
+                                            <i class="bi bi-sticky"></i> <span class="fst-italic text-muted">{{ trans.notes }}</span>
+                                        {% endif %}
                                     </small>
                                 </td>
                             </tr>

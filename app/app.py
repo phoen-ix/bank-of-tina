@@ -124,6 +124,7 @@ class Transaction(db.Model):
     to_user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     transaction_type = db.Column(db.String(50))  # 'transfer', 'deposit', 'withdrawal', 'expense'
     receipt_path = db.Column(db.String(500))
+    notes = db.Column(db.Text, nullable=True)
 
     from_user = db.relationship('User', foreign_keys=[from_user_id], backref='transactions_sent')
     to_user = db.relationship('User', foreign_keys=[to_user_id], backref='transactions_received')
@@ -898,8 +899,12 @@ def _migrate_db():
                 conn.execute(db.text(f'ALTER TABLE user ADD COLUMN {col} {definition}'))
                 conn.commit()
             except Exception:
-                # Column already exists — safe to ignore
                 pass
+        try:
+            conn.execute(db.text('ALTER TABLE `transaction` ADD COLUMN notes TEXT'))
+            conn.commit()
+        except Exception:
+            pass
 
 
 def _restore_schedule():
@@ -1050,6 +1055,7 @@ def add_transaction():
     transaction_type = request.form.get('transaction_type')
 
     submitted_date = parse_submitted_date(request.form.get('date', ''))
+    notes = request.form.get('notes', '').strip() or None
 
     if transaction_type == 'deposit':
         user_id = int(request.form.get('user_id'))
@@ -1061,7 +1067,8 @@ def add_transaction():
             amount=amount,
             to_user_id=user_id,
             transaction_type='deposit',
-            date=submitted_date
+            date=submitted_date,
+            notes=notes
         )
         db.session.add(transaction)
         update_balance(user_id, amount)
@@ -1077,7 +1084,8 @@ def add_transaction():
             amount=amount,
             from_user_id=user_id,
             transaction_type='withdrawal',
-            date=submitted_date
+            date=submitted_date,
+            notes=notes
         )
         db.session.add(transaction)
         update_balance(user_id, -amount)
@@ -1114,7 +1122,8 @@ def add_transaction():
                     to_user_id=buyer_id,
                     transaction_type='expense',
                     receipt_path=receipt_path,
-                    date=submitted_date
+                    date=submitted_date,
+                    notes=notes
                 )
                 db.session.add(transaction)
 
@@ -1198,6 +1207,7 @@ def search():
             qry = qry.filter(
                 db.or_(
                     Transaction.description.ilike(f'%{q}%'),
+                    Transaction.notes.ilike(f'%{q}%'),
                     Transaction.items.any(ExpenseItem.item_name.ilike(f'%{q}%'))
                 )
             )
@@ -1280,6 +1290,7 @@ def edit_transaction(transaction_id):
 
     # Update basic fields
     trans.description = request.form.get('description', trans.description).strip()
+    trans.notes = request.form.get('notes', '').strip() or None
 
     date_str = request.form.get('date', '').strip()
     if date_str:
