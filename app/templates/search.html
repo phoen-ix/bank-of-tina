@@ -100,7 +100,7 @@
                     <tbody>
                         {% for trans in results %}
                         <tr>
-                            <td class="text-nowrap">{{ trans.date.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td class="text-nowrap">{{ trans.date | localdt('%Y-%m-%d %H:%M') }}</td>
                             <td>
                                 <span class="badge
                                     {% if trans.transaction_type == 'deposit' %}bg-success

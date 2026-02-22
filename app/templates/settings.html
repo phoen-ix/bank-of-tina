@@ -70,6 +70,22 @@
                             Set to 0 to hide the section entirely.
                         </div>
                     </div>
+                    <div class="mb-4">
+                        <label for="timezone" class="form-label">Timezone</label>
+                        <select class="form-select" id="timezone" name="timezone" style="max-width: 360px">
+                            {% for region, zones in timezone_groups.items() %}
+                            <optgroup label="{{ region }}">
+                                {% for tz in zones %}
+                                <option value="{{ tz }}" {% if cfg.timezone == tz %}selected{% endif %}>
+                                    {{ tz }}
+                                </option>
+                                {% endfor %}
+                            </optgroup>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Used for displaying all dates and times throughout the app.</div>
+                    </div>
+
                     <hr>
 
                     <div class="mb-3">

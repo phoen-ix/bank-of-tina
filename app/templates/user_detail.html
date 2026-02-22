@@ -74,7 +74,7 @@
                                         {{ trans.transaction_type }}
                                     </span>
                                 </h6>
-                                <small class="text-muted">{{ trans.date.strftime('%Y-%m-%d %H:%M') }}</small>
+                                <small class="text-muted">{{ trans.date | localdt('%Y-%m-%d %H:%M') }}</small>
                             </div>
                             <p class="mb-1">
                                 {% if trans.from_user and trans.from_user.id == user.id %}

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, g
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from werkzeug.utils import secure_filename
@@ -11,6 +11,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from apscheduler.schedulers.background import BackgroundScheduler
 import atexit
+import pytz
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'change-this-to-a-random-secret-key'
@@ -291,6 +292,32 @@ def _restore_schedule():
     if get_setting('schedule_enabled') == '1':
         _add_email_job()
 
+# Timezone helpers
+def get_app_tz():
+    """Return the configured pytz timezone, cached for the duration of the request."""
+    if 'app_tz' not in g:
+        tz_name = get_setting('timezone', 'UTC')
+        try:
+            g.app_tz = pytz.timezone(tz_name)
+        except pytz.exceptions.UnknownTimeZoneError:
+            g.app_tz = pytz.UTC
+    return g.app_tz
+
+def to_local(dt):
+    """Convert a naive UTC datetime to the configured local timezone."""
+    if dt is None:
+        return dt
+    if dt.tzinfo is None:
+        dt = pytz.utc.localize(dt)
+    return dt.astimezone(get_app_tz())
+
+@app.template_filter('localdt')
+def localdt_filter(dt, fmt='%Y-%m-%d %H:%M'):
+    if dt is None:
+        return ''
+    return to_local(dt).strftime(fmt)
+
+
 # Routes
 @app.route('/')
 def index():
@@ -470,7 +497,7 @@ def view_transactions():
 
     by_day = defaultdict(list)
     for t in transactions:
-        by_day[t.date.date()].append(t)
+        by_day[to_local(t.date).date()].append(t)
     grouped = sorted(by_day.items(), reverse=True)
 
     prev_month = month - 1 or 12
@@ -697,10 +724,16 @@ def settings():
         'recent_transactions_count': get_setting('recent_transactions_count', '5'),
         'email_enabled': get_setting('email_enabled', '1'),
         'email_debug': get_setting('email_debug', '0'),
+        'timezone': get_setting('timezone', 'UTC'),
     }
     common_items = CommonItem.query.order_by(CommonItem.name).all()
     all_users = User.query.order_by(User.name).all()
-    return render_template('settings.html', cfg=cfg, common_items=common_items, all_users=all_users)
+    timezone_groups = {}
+    for tz in pytz.common_timezones:
+        region = tz.split('/')[0]
+        timezone_groups.setdefault(region, []).append(tz)
+    return render_template('settings.html', cfg=cfg, common_items=common_items,
+                           all_users=all_users, timezone_groups=timezone_groups)
 
 @app.route('/settings/email', methods=['POST'])
 def settings_email():
@@ -769,6 +802,9 @@ def settings_general():
     set_setting('email_enabled', email_enabled)
     email_debug = '1' if request.form.get('email_debug') else '0'
     set_setting('email_debug', email_debug)
+    timezone = request.form.get('timezone', 'UTC')
+    if timezone in pytz.common_timezones:
+        set_setting('timezone', timezone)
     flash('General settings saved.', 'success')
     return redirect(url_for('settings'))
 

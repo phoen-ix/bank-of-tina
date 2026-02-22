@@ -61,7 +61,7 @@
                         <div class="list-group-item">
                             <div class="d-flex w-100 justify-content-between">
                                 <h6 class="mb-1">{{ trans.description }}</h6>
-                                <small class="text-muted">{{ trans.date.strftime('%Y-%m-%d %H:%M') }}</small>
+                                <small class="text-muted">{{ trans.date | localdt('%Y-%m-%d %H:%M') }}</small>
                             </div>
                             <p class="mb-1">
                                 <span class="badge bg-info">{{ trans.transaction_type }}</span>
