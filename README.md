@@ -11,6 +11,7 @@ A lightweight, self-hosted web application for managing shared expenses and bala
 - Real-time balance tracking for every user
 - Deactivate users (hidden from dashboard, manageable from Settings)
 - Full transaction history per user
+- **Per-user email preferences** — opt in/out of the weekly balance email individually; choose how much transaction history to include (`Last 3`, `This week`, `This month`, or `None`)
 
 ### Transactions
 - **Expense** — record who paid and assign items to individuals
@@ -87,13 +88,15 @@ The Settings page is split into six tabs:
 | **Common** | Global autocomplete toggle; manually manage item names, descriptions, and prices (each with its own blacklist); configure the auto-collect scheduled job and view its debug log |
 | **Backup** | Create/download/delete backups; restore from any backup or an uploaded file; configure an automatic backup schedule with auto-prune; backup status email to site admin (scheduled runs only); debug log |
 | **Templates** | Color palette + preset themes; editable subjects and body text for all three email types (balance, admin summary, backup status); preview buttons for each email |
-| **Users** | Add new users; view all users with their status and balance; deactivate or reactivate any user |
+| **Users** | Add new users (including email opt-in and transaction scope preferences); view all users with their status and balance; deactivate or reactivate any user |
 
 ### Email Notifications
 - SMTP credentials are stored securely in the database (configured via Settings → Email)
 - **Send Now** button to immediately email all active users their current balance
 - **Auto-schedule** — pick a day and time (24 h clock); the schedule survives container restarts
-- **Admin summary email** — when a site admin is configured (Settings → General), an optional extra email is sent to them after each run with a colour-coded balance overview of all active users
+- **Per-user opt-in** — users can be set to opt out of the weekly email; opted-out users are skipped on every send (manual and scheduled)
+- **Per-user transaction scope** — each user's email includes their choice of: last 3 transactions, all transactions this week, all transactions this month, or no transaction history at all
+- **Admin summary email** — when a site admin is configured (Settings → General), an optional extra email is sent to them after each run with a colour-coded balance overview of *all* active users (regardless of individual opt-in status)
 - Standalone `send_weekly_email.py` script still works via environment variables if needed
 
 ---
@@ -137,7 +140,9 @@ That's it. SMTP credentials and the email schedule are configured from the **Set
 ## 📱 Usage Guide
 
 ### Adding Users
-1. **Settings** → **Users** tab → fill in name and email → **Add**
+1. **Settings** → **Users** tab → fill in name and email
+2. Set **Weekly email report** (toggle on/off) and **Include in email** (transaction scope)
+3. **Add**
 
 ### Recording an Expense
 1. **Add Transaction** → **Expense** tab
@@ -193,6 +198,7 @@ That's it. SMTP credentials and the email schedule are configured from the **Set
 1. **Settings** → **Users** tab
 2. All users are listed with their status (Active / Inactive) and current balance
 3. Click **Deactivate** to hide a user from the dashboard, or **Reactivate** to restore them
+4. Click a user's name to open their detail page, then **Edit User** to change their name, email, member-since date, or email preferences
 
 ---
 

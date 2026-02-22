@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, g, abort
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 import os
 import re
@@ -107,6 +107,9 @@ class User(db.Model):
     balance = db.Column(db.Float, default=0.0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_active = db.Column(db.Boolean, default=True)
+    email_opt_in = db.Column(db.Boolean, default=True)
+    email_transactions = db.Column(db.String(20), default='last3')
+    # email_transactions values: 'none' | 'last3' | 'this_week' | 'this_month'
 
     def __repr__(self):
         return f'<User {self.name}>'
@@ -278,9 +281,34 @@ def inject_theme():
 
 # Email logic
 def build_email_html(user):
-    recent_transactions = Transaction.query.filter(
-        (Transaction.from_user_id == user.id) | (Transaction.to_user_id == user.id)
-    ).order_by(Transaction.date.desc()).limit(10).all()
+    tx_pref = user.email_transactions  # 'none' | 'last3' | 'this_week' | 'this_month'
+
+    if tx_pref == 'none':
+        recent_transactions = []
+        show_tx_section = False
+    else:
+        show_tx_section = True
+        base_q = Transaction.query.filter(
+            (Transaction.from_user_id == user.id) | (Transaction.to_user_id == user.id)
+        ).order_by(Transaction.date.desc())
+
+        if tx_pref == 'last3':
+            recent_transactions = base_q.limit(3).all()
+        elif tx_pref == 'this_week':
+            local_tz = pytz.timezone(get_setting('timezone', 'UTC'))
+            now_lt = datetime.now(local_tz)
+            week_start = (now_lt - timedelta(days=now_lt.weekday())).replace(
+                            hour=0, minute=0, second=0, microsecond=0)
+            week_start_utc = week_start.astimezone(pytz.UTC).replace(tzinfo=None)
+            recent_transactions = base_q.filter(Transaction.date >= week_start_utc).all()
+        elif tx_pref == 'this_month':
+            local_tz = pytz.timezone(get_setting('timezone', 'UTC'))
+            now_lt = datetime.now(local_tz)
+            month_start = now_lt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            month_start_utc = month_start.astimezone(pytz.UTC).replace(tzinfo=None)
+            recent_transactions = base_q.filter(Transaction.date >= month_start_utc).all()
+        else:
+            recent_transactions = base_q.limit(3).all()
 
     if user.balance < 0:
         balance_class = "color: #dc3545;"
@@ -292,44 +320,62 @@ def build_email_html(user):
         balance_class = "color: #6c757d;"
         balance_status = "Your balance is settled"
 
-    transactions_html = ""
-    if recent_transactions:
-        for trans in recent_transactions:
-            if trans.from_user_id == user.id:
-                direction = "→"
-                other_user = trans.to_user.name if trans.to_user else "System"
-                amount_class = "color: #dc3545;"
-                amount_sign = "-"
-            else:
-                direction = "←"
-                other_user = trans.from_user.name if trans.from_user else "System"
-                amount_class = "color: #28a745;"
-                amount_sign = "+"
+    transactions_section_html = ""
+    if show_tx_section:
+        transactions_html = ""
+        if recent_transactions:
+            for trans in recent_transactions:
+                if trans.from_user_id == user.id:
+                    direction = "→"
+                    other_user = trans.to_user.name if trans.to_user else "System"
+                    amount_class = "color: #dc3545;"
+                    amount_sign = "-"
+                else:
+                    direction = "←"
+                    other_user = trans.from_user.name if trans.from_user else "System"
+                    amount_class = "color: #28a745;"
+                    amount_sign = "+"
 
-            transactions_html += f"""
+                transactions_html += f"""
+                <tr>
+                    <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">
+                        {trans.date.strftime('%Y-%m-%d')}
+                    </td>
+                    <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">
+                        {trans.description}
+                    </td>
+                    <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">
+                        {direction} {other_user}
+                    </td>
+                    <td style="padding: 8px; border-bottom: 1px solid #dee2e6; text-align: right; {amount_class}">
+                        {amount_sign}€{trans.amount:.2f}
+                    </td>
+                </tr>
+                """
+        else:
+            transactions_html = """
             <tr>
-                <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">
-                    {trans.date.strftime('%Y-%m-%d')}
-                </td>
-                <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">
-                    {trans.description}
-                </td>
-                <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">
-                    {direction} {other_user}
-                </td>
-                <td style="padding: 8px; border-bottom: 1px solid #dee2e6; text-align: right; {amount_class}">
-                    {amount_sign}€{trans.amount:.2f}
+                <td colspan="4" style="padding: 16px; text-align: center; color: #6c757d;">
+                    No recent transactions
                 </td>
             </tr>
             """
-    else:
-        transactions_html = """
-        <tr>
-            <td colspan="4" style="padding: 16px; text-align: center; color: #6c757d;">
-                No recent transactions
-            </td>
-        </tr>
-        """
+
+        transactions_section_html = f"""
+            <h3 style="color: #495057; margin-top: 30px;">Recent Transactions</h3>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                <thead>
+                    <tr style="background: #f8f9fa;">
+                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">Date</th>
+                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">Description</th>
+                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">With</th>
+                        <th style="padding: 10px; text-align: right; border-bottom: 2px solid #dee2e6;">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {transactions_html}
+                </tbody>
+            </table>"""
 
     grad_start = get_tpl('color_email_grad_start')
     grad_end   = get_tpl('color_email_grad_end')
@@ -369,20 +415,7 @@ def build_email_html(user):
                 <p style="margin: 10px 0 0 0; {balance_class}">{balance_status}</p>
             </div>
 
-            <h3 style="color: #495057; margin-top: 30px;">Recent Transactions</h3>
-            <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
-                <thead>
-                    <tr style="background: #f8f9fa;">
-                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">Date</th>
-                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">Description</th>
-                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">With</th>
-                        <th style="padding: 10px; text-align: right; border-bottom: 2px solid #dee2e6;">Amount</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {transactions_html}
-                </tbody>
-            </table>
+            {transactions_section_html}
 
             <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6; text-align: center; color: #6c757d; font-size: 14px;">
                 {footer1_html}
@@ -480,12 +513,13 @@ def send_all_emails():
     if get_setting('email_enabled', '1') != '1':
         return 0, 0, ['Email sending is disabled in General settings.']
 
-    users = User.query.filter_by(is_active=True).all()
+    all_active_users = User.query.filter_by(is_active=True).all()
+    opted_in_users   = [u for u in all_active_users if u.email_opt_in]
     success, fail = 0, 0
     errors = []
     debug = get_setting('email_debug', '0') == '1'
     subject = apply_template(get_tpl('tpl_email_subject'), Date=now_local().strftime('%Y-%m-%d'))
-    for user in users:
+    for user in opted_in_users:
         html = build_email_html(user)
         ok, err = send_single_email(user.email, user.name, subject, html)
         if ok:
@@ -502,15 +536,15 @@ def send_all_emails():
                                         recipient=f'{user.name} <{user.email}>',
                                         message=err or 'Unknown error'))
 
-    # Admin summary email
+    # Admin summary email — always uses all active users regardless of opt-in
     admin_id = get_setting('site_admin_id', '')
     if get_setting('admin_summary_email', '0') == '1' and admin_id:
         admin = User.query.get(int(admin_id)) if admin_id.isdigit() else None
         if admin:
             summary_subject = apply_template(get_tpl('tpl_admin_subject'),
                                              Date=now_local().strftime('%Y-%m-%d'),
-                                             UserCount=len(users))
-            summary_html = build_admin_summary_email(users)
+                                             UserCount=len(all_active_users))
+            summary_html = build_admin_summary_email(all_active_users)
             ok, err = send_single_email(admin.email, admin.name, summary_subject, summary_html)
             if debug:
                 if ok:
@@ -831,6 +865,21 @@ def _add_backup_job():
                       timezone=tz, id='backup_job', replace_existing=True)
 
 
+def _migrate_db():
+    """Add any new columns to existing tables that db.create_all() won't add."""
+    with db.engine.connect() as conn:
+        for col, definition in [
+            ('email_opt_in',       'BOOLEAN NOT NULL DEFAULT 1'),
+            ('email_transactions', "VARCHAR(20) NOT NULL DEFAULT 'last3'"),
+        ]:
+            try:
+                conn.execute(db.text(f'ALTER TABLE user ADD COLUMN {col} {definition}'))
+                conn.commit()
+            except Exception:
+                # Column already exists — safe to ignore
+                pass
+
+
 def _restore_schedule():
     if get_setting('schedule_enabled') == '1':
         _add_email_job()
@@ -888,6 +937,8 @@ def index():
     recent = Transaction.query.order_by(Transaction.date.desc()).limit(count).all() if count else []
     return render_template('index.html', users=users, transactions=recent, show_recent=count > 0)
 
+VALID_EMAIL_TX = {'none', 'last3', 'this_week', 'this_month'}
+
 @app.route('/user/add', methods=['POST'])
 def add_user():
     name = request.form.get('name')
@@ -901,7 +952,14 @@ def add_user():
         flash('User already exists!', 'error')
         return redirect(url_for('settings'))
 
-    user = User(name=name, email=email)
+    email_opt_in = request.form.get('email_opt_in') == '1'
+    email_transactions = request.form.get('email_transactions', 'last3')
+    if email_transactions not in VALID_EMAIL_TX:
+        email_transactions = 'last3'
+
+    user = User(name=name, email=email,
+                email_opt_in=email_opt_in,
+                email_transactions=email_transactions)
     db.session.add(user)
     db.session.commit()
     flash(f'User {name} added successfully!', 'success')
@@ -936,6 +994,11 @@ def edit_user(user_id):
 
     user.name = name
     user.email = email
+    user.email_opt_in = request.form.get('email_opt_in') == '1'
+    email_transactions = request.form.get('email_transactions', 'last3')
+    if email_transactions not in VALID_EMAIL_TX:
+        email_transactions = 'last3'
+    user.email_transactions = email_transactions
     db.session.commit()
     flash('User updated successfully!', 'success')
     return redirect(url_for('user_detail', user_id=user_id))
@@ -1885,6 +1948,7 @@ def backup_restore(filename):
 # Initialize database
 with app.app_context():
     db.create_all()
+    _migrate_db()
     _restore_schedule()
 
 scheduler.start()

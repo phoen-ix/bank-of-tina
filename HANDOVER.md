@@ -64,7 +64,7 @@ bank-of-tina/
 
 | Model | Key fields | Notes |
 |-------|-----------|-------|
-| `User` | `id`, `name`, `email`, `balance` (Float), `is_active` | Deactivated users are hidden from dashboard/search filter |
+| `User` | `id`, `name`, `email`, `balance` (Float), `is_active`, `email_opt_in` (Bool, default `True`), `email_transactions` (String, default `'last3'`) | Deactivated users are hidden from dashboard/search filter; `email_opt_in` controls whether the weekly email is sent; `email_transactions` values: `'none'` \| `'last3'` \| `'this_week'` \| `'this_month'` |
 | `Transaction` | `id`, `date`, `description`, `amount`, `from_user_id`, `to_user_id`, `transaction_type`, `receipt_path` | Types: `expense`, `deposit`, `withdrawal`, `transfer` |
 | `ExpenseItem` | `id`, `transaction_id`, `item_name`, `price`, `buyer_id` | Child rows of an expense transaction |
 | `Setting` | `key` (PK), `value` | Key/value store for all configuration |
@@ -76,7 +76,7 @@ bank-of-tina/
 | `EmailLog` | `id`, `sent_at`, `level`, `recipient`, `message` | Capped at 500 rows |
 | `BackupLog` | `id`, `ran_at`, `level`, `message` | Capped at 500 rows |
 
-**No migration system** — schema is created by `db.create_all()` inside `with app.app_context()` at startup. Adding a new column requires either a manual `ALTER TABLE` or a full restore.
+Schema is created by `db.create_all()` at startup. A lightweight `_migrate_db()` function (called immediately after `db.create_all()`) issues `ALTER TABLE … ADD COLUMN` for any columns added since initial install, swallowing duplicate-column errors. New columns must be registered there for existing installs to pick them up automatically.
 
 ---
 
@@ -196,11 +196,21 @@ Three email types, each with editable subject + body via the Templates tab:
 
 | Function | Recipient | Triggered by |
 |----------|-----------|-------------|
-| `build_email_html(user)` | Individual active users | Manual "Send Now" or auto-schedule |
+| `build_email_html(user)` | Individual opted-in active users | Manual "Send Now" or auto-schedule |
 | `build_admin_summary_email(users)` | Site admin | After each email run, if `admin_summary_email=1` |
 | `build_backup_status_email(ok, result, kept, pruned)` | Site admin | After each **scheduled** backup only |
 
 `send_single_email(to_email, to_name, subject, html)` handles the SMTP connection. All subjects and body fields go through `apply_template()` with the appropriate placeholder dict.
+
+**Per-user email preferences** (stored on `User`):
+- `email_opt_in` — if `False`, the user is skipped entirely during `send_all_emails()`. The admin summary always uses *all* active users regardless of opt-in.
+- `email_transactions` — controls what `build_email_html()` includes in the "Recent Transactions" section:
+  - `'none'` — section is omitted entirely from the HTML
+  - `'last3'` — last 3 transactions (`.limit(3)`)
+  - `'this_week'` — all transactions since Monday 00:00 in the configured timezone (converted to UTC for the DB query)
+  - `'this_month'` — all transactions since the 1st of the current month 00:00 (same UTC conversion)
+
+The constant `VALID_EMAIL_TX = {'none', 'last3', 'this_week', 'this_month'}` is defined at module level; both `add_user` and `edit_user` validate the submitted value against it and fall back to `'last3'` if invalid.
 
 **Placeholders by email type:**
 
@@ -256,13 +266,13 @@ Route: `GET /search` — parameters: `q`, `type`, `user`, `date_from`, `date_to`
 
 ## Common Gotchas
 
-- **No DB migrations** — adding a column requires `ALTER TABLE` or a full backup/restore cycle.
+- **Adding a new column** — add it to the model *and* register an `ALTER TABLE` entry in `_migrate_db()` so existing installs pick it up automatically on the next container start.
 - **`datetime.now()` is UTC in Docker** — always use `now_local()` for display or filenames, never `datetime.now()` directly.
 - **Balance is stored, not derived** — never recalculate from transactions; mutate `user.balance` carefully.
 - **`/uploads` is a bind-mount** — cannot `rmtree` the directory itself; clear its contents only.
 - **Scheduler jobs need `with app.app_context()`** — background jobs have no Flask request context.
 - **Single gunicorn worker** — the in-process APScheduler only works correctly with 1 worker. Scaling requires moving to a proper task queue.
-- **`db.create_all()` is idempotent** but won't add columns to existing tables.
+- **`db.create_all()` is idempotent** but won't add columns to existing tables — that's what `_migrate_db()` is for.
 
 ---
 
@@ -279,6 +289,7 @@ All features are fully implemented and committed. Recent work in order:
 7. Search: active-users-only filter, has-receipt toggle
 8. Edit transaction: receipt upload / replace / remove
 9. `.dockerignore` updated (excludes `backups/`, `mariadb-data/`, `*.tar.gz`)
+10. **Per-user email preferences** — `email_opt_in` and `email_transactions` fields on `User`; `_migrate_db()` for existing installs; opt-in filtering in `send_all_emails()`; preference-driven transaction query in `build_email_html()`; controls in Add User form (settings.html) and Edit User modal (user_detail.html)
 
 ---
 

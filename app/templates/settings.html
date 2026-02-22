@@ -1202,16 +1202,35 @@
             </div>
             <div class="card-body">
                 <form method="POST" action="{{ url_for('add_user') }}" class="row g-3">
-                    <div class="col-sm-5">
+                    <div class="col-sm-6">
                         <label for="new_user_name" class="form-label">Name</label>
                         <input type="text" class="form-control" id="new_user_name" name="name" required>
                     </div>
-                    <div class="col-sm-5">
+                    <div class="col-sm-6">
                         <label for="new_user_email" class="form-label">Email</label>
                         <input type="email" class="form-control" id="new_user_email" name="email" required>
                     </div>
-                    <div class="col-sm-2 d-flex align-items-end">
-                        <button type="submit" class="btn btn-primary w-100">
+                    <div class="col-sm-12 col-md-6">
+                        <label class="form-label">Weekly email report</label>
+                        <div class="form-check form-switch mt-1">
+                            <input class="form-check-input" type="checkbox" name="email_opt_in"
+                                   value="1" id="new_user_email_opt_in" checked>
+                            <label class="form-check-label" for="new_user_email_opt_in">
+                                Send weekly balance email
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-sm-12 col-md-6">
+                        <label for="new_user_email_transactions" class="form-label">Include in email</label>
+                        <select class="form-select" name="email_transactions" id="new_user_email_transactions">
+                            <option value="none">No transactions</option>
+                            <option value="last3" selected>Last 3 transactions</option>
+                            <option value="this_week">Transactions this week</option>
+                            <option value="this_month">Transactions this month</option>
+                        </select>
+                    </div>
+                    <div class="col-sm-12">
+                        <button type="submit" class="btn btn-primary">
                             <i class="bi bi-plus-circle"></i> Add
                         </button>
                     </div>
