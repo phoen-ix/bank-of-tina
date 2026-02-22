@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}{{ user.name }} - Bank of Tina{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white">
+                <i class="bi bi-person-circle"></i> {{ user.name }}
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Email:</dt>
+                    <dd class="col-sm-8">{{ user.email }}</dd>
+                    
+                    <dt class="col-sm-4">Balance:</dt>
+                    <dd class="col-sm-8">
+                        <h4 class="mb-0 {% if user.balance >= 0 %}balance-positive{% else %}balance-negative{% endif %}">
+                            €{{ "%.2f"|format(user.balance) }}
+                        </h4>
+                    </dd>
+                    
+                    <dt class="col-sm-4">Member since:</dt>
+                    <dd class="col-sm-8">{{ user.created_at.strftime('%Y-%m-%d') }}</dd>
+                </dl>
+                
+                {% if user.balance < 0 %}
+                    <div class="alert alert-warning mt-3 mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> This user needs to add €{{ "%.2f"|format(-user.balance) }} to balance their account.
+                    </div>
+                {% elif user.balance > 0 %}
+                    <div class="alert alert-success mt-3 mb-0">
+                        <i class="bi bi-check-circle"></i> This user is owed €{{ "%.2f"|format(user.balance) }}.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-clock-history"></i> Transaction History
+            </div>
+            <div class="card-body">
+                {% if transactions %}
+                    <div class="list-group">
+                        {% for trans in transactions %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">
+                                    {{ trans.description }}
+                                    <span class="badge 
+                                        {% if trans.transaction_type == 'deposit' %}bg-success
+                                        {% elif trans.transaction_type == 'withdrawal' %}bg-danger
+                                        {% elif trans.transaction_type == 'expense' %}bg-primary
+                                        {% else %}bg-secondary{% endif %}">
+                                        {{ trans.transaction_type }}
+                                    </span>
+                                </h6>
+                                <small class="text-muted">{{ trans.date.strftime('%Y-%m-%d %H:%M') }}</small>
+                            </div>
+                            <p class="mb-1">
+                                {% if trans.from_user and trans.from_user.id == user.id %}
+                                    <span class="text-danger">
+                                        <i class="bi bi-arrow-up"></i> Paid €{{ "%.2f"|format(trans.amount) }}
+                                    </span>
+                                    {% if trans.to_user %}
+                                        to <strong>{{ trans.to_user.name }}</strong>
+                                    {% endif %}
+                                {% elif trans.to_user and trans.to_user.id == user.id %}
+                                    <span class="text-success">
+                                        <i class="bi bi-arrow-down"></i> Received €{{ "%.2f"|format(trans.amount) }}
+                                    </span>
+                                    {% if trans.from_user %}
+                                        from <strong>{{ trans.from_user.name }}</strong>
+                                    {% endif %}
+                                {% endif %}
+                            </p>
+                            {% if trans.items %}
+                                <small class="text-muted">
+                                    <strong>Items:</strong>
+                                    {% for item in trans.items %}
+                                        {{ item.item_name }} (€{{ "%.2f"|format(item.price) }}){% if not loop.last %}, {% endif %}
+                                    {% endfor %}
+                                </small>
+                            {% endif %}
+                            {% if trans.receipt_path %}
+                                <div class="mt-2">
+                                    <a href="{{ url_for('view_receipt', filename=trans.receipt_path) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-paperclip"></i> View Receipt
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">No transactions yet for this user.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-3">
+    <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Dashboard
+    </a>
+</div>
+{% endblock %}

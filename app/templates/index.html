@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-people"></i> User Balances</span>
+                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                    <i class="bi bi-plus-circle"></i> Add User
+                </button>
+            </div>
+            <div class="card-body">
+                {% if users %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th class="text-end">Balance</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('user_detail', user_id=user.id) }}" class="text-decoration-none">
+                                            <strong>{{ user.name }}</strong>
+                                        </a>
+                                    </td>
+                                    <td>{{ user.email }}</td>
+                                    <td class="text-end">
+                                        <span class="{% if user.balance >= 0 %}balance-positive{% else %}balance-negative{% endif %}">
+                                            <strong>€{{ "%.2f"|format(user.balance) }}</strong>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('user_detail', user_id=user.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i> View
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">No users yet. Add your first user to get started!</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-clock-history"></i> Recent Transactions
+            </div>
+            <div class="card-body">
+                {% if transactions %}
+                    <div class="list-group">
+                        {% for trans in transactions %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ trans.description }}</h6>
+                                <small class="text-muted">{{ trans.date.strftime('%Y-%m-%d %H:%M') }}</small>
+                            </div>
+                            <p class="mb-1">
+                                <span class="badge bg-info">{{ trans.transaction_type }}</span>
+                                {% if trans.from_user %}
+                                    <strong>{{ trans.from_user.name }}</strong>
+                                {% endif %}
+                                {% if trans.to_user %}
+                                    → <strong>{{ trans.to_user.name }}</strong>
+                                {% endif %}
+                                <span class="text-success ms-2"><strong>€{{ "%.2f"|format(trans.amount) }}</strong></span>
+                            </p>
+                            {% if trans.receipt_path %}
+                                <small>
+                                    <i class="bi bi-paperclip"></i>
+                                    <a href="{{ url_for('view_receipt', filename=trans.receipt_path) }}" target="_blank">View Receipt</a>
+                                </small>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="mt-3 text-center">
+                        <a href="{{ url_for('view_transactions') }}" class="btn btn-outline-primary">
+                            View All Transactions
+                        </a>
+                    </div>
+                {% else %}
+                    <p class="text-muted">No transactions yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card mb-4 border-primary">
+            <div class="card-header bg-primary text-white">
+                <i class="bi bi-info-circle"></i> Quick Stats
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <i class="bi bi-people-fill text-primary"></i>
+                        <strong>Total Users:</strong> {{ users|length }}
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-cash-stack text-success"></i>
+                        <strong>Positive Balances:</strong> {{ users|selectattr('balance', 'gt', 0)|list|length }}
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-exclamation-triangle text-danger"></i>
+                        <strong>Negative Balances:</strong> {{ users|selectattr('balance', 'lt', 0)|list|length }}
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card border-success">
+            <div class="card-header bg-success text-white">
+                <i class="bi bi-plus-square"></i> Quick Actions
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('add_transaction') }}?type=expense" class="btn btn-outline-primary">
+                        <i class="bi bi-receipt"></i> Record Expense
+                    </a>
+                    <a href="{{ url_for('add_transaction') }}?type=deposit" class="btn btn-outline-success">
+                        <i class="bi bi-arrow-down-circle"></i> Add Money
+                    </a>
+                    <a href="{{ url_for('add_transaction') }}?type=withdrawal" class="btn btn-outline-danger">
+                        <i class="bi bi-arrow-up-circle"></i> Withdraw Money
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add User Modal -->
+<div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('add_user') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

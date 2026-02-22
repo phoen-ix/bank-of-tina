@@ -1,0 +1,12 @@
+.env
+.env.example
+README.md
+uploads/
+database/
+*.db
+*.pyc
+__pycache__/
+.git/
+.gitignore
+docker-compose.yml
+send_emails.sh
