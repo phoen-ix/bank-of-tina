@@ -16,9 +16,6 @@ COPY app/ .
 # Create necessary directories
 RUN mkdir -p /uploads /database /backups
 
-# Make the email script executable
-RUN chmod +x send_weekly_email.py
-
 # Expose port
 EXPOSE 5000
 
