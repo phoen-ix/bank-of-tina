@@ -214,6 +214,22 @@ def save_receipt(file, buyer_name):
     return f"{rel_dir}/{filename}"
 
 
+def delete_receipt_file(receipt_path, exclude_transaction_id):
+    """Delete a receipt file from disk only if no other transaction still references it."""
+    if not receipt_path:
+        return
+    others = Transaction.query.filter(
+        Transaction.receipt_path == receipt_path,
+        Transaction.id != exclude_transaction_id
+    ).first()
+    if others:
+        return  # still in use — only unlink the current transaction, don't touch the file
+    abs_path = os.path.join(app.config['UPLOAD_FOLDER'], receipt_path)
+    try:
+        os.remove(abs_path)
+    except OSError:
+        pass
+
 def update_balance(user_id, amount):
     user = User.query.get(user_id)
     if user:
@@ -1349,23 +1365,14 @@ def edit_transaction(transaction_id):
 
     # Receipt: remove first, then upload (upload wins if both submitted)
     if request.form.get('remove_receipt'):
-        if trans.receipt_path:
-            abs_path = os.path.join(app.config['UPLOAD_FOLDER'], trans.receipt_path)
-            try:
-                os.remove(abs_path)
-            except OSError:
-                pass
+        delete_receipt_file(trans.receipt_path, trans.id)
         trans.receipt_path = None
 
     new_file = request.files.get('receipt')
     if new_file and new_file.filename:
         # Delete old file if there was one and we're replacing it
         if trans.receipt_path:
-            abs_old = os.path.join(app.config['UPLOAD_FOLDER'], trans.receipt_path)
-            try:
-                os.remove(abs_old)
-            except OSError:
-                pass
+            delete_receipt_file(trans.receipt_path, trans.id)
         buyer = User.query.get(trans.from_user_id) if trans.from_user_id else None
         buyer_name = buyer.name if buyer else 'unknown'
         saved = save_receipt(new_file, buyer_name)
@@ -1391,6 +1398,7 @@ def delete_transaction(transaction_id):
         if to_user:
             to_user.balance -= trans.amount
 
+    delete_receipt_file(trans.receipt_path, trans.id)
     ExpenseItem.query.filter_by(transaction_id=trans.id).delete()
     db.session.delete(trans)
     db.session.commit()
