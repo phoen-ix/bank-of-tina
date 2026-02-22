@@ -280,13 +280,18 @@ def _add_email_job():
     day    = get_setting('schedule_day', 'mon')
     hour   = int(get_setting('schedule_hour', '9'))
     minute = int(get_setting('schedule_minute', '0'))
+    tz_name = get_setting('timezone', 'UTC')
+    try:
+        tz = pytz.timezone(tz_name)
+    except pytz.exceptions.UnknownTimeZoneError:
+        tz = pytz.UTC
 
     def job():
         with app.app_context():
             send_all_emails()
 
     scheduler.add_job(job, 'cron', day_of_week=day, hour=hour, minute=minute,
-                      id='email_job', replace_existing=True)
+                      timezone=tz, id='email_job', replace_existing=True)
 
 def _restore_schedule():
     if get_setting('schedule_enabled') == '1':
@@ -805,6 +810,8 @@ def settings_general():
     timezone = request.form.get('timezone', 'UTC')
     if timezone in pytz.common_timezones:
         set_setting('timezone', timezone)
+        if get_setting('schedule_enabled') == '1':
+            _add_email_job()
     flash('General settings saved.', 'success')
     return redirect(url_for('settings'))
 
