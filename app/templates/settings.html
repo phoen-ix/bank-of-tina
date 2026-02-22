@@ -116,6 +116,18 @@
                     </div>
 
                     <div class="mb-4">
+                        <label class="form-label">Dashboard</label>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="show_email_on_dashboard"
+                                   name="show_email_on_dashboard"
+                                   {% if cfg.show_email_on_dashboard == '1' %}checked{% endif %}>
+                            <label class="form-check-label" for="show_email_on_dashboard">
+                                Show email address in user balances table
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
                         <label for="site_admin_id" class="form-label">Site Admin</label>
                         <select class="form-select" id="site_admin_id" name="site_admin_id" style="max-width: 300px">
                             <option value="">— None —</option>
@@ -1420,8 +1432,9 @@ document.querySelectorAll('[data-bs-toggle="tab"]').forEach(btn => {
     });
 });
 
-// Restore on load
-activateTab(sessionStorage.getItem(STORAGE_KEY) || defaultTab);
+// Restore on load — honour ?tab= URL param first, then sessionStorage, then default
+const urlTab = new URLSearchParams(window.location.search).get('tab');
+activateTab(urlTab ? '#tab-' + urlTab : (sessionStorage.getItem(STORAGE_KEY) || defaultTab));
 
 // ── Templates: theme preset / color picker logic ───────────────────────────
 

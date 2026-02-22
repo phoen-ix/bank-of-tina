@@ -957,7 +957,9 @@ def index():
     users = User.query.filter_by(is_active=True).order_by(User.name).all()
     count = int(get_setting('recent_transactions_count', '5'))
     recent = Transaction.query.order_by(Transaction.date.desc()).limit(count).all() if count else []
-    return render_template('index.html', users=users, transactions=recent, show_recent=count > 0)
+    show_email = get_setting('show_email_on_dashboard', '0') == '1'
+    return render_template('index.html', users=users, transactions=recent, show_recent=count > 0,
+                           show_email=show_email)
 
 VALID_EMAIL_TX = {'none', 'last3', 'this_week', 'this_month'}
 
@@ -1247,7 +1249,7 @@ def user_detail(user_id):
     user = User.query.get_or_404(user_id)
     transactions = Transaction.query.filter(
         (Transaction.from_user_id == user_id) | (Transaction.to_user_id == user_id)
-    ).order_by(Transaction.date.desc()).all()
+    ).order_by(Transaction.date.desc()).limit(5).all()
     return render_template('user_detail.html', user=user, transactions=transactions)
 
 @app.route('/receipt/<path:filepath>')
@@ -1447,7 +1449,8 @@ def settings():
         'backup_hour':         get_setting('backup_hour',         '3'),
         'backup_minute':       get_setting('backup_minute',       '0'),
         'backup_keep':         get_setting('backup_keep',         '7'),
-        'decimal_separator':   get_setting('decimal_separator',   '.'),
+        'decimal_separator':         get_setting('decimal_separator',         '.'),
+        'show_email_on_dashboard':   get_setting('show_email_on_dashboard',   '0'),
     }
     common_items        = CommonItem.query.order_by(CommonItem.name).all()
     common_descriptions = CommonDescription.query.order_by(CommonDescription.value).all()
@@ -1557,6 +1560,7 @@ def settings_general():
     if sep not in ('.', ','):
         sep = '.'
     set_setting('decimal_separator', sep)
+    set_setting('show_email_on_dashboard', '1' if request.form.get('show_email_on_dashboard') else '0')
     flash('General settings saved.', 'success')
     return redirect(url_for('settings'))
 

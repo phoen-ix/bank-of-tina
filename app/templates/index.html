@@ -14,9 +14,8 @@
                             <thead>
                                 <tr>
                                     <th>Name</th>
-                                    <th>Email</th>
+                                    {% if show_email %}<th>Email</th>{% endif %}
                                     <th class="text-end">Balance</th>
-                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -27,16 +26,11 @@
                                             <strong>{{ user.name }}</strong>
                                         </a>
                                     </td>
-                                    <td>{{ user.email }}</td>
+                                    {% if show_email %}<td>{{ user.email }}</td>{% endif %}
                                     <td class="text-end">
                                         <span class="{% if user.balance >= 0 %}balance-positive{% else %}balance-negative{% endif %}">
                                             <strong>€{{ user.balance|money }}</strong>
                                         </span>
-                                    </td>
-                                    <td>
-                                        <a href="{{ url_for('user_detail', user_id=user.id) }}" class="btn btn-sm btn-outline-primary">
-                                            <i class="bi bi-eye"></i> View
-                                        </a>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -44,7 +38,7 @@
                         </table>
                     </div>
                 {% else %}
-                    <p class="text-muted">No users yet. <a href="{{ url_for('settings') }}">Add users from Settings → Users</a>.</p>
+                    <p class="text-muted">No users yet. <a href="{{ url_for('settings') }}?tab=users">Add users from Settings → Users</a>.</p>
                 {% endif %}
             </div>
         </div>

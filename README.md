@@ -10,7 +10,8 @@ A lightweight, self-hosted web application for managing shared expenses and bala
 - Add team members with name and email
 - Real-time balance tracking for every user
 - Deactivate users (hidden from dashboard, manageable from Settings)
-- Full transaction history per user
+- Dashboard shows Name and Balance; email column optional (Settings → General, default off)
+- User detail page shows the 5 most recent transactions; click a user's name on the dashboard to open it
 - **Per-user email preferences** — opt in/out of the weekly balance email individually; choose how much transaction history to include (`Last 3`, `This week`, `This month`, or `None`)
 
 ### Transactions
@@ -83,7 +84,7 @@ The Settings page is split into six tabs:
 
 | Tab | What you configure |
 |-----|--------------------|
-| **General** | Default number of blank item rows in the Add Transaction form; number of recent transactions shown on the dashboard (0 hides the section); timezone (applied to all displayed dates, email subjects, and backup filenames); **decimal separator** (period `1.99` or comma `1,99`) applied to all monetary display and input throughout the app; site admin (used for admin summary emails) |
+| **General** | Default number of blank item rows in the Add Transaction form; number of recent transactions shown on the dashboard (0 hides the section); timezone (applied to all displayed dates, email subjects, and backup filenames); **decimal separator** (period `1.99` or comma `1,99`) applied to all monetary display and input throughout the app; toggle to show/hide the email column on the dashboard; site admin (used for admin summary emails) |
 | **Email** | SMTP credentials; enable/disable email sending; debug mode (logs runs to DB, surfaces SMTP errors in the UI); admin summary email toggle; send balance emails on demand; set a recurring auto-schedule |
 | **Common** | Global autocomplete toggle; manually manage item names, descriptions, and prices (each with its own blacklist); configure the auto-collect scheduled job and view its debug log |
 | **Backup** | Create/download/delete backups; restore from any backup or an uploaded file; configure an automatic backup schedule with auto-prune; backup status email to site admin (scheduled runs only); debug log |
