@@ -270,21 +270,12 @@ def build_admin_summary_email(users):
     date_str = datetime.now().strftime('%Y-%m-%d')
     rows_html = ''
     for user in users:
-        if user.balance < 0:
-            color = '#dc3545'
-            label = f'owes €{abs(user.balance):.2f}'
-        elif user.balance > 0:
-            color = '#28a745'
-            label = f'is owed €{user.balance:.2f}'
-        else:
-            color = '#6c757d'
-            label = 'settled'
+        color = '#dc3545' if user.balance < 0 else ('#28a745' if user.balance > 0 else '#6c757d')
         rows_html += f"""
             <tr>
                 <td style="padding: 10px 8px; border-bottom: 1px solid #dee2e6;">{user.name}</td>
                 <td style="padding: 10px 8px; border-bottom: 1px solid #dee2e6; color: #6c757d; font-size: 0.9em;">{user.email}</td>
                 <td style="padding: 10px 8px; border-bottom: 1px solid #dee2e6; text-align: right; font-weight: bold; color: {color};">€{user.balance:.2f}</td>
-                <td style="padding: 10px 8px; border-bottom: 1px solid #dee2e6; color: {color};">{label}</td>
             </tr>"""
 
     return f"""<!DOCTYPE html>
@@ -303,7 +294,6 @@ def build_admin_summary_email(users):
                     <th style="padding: 10px 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Name</th>
                     <th style="padding: 10px 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Email</th>
                     <th style="padding: 10px 8px; text-align: right; border-bottom: 2px solid #dee2e6;">Balance</th>
-                    <th style="padding: 10px 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Status</th>
                 </tr>
             </thead>
             <tbody>{rows_html}

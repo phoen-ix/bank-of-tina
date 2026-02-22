@@ -96,7 +96,7 @@
                         <label for="site_admin_id" class="form-label">Site Admin</label>
                         <select class="form-select" id="site_admin_id" name="site_admin_id" style="max-width: 300px">
                             <option value="">— None —</option>
-                            {% for user in all_users %}
+                            {% for user in all_users if user.is_active %}
                             <option value="{{ user.id }}" {% if cfg.site_admin_id == user.id|string %}selected{% endif %}>
                                 {{ user.name }} ({{ user.email }})
                             </option>
