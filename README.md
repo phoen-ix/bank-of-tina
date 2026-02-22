@@ -100,7 +100,6 @@ The Settings page is split into six tabs:
 - **Per-user opt-in** — users can be set to opt out of the weekly email; opted-out users are skipped on every send (manual and scheduled)
 - **Per-user transaction scope** — each user's email includes their choice of: last 3 transactions, all transactions this week, all transactions this month, or no transaction history at all
 - **Admin summary email** — when a site admin is configured (Settings → General), an optional extra email is sent to them after each run with a colour-coded balance overview of *all* active users (regardless of individual opt-in status)
-- Standalone `send_weekly_email.py` script still works via environment variables if needed
 
 ---
 
@@ -211,7 +210,6 @@ That's it. SMTP credentials and the email schedule are configured from the **Set
 bank-of-tina/
 ├── app/
 │   ├── app.py                    # Flask application (routes, models, scheduler)
-│   ├── send_weekly_email.py      # Standalone email script (uses env vars)
 │   ├── templates/
 │   │   ├── base.html             # Shared layout with dynamic theme CSS
 │   │   ├── index.html            # Dashboard (active users only)

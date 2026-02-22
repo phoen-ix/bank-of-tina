@@ -36,7 +36,6 @@ This document gives a new Claude instance full context to continue development w
 bank-of-tina/
 ├── app/
 │   ├── app.py                    # Entire backend: models, routes, helpers, scheduler
-│   ├── send_weekly_email.py      # Standalone script (env-var driven, legacy)
 │   └── templates/
 │       ├── base.html             # Shared layout; injects dynamic theme CSS
 │       ├── index.html            # Dashboard (active users only)
