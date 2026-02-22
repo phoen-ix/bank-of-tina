@@ -92,6 +92,21 @@
                         <div class="form-text">Used for displaying all dates and times throughout the app.</div>
                     </div>
 
+                    <div class="mb-4">
+                        <label for="site_admin_id" class="form-label">Site Admin</label>
+                        <select class="form-select" id="site_admin_id" name="site_admin_id" style="max-width: 300px">
+                            <option value="">— None —</option>
+                            {% for user in all_users %}
+                            <option value="{{ user.id }}" {% if cfg.site_admin_id == user.id|string %}selected{% endif %}>
+                                {{ user.name }} ({{ user.email }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">
+                            Used to send an admin summary email after each email run. Select a user or leave blank to disable.
+                        </div>
+                    </div>
+
                     <button type="submit" class="btn btn-primary">
                         <i class="bi bi-floppy"></i> Save
                     </button>
@@ -163,7 +178,7 @@
                                 </div>
                             </div>
 
-                            <div class="mb-4">
+                            <div class="mb-3">
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" role="switch"
                                            id="email_debug" name="email_debug" value="1"
@@ -174,6 +189,25 @@
                                 </div>
                                 <div class="form-text">
                                     When on, every send run is written to the debug log below and SMTP errors are shown as flash notifications.
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch"
+                                           id="admin_summary_email" name="admin_summary_email" value="1"
+                                           {% if cfg.admin_summary_email == '1' %}checked{% endif %}
+                                           {% if not cfg.site_admin_id %}disabled{% endif %}>
+                                    <label class="form-check-label" for="admin_summary_email">
+                                        Send admin summary email
+                                    </label>
+                                </div>
+                                <div class="form-text">
+                                    {% if cfg.site_admin_id %}
+                                        After each email run, send a full overview of all active users' balances to the site admin.
+                                    {% else %}
+                                        No site admin is configured. Set one in <strong>General</strong> to enable this option.
+                                    {% endif %}
                                 </div>
                             </div>
 

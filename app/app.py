@@ -266,6 +266,57 @@ def build_email_html(user):
     """
     return html
 
+def build_admin_summary_email(users):
+    date_str = datetime.now().strftime('%Y-%m-%d')
+    rows_html = ''
+    for user in users:
+        if user.balance < 0:
+            color = '#dc3545'
+            label = f'owes €{abs(user.balance):.2f}'
+        elif user.balance > 0:
+            color = '#28a745'
+            label = f'is owed €{user.balance:.2f}'
+        else:
+            color = '#6c757d'
+            label = 'settled'
+        rows_html += f"""
+            <tr>
+                <td style="padding: 10px 8px; border-bottom: 1px solid #dee2e6;">{user.name}</td>
+                <td style="padding: 10px 8px; border-bottom: 1px solid #dee2e6; color: #6c757d; font-size: 0.9em;">{user.email}</td>
+                <td style="padding: 10px 8px; border-bottom: 1px solid #dee2e6; text-align: right; font-weight: bold; color: {color};">€{user.balance:.2f}</td>
+                <td style="padding: 10px 8px; border-bottom: 1px solid #dee2e6; color: {color};">{label}</td>
+            </tr>"""
+
+    return f"""<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 700px; margin: 0 auto; padding: 20px;">
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+        <h1 style="margin: 0; font-size: 28px;">🏦 Bank of Tina</h1>
+        <p style="margin: 10px 0 0 0; opacity: 0.9;">Admin Summary — {date_str}</p>
+    </div>
+    <div style="background: white; padding: 30px; border: 1px solid #dee2e6; border-top: none; border-radius: 0 0 10px 10px;">
+        <h3 style="color: #495057; margin-top: 0;">All Active Users</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f8f9fa;">
+                    <th style="padding: 10px 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Name</th>
+                    <th style="padding: 10px 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Email</th>
+                    <th style="padding: 10px 8px; text-align: right; border-bottom: 2px solid #dee2e6;">Balance</th>
+                    <th style="padding: 10px 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Status</th>
+                </tr>
+            </thead>
+            <tbody>{rows_html}
+            </tbody>
+        </table>
+        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #dee2e6; text-align: center; color: #6c757d; font-size: 13px;">
+            <p>This is an automated admin summary from the Bank of Tina system.</p>
+        </div>
+    </div>
+</body>
+</html>"""
+
+
 def send_single_email(to_email, to_name, subject, html):
     smtp_server   = get_setting('smtp_server', 'smtp.gmail.com')
     smtp_port     = int(get_setting('smtp_port', '587'))
@@ -319,6 +370,22 @@ def send_all_emails():
                 db.session.add(EmailLog(level='FAIL',
                                         recipient=f'{user.name} <{user.email}>',
                                         message=err or 'Unknown error'))
+
+    # Admin summary email
+    admin_id = get_setting('site_admin_id', '')
+    if get_setting('admin_summary_email', '0') == '1' and admin_id:
+        admin = User.query.get(int(admin_id)) if admin_id.isdigit() else None
+        if admin:
+            summary_subject = f"Bank of Tina - Admin Summary ({datetime.now().strftime('%Y-%m-%d')})"
+            summary_html = build_admin_summary_email(users)
+            ok, err = send_single_email(admin.email, admin.name, summary_subject, summary_html)
+            if debug:
+                if ok:
+                    db.session.add(EmailLog(level='INFO', recipient=None,
+                                            message=f'Admin summary sent to {admin.name} <{admin.email}>'))
+                else:
+                    db.session.add(EmailLog(level='FAIL', recipient=f'{admin.name} <{admin.email}>',
+                                            message=f'Admin summary failed: {err}'))
 
     if debug:
         db.session.add(EmailLog(level='INFO', recipient=None,
@@ -1025,8 +1092,10 @@ def settings():
         'schedule_minute':   get_setting('schedule_minute', '0'),
         'default_item_rows': get_setting('default_item_rows', '3'),
         'recent_transactions_count': get_setting('recent_transactions_count', '5'),
+        'site_admin_id': get_setting('site_admin_id', ''),
         'email_enabled': get_setting('email_enabled', '1'),
         'email_debug': get_setting('email_debug', '0'),
+        'admin_summary_email': get_setting('admin_summary_email', '0'),
         'timezone': get_setting('timezone', 'UTC'),
         'common_enabled':                get_setting('common_enabled', '1'),
         'common_auto_enabled':           get_setting('common_auto_enabled', '0'),
@@ -1079,8 +1148,9 @@ def settings_email():
     if new_password:
         set_setting('smtp_password', new_password)
 
-    set_setting('email_enabled', '1' if request.form.get('email_enabled') else '0')
-    set_setting('email_debug',   '1' if request.form.get('email_debug')   else '0')
+    set_setting('email_enabled',       '1' if request.form.get('email_enabled')       else '0')
+    set_setting('email_debug',         '1' if request.form.get('email_debug')         else '0')
+    set_setting('admin_summary_email', '1' if request.form.get('admin_summary_email') else '0')
 
     flash('Settings saved.', 'success')
     return redirect(url_for('settings'))
@@ -1146,6 +1216,9 @@ def settings_general():
             _add_email_job()
         if get_setting('common_auto_enabled', '0') == '1':
             _add_common_job()
+    admin_id = request.form.get('site_admin_id', '').strip()
+    if admin_id == '' or (admin_id.isdigit() and User.query.get(int(admin_id))):
+        set_setting('site_admin_id', admin_id)
     flash('General settings saved.', 'success')
     return redirect(url_for('settings'))
 
