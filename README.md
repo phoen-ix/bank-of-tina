@@ -19,6 +19,7 @@ A lightweight, self-hosted web application for managing shared expenses and bala
 - **Edit** any saved transaction: description, amount, date, from/to user
 - **Delete** any transaction (balances are automatically reversed)
 - **Month-by-month view** — transactions grouped by day with ◀ ▶ navigation and a month/year jump picker; defaults to the current month
+- **Search** — free-text search across descriptions and expense items; advanced filters for type, user, date range, and amount range
 
 ### Expense Items
 - Add line items per expense (name + price)
@@ -103,6 +104,12 @@ That's it. SMTP credentials and the email schedule are configured from the **Set
 2. Use ◀ / ▶ to move one month at a time (▶ is disabled on the current month)
 3. Use the **Month** and **Year** dropdowns to jump directly to any past period
 
+### Searching Transactions
+1. Use the search bar in the navbar (any page) for a quick keyword search
+2. Or navigate to `/search` directly for more control
+3. Click **Advanced filters** to filter by type, user, date range, and/or amount range — filters can be combined
+4. Results span all months and show the full date (`YYYY-MM-DD HH:MM`)
+
 ### Editing a Transaction
 1. **All Transactions** (or a user's detail page) → pencil icon
 2. Adjust any field — description, amount, date, from/to user
@@ -136,9 +143,10 @@ bank-of-tina/
 │   │   ├── index.html            # Dashboard (active users only)
 │   │   ├── add_transaction.html
 │   │   ├── edit_transaction.html # Edit transactions & items
-│   │   ├── transactions.html     # All transactions list
+│   │   ├── transactions.html     # Month-by-month transactions list
+│   │   ├── search.html           # Cross-month search with advanced filters
 │   │   ├── user_detail.html
-│   │   └── settings.html         # Settings (General / Email / Common Items / Deactivated Users)
+│   │   └── settings.html         # Settings (General / Email / Common Items / Users)
 │   └── static/
 ├── uploads/                      # Receipts — organised as YYYY/MM/DD/
 ├── mariadb-data/                 # MariaDB data directory (created on first run)
@@ -211,6 +219,7 @@ docker compose up -d
 - [ ] Charts and analytics dashboard
 - [ ] Support for multiple currencies
 - [ ] OCR for automatic receipt parsing
+- [ ] Saved/pinned searches
 
 ---
 

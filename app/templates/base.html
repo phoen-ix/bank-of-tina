@@ -38,6 +38,16 @@
                         <a class="nav-link" href="{{ url_for('settings') }}">Settings</a>
                     </li>
                 </ul>
+                <form class="d-flex ms-3" action="{{ url_for('search') }}" method="GET">
+                    <div class="input-group input-group-sm">
+                        <input class="form-control" type="search" name="q"
+                               placeholder="Search transactions…"
+                               value="{{ request.args.get('q', '') if request.endpoint == 'search' else '' }}">
+                        <button class="btn btn-outline-light" type="submit">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </nav>

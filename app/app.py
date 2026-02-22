@@ -488,6 +488,68 @@ def view_transactions():
         tx_total=sum(t.amount for t in transactions),
     )
 
+@app.route('/search')
+def search():
+    q          = request.args.get('q', '').strip()
+    tx_type    = request.args.get('type', '')
+    user_id    = request.args.get('user', None, type=int)
+    date_from  = request.args.get('date_from', '')
+    date_to    = request.args.get('date_to', '')
+    amount_min = request.args.get('amount_min', '')
+    amount_max = request.args.get('amount_max', '')
+
+    searched = any([q, tx_type, user_id, date_from, date_to, amount_min, amount_max])
+    results  = []
+
+    if searched:
+        qry = Transaction.query
+
+        if q:
+            qry = qry.filter(
+                db.or_(
+                    Transaction.description.ilike(f'%{q}%'),
+                    Transaction.items.any(ExpenseItem.item_name.ilike(f'%{q}%'))
+                )
+            )
+        if tx_type:
+            qry = qry.filter(Transaction.transaction_type == tx_type)
+        if user_id:
+            qry = qry.filter(
+                db.or_(Transaction.from_user_id == user_id,
+                       Transaction.to_user_id   == user_id)
+            )
+        if date_from:
+            try:
+                qry = qry.filter(Transaction.date >= datetime.strptime(date_from, '%Y-%m-%d'))
+            except ValueError:
+                pass
+        if date_to:
+            try:
+                dt = datetime.strptime(date_to, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
+                qry = qry.filter(Transaction.date <= dt)
+            except ValueError:
+                pass
+        if amount_min:
+            try:
+                qry = qry.filter(Transaction.amount >= float(amount_min))
+            except ValueError:
+                pass
+        if amount_max:
+            try:
+                qry = qry.filter(Transaction.amount <= float(amount_max))
+            except ValueError:
+                pass
+
+        results = qry.order_by(Transaction.date.desc()).all()
+
+    all_users = User.query.order_by(User.name).all()
+    return render_template('search.html',
+        results=results, searched=searched, all_users=all_users,
+        q=q, tx_type=tx_type, user_id=user_id,
+        date_from=date_from, date_to=date_to,
+        amount_min=amount_min, amount_max=amount_max)
+
+
 @app.route('/user/<int:user_id>')
 def user_detail(user_id):
     user = User.query.get_or_404(user_id)
