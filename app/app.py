@@ -162,6 +162,16 @@ def set_setting(key, value):
     db.session.add(s)
     db.session.commit()
 
+def now_local():
+    """Return the current datetime in the configured app timezone.
+    Works in both request and scheduler (background) contexts."""
+    tz_name = get_setting('timezone', 'UTC')
+    try:
+        tz = pytz.timezone(tz_name)
+    except pytz.exceptions.UnknownTimeZoneError:
+        tz = pytz.UTC
+    return datetime.now(tz)
+
 # Email logic
 def build_email_html(user):
     recent_transactions = Transaction.query.filter(
@@ -267,7 +277,7 @@ def build_email_html(user):
     return html
 
 def build_admin_summary_email(users):
-    date_str = datetime.now().strftime('%Y-%m-%d')
+    date_str = now_local().strftime('%Y-%m-%d')
     rows_html = ''
     for user in users:
         color = '#dc3545' if user.balance < 0 else ('#28a745' if user.balance > 0 else '#6c757d')
@@ -343,7 +353,7 @@ def send_all_emails():
     success, fail = 0, 0
     errors = []
     debug = get_setting('email_debug', '0') == '1'
-    subject = f"Bank of Tina - Weekly Balance Update ({datetime.now().strftime('%Y-%m-%d')})"
+    subject = f"Bank of Tina - Weekly Balance Update ({now_local().strftime('%Y-%m-%d')})"
     for user in users:
         html = build_email_html(user)
         ok, err = send_single_email(user.email, user.name, subject, html)
@@ -366,7 +376,7 @@ def send_all_emails():
     if get_setting('admin_summary_email', '0') == '1' and admin_id:
         admin = User.query.get(int(admin_id)) if admin_id.isdigit() else None
         if admin:
-            summary_subject = f"Bank of Tina - Admin Summary ({datetime.now().strftime('%Y-%m-%d')})"
+            summary_subject = f"Bank of Tina - Admin Summary ({now_local().strftime('%Y-%m-%d')})"
             summary_html = build_admin_summary_email(users)
             ok, err = send_single_email(admin.email, admin.name, summary_subject, summary_html)
             if debug:
@@ -401,7 +411,7 @@ def run_backup():
         if debug:
             _backup_log(level, msg)
 
-    ts = datetime.now().strftime('%Y_%m_%d_%H-%M-%S')
+    ts = now_local().strftime('%Y_%m_%d_%H-%M-%S')
     filename = f'bot_backup_{ts}.tar.gz'
     dest = os.path.join(BACKUP_DIR, filename)
     os.makedirs(BACKUP_DIR, exist_ok=True)
@@ -603,7 +613,7 @@ def _add_common_job():
 
 
 def build_backup_status_email(ok, result, kept, pruned):
-    date_str = datetime.now().strftime('%Y-%m-%d %H:%M')
+    date_str = now_local().strftime('%Y-%m-%d %H:%M')
     if ok:
         status_color  = '#28a745'
         status_icon   = '✔'
@@ -674,7 +684,7 @@ def _add_backup_job():
                 if admin:
                     kept = len(_list_backups())
                     html = build_backup_status_email(ok, result, kept, pruned)
-                    subject = f"Bank of Tina - Backup {'Success' if ok else 'Failed'} ({datetime.now().strftime('%Y-%m-%d')})"
+                    subject = f"Bank of Tina - Backup {'Success' if ok else 'Failed'} ({now_local().strftime('%Y-%m-%d')})"
                     send_single_email(admin.email, admin.name, subject, html)
 
     scheduler.add_job(job, 'cron', day_of_week=day, hour=hour, minute=minute,
@@ -1552,7 +1562,7 @@ def backup_upload_chunk():
     received = len([f for f in os.listdir(tmp_dir) if f.isdigit() or f[:-1].isdigit()])
     if received >= total_chunks:
         # Assemble chunks in order
-        ts = datetime.now().strftime('%Y_%m_%d_%H-%M-%S')
+        ts = now_local().strftime('%Y_%m_%d_%H-%M-%S')
         filename = f'bot_backup_{ts}.tar.gz'
         dest = os.path.join(BACKUP_DIR, filename)
         with open(dest, 'wb') as out:
