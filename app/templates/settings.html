@@ -850,13 +850,32 @@
                         Automatically create a backup on the configured schedule.
                     </div>
 
-                    <div class="form-check form-switch mb-4">
+                    <div class="form-check form-switch mb-3">
                         <input class="form-check-input" type="checkbox" role="switch"
                                id="backup_debug" name="backup_debug" value="1"
                                {% if cfg.backup_debug == '1' %}checked{% endif %}>
                         <label class="form-check-label" for="backup_debug">
                             Debug mode — log backup runs to database
                         </label>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch"
+                                   id="backup_admin_email" name="backup_admin_email" value="1"
+                                   {% if cfg.backup_admin_email == '1' %}checked{% endif %}
+                                   {% if not cfg.site_admin_id %}disabled{% endif %}>
+                            <label class="form-check-label" for="backup_admin_email">
+                                Send backup status email to site admin
+                            </label>
+                        </div>
+                        <div class="form-text">
+                            {% if cfg.site_admin_id %}
+                                After each <strong>scheduled</strong> backup, send a status report to the site admin. Manual backups do not trigger this email.
+                            {% else %}
+                                No site admin is configured. Set one in <strong>General</strong> to enable this option.
+                            {% endif %}
+                        </div>
                     </div>
 
                     <div id="backup_schedule_fields" {% if cfg.backup_enabled != '1' %}style="display:none"{% endif %}>

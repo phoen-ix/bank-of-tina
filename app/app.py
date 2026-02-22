@@ -602,6 +602,53 @@ def _add_common_job():
                       timezone=tz, id='common_job', replace_existing=True)
 
 
+def build_backup_status_email(ok, result, kept, pruned):
+    date_str = datetime.now().strftime('%Y-%m-%d %H:%M')
+    if ok:
+        status_color  = '#28a745'
+        status_icon   = '✔'
+        status_text   = 'Backup completed successfully'
+        detail_rows   = f"""
+            <tr><td style="padding:8px;color:#6c757d;width:140px;">File</td>
+                <td style="padding:8px;font-family:monospace;">{result}</td></tr>
+            <tr><td style="padding:8px;color:#6c757d;">Backups kept</td>
+                <td style="padding:8px;">{kept}</td></tr>"""
+        if pruned:
+            detail_rows += f"""
+            <tr><td style="padding:8px;color:#6c757d;">Pruned</td>
+                <td style="padding:8px;">{pruned} old backup(s) deleted</td></tr>"""
+    else:
+        status_color = '#dc3545'
+        status_icon  = '✘'
+        status_text  = 'Backup failed'
+        detail_rows  = f"""
+            <tr><td style="padding:8px;color:#6c757d;width:140px;">Error</td>
+                <td style="padding:8px;color:#dc3545;">{result}</td></tr>"""
+
+    return f"""<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height:1.6; color:#333; max-width:600px; margin:0 auto; padding:20px;">
+    <div style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%); color:white; padding:30px; border-radius:10px 10px 0 0; text-align:center;">
+        <h1 style="margin:0; font-size:28px;">🏦 Bank of Tina</h1>
+        <p style="margin:10px 0 0 0; opacity:0.9;">Scheduled Backup Report — {date_str}</p>
+    </div>
+    <div style="background:white; padding:30px; border:1px solid #dee2e6; border-top:none; border-radius:0 0 10px 10px;">
+        <div style="background:#f8f9fa; padding:16px 20px; border-radius:8px; margin-bottom:24px; border-left:4px solid {status_color};">
+            <span style="font-size:1.1em; font-weight:bold; color:{status_color};">{status_icon} {status_text}</span>
+        </div>
+        <table style="width:100%; border-collapse:collapse; font-size:0.95em;">
+            <tbody>{detail_rows}
+            </tbody>
+        </table>
+        <div style="margin-top:24px; padding-top:16px; border-top:1px solid #dee2e6; text-align:center; color:#6c757d; font-size:13px;">
+            <p>This is an automated backup report from the Bank of Tina system.</p>
+        </div>
+    </div>
+</body>
+</html>"""
+
+
 def _add_backup_job():
     day    = get_setting('backup_day', '*')
     hour   = int(get_setting('backup_hour', '3'))
@@ -614,9 +661,21 @@ def _add_backup_job():
 
     def job():
         with app.app_context():
-            ok, _ = run_backup()
+            ok, result = run_backup()
+            pruned = 0
             if ok and keep > 0:
+                before = len(_list_backups())
                 _prune_old_backups(keep)
+                pruned = max(0, before - len(_list_backups()))
+
+            if get_setting('backup_admin_email', '0') == '1':
+                admin_id = get_setting('site_admin_id', '')
+                admin = User.query.get(int(admin_id)) if admin_id.isdigit() else None
+                if admin:
+                    kept = len(_list_backups())
+                    html = build_backup_status_email(ok, result, kept, pruned)
+                    subject = f"Bank of Tina - Backup {'Success' if ok else 'Failed'} ({datetime.now().strftime('%Y-%m-%d')})"
+                    send_single_email(admin.email, admin.name, subject, html)
 
     scheduler.add_job(job, 'cron', day_of_week=day, hour=hour, minute=minute,
                       timezone=tz, id='backup_job', replace_existing=True)
@@ -1099,12 +1158,13 @@ def settings():
         'common_descriptions_threshold': get_setting('common_descriptions_threshold', '5'),
         'common_prices_auto':            get_setting('common_prices_auto', '0'),
         'common_prices_threshold':       get_setting('common_prices_threshold', '5'),
-        'backup_enabled': get_setting('backup_enabled', '0'),
-        'backup_debug':   get_setting('backup_debug',   '0'),
-        'backup_day':     get_setting('backup_day',     '*'),
-        'backup_hour':    get_setting('backup_hour',    '3'),
-        'backup_minute':  get_setting('backup_minute',  '0'),
-        'backup_keep':    get_setting('backup_keep',    '7'),
+        'backup_enabled':      get_setting('backup_enabled',      '0'),
+        'backup_debug':        get_setting('backup_debug',        '0'),
+        'backup_admin_email':  get_setting('backup_admin_email',  '0'),
+        'backup_day':          get_setting('backup_day',          '*'),
+        'backup_hour':         get_setting('backup_hour',         '3'),
+        'backup_minute':       get_setting('backup_minute',       '0'),
+        'backup_keep':         get_setting('backup_keep',         '7'),
     }
     common_items        = CommonItem.query.order_by(CommonItem.name).all()
     common_descriptions = CommonDescription.query.order_by(CommonDescription.value).all()
@@ -1408,8 +1468,10 @@ def settings_backup():
     except ValueError:
         keep = '7'
 
-    set_setting('backup_enabled', enabled)
-    set_setting('backup_debug',   debug)
+    admin_email = '1' if request.form.get('backup_admin_email') else '0'
+    set_setting('backup_enabled',     enabled)
+    set_setting('backup_debug',       debug)
+    set_setting('backup_admin_email', admin_email)
     set_setting('backup_day',     day)
     set_setting('backup_hour',    hour)
     set_setting('backup_minute',  minute)
