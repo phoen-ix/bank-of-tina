@@ -54,6 +54,9 @@ A lightweight, self-hosted web application for managing shared expenses and bala
 - **Backup status email** — when a site admin is configured, an optional email is sent after each *scheduled* backup with the result (success or failure), filename, backups kept, and number pruned; manual backups never trigger this email
 - **Debug log** — when debug mode is on, every backup step is written to the database and shown in the Settings UI
 
+### UI
+- Flash notifications (success/error banners) auto-dismiss after 4 seconds; can still be closed manually at any time
+
 ### Settings (web UI — no `.env` editing needed)
 The Settings page is split into five tabs:
 
