@@ -940,6 +940,9 @@ def settings_email():
     if new_password:
         set_setting('smtp_password', new_password)
 
+    set_setting('email_enabled', '1' if request.form.get('email_enabled') else '0')
+    set_setting('email_debug',   '1' if request.form.get('email_debug')   else '0')
+
     flash('Settings saved.', 'success')
     return redirect(url_for('settings'))
 
@@ -997,10 +1000,6 @@ def settings_general():
     except ValueError:
         count = 5
     set_setting('recent_transactions_count', str(count))
-    email_enabled = '1' if request.form.get('email_enabled') else '0'
-    set_setting('email_enabled', email_enabled)
-    email_debug = '1' if request.form.get('email_debug') else '0'
-    set_setting('email_debug', email_debug)
     timezone = request.form.get('timezone', 'UTC')
     if timezone in pytz.common_timezones:
         set_setting('timezone', timezone)
