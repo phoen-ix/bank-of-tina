@@ -1,6 +1,6 @@
 # 🏦 Bank of Tina
 
-A lightweight, self-hosted web application for managing shared expenses and balances within an office or group. Built with Flask and MariaDB, runs entirely in Docker — no external services required.
+A self-hosted web application for tracking shared expenses and balances within a small office or group. Features include expense recording with receipts, per-user weekly email reports, an admin summary email, charts and statistics, automated backups, and a fully configurable UI with themes and email templates. Built with Flask and MariaDB, runs entirely in Docker — no external services required.
 
 ---
 
