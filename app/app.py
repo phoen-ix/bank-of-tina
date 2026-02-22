@@ -297,6 +297,21 @@ def _restore_schedule():
     if get_setting('schedule_enabled') == '1':
         _add_email_job()
 
+def parse_submitted_date(date_str):
+    """Parse a datetime-local string entered in the app timezone and return a naive UTC datetime."""
+    if not date_str:
+        return datetime.utcnow()
+    for fmt in ('%Y-%m-%dT%H:%M', '%Y-%m-%d'):
+        try:
+            naive = datetime.strptime(date_str, fmt)
+            tz_name = get_setting('timezone', 'UTC')
+            tz = pytz.timezone(tz_name)
+            return tz.localize(naive).astimezone(pytz.UTC).replace(tzinfo=None)
+        except (ValueError, pytz.exceptions.UnknownTimeZoneError):
+            continue
+    return datetime.utcnow()
+
+
 # Timezone helpers
 def get_app_tz():
     """Return the configured pytz timezone, cached for the duration of the request."""
@@ -399,9 +414,13 @@ def add_transaction():
     if request.method == 'GET':
         users = User.query.filter_by(is_active=True).order_by(User.name).all()
         default_item_rows = int(get_setting('default_item_rows', '3'))
-        return render_template('add_transaction.html', users=users, default_item_rows=default_item_rows)
+        default_date = datetime.now(get_app_tz()).strftime('%Y-%m-%dT%H:%M')
+        return render_template('add_transaction.html', users=users,
+                               default_item_rows=default_item_rows, default_date=default_date)
 
     transaction_type = request.form.get('transaction_type')
+
+    submitted_date = parse_submitted_date(request.form.get('date', ''))
 
     if transaction_type == 'deposit':
         user_id = int(request.form.get('user_id'))
@@ -412,7 +431,8 @@ def add_transaction():
             description=description,
             amount=amount,
             to_user_id=user_id,
-            transaction_type='deposit'
+            transaction_type='deposit',
+            date=submitted_date
         )
         db.session.add(transaction)
         update_balance(user_id, amount)
@@ -427,7 +447,8 @@ def add_transaction():
             description=description,
             amount=amount,
             from_user_id=user_id,
-            transaction_type='withdrawal'
+            transaction_type='withdrawal',
+            date=submitted_date
         )
         db.session.add(transaction)
         update_balance(user_id, -amount)
@@ -463,7 +484,8 @@ def add_transaction():
                     from_user_id=debtor_id,
                     to_user_id=buyer_id,
                     transaction_type='expense',
-                    receipt_path=receipt_path
+                    receipt_path=receipt_path,
+                    date=submitted_date
                 )
                 db.session.add(transaction)
 

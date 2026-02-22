@@ -72,6 +72,12 @@
                                 </div>
                             </div>
 
+                            <div class="mb-3">
+                                <label for="expense_date" class="form-label">Date &amp; time</label>
+                                <input type="datetime-local" class="form-control" id="expense_date"
+                                       name="date" value="{{ default_date }}">
+                            </div>
+
                             <button type="submit" class="btn btn-primary w-100">
                                 <i class="bi bi-check-circle"></i> Record Expense
                             </button>
@@ -103,6 +109,12 @@
                                 <input type="text" class="form-control" id="deposit_description" name="description" placeholder="e.g., Monthly deposit">
                             </div>
 
+                            <div class="mb-3">
+                                <label for="deposit_date" class="form-label">Date &amp; time</label>
+                                <input type="datetime-local" class="form-control" id="deposit_date"
+                                       name="date" value="{{ default_date }}">
+                            </div>
+
                             <button type="submit" class="btn btn-success w-100">
                                 <i class="bi bi-check-circle"></i> Add Money
                             </button>
@@ -132,6 +144,12 @@
                             <div class="mb-3">
                                 <label for="withdrawal_description" class="form-label">Description (optional)</label>
                                 <input type="text" class="form-control" id="withdrawal_description" name="description" placeholder="e.g., Cash withdrawal">
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="withdrawal_date" class="form-label">Date &amp; time</label>
+                                <input type="datetime-local" class="form-control" id="withdrawal_date"
+                                       name="date" value="{{ default_date }}">
                             </div>
 
                             <button type="submit" class="btn btn-danger w-100">
