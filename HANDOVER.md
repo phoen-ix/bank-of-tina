@@ -36,19 +36,26 @@ This document gives a new Claude instance full context to continue development w
 bank-of-tina/
 ├── app/
 │   ├── app.py                    # Entire backend: models, routes, helpers, scheduler
-│   └── templates/
-│       ├── base.html             # Shared layout; injects dynamic theme CSS
-│       ├── index.html            # Dashboard (active users only)
-│       ├── add_transaction.html
-│       ├── edit_transaction.html # Edit transaction + receipt upload/remove
-│       ├── transactions.html     # Month-by-month view
-│       ├── search.html           # Cross-month search with advanced filters
-│       ├── user_detail.html
-│       ├── analytics.html        # Charts & Statistics page (5-tab Chart.js dashboard)
-│       └── settings.html         # All settings tabs (General/Email/Common/Backup/Templates/Users)
+│   ├── templates/
+│   │   ├── base.html             # Shared layout; injects dynamic theme CSS + PWA tags
+│   │   ├── index.html            # Dashboard (active users only)
+│   │   ├── add_transaction.html
+│   │   ├── edit_transaction.html # Edit transaction + receipt upload/remove
+│   │   ├── transactions.html     # Month-by-month view
+│   │   ├── search.html           # Cross-month search with advanced filters
+│   │   ├── user_detail.html
+│   │   ├── analytics.html        # Charts & Statistics page (5-tab Chart.js dashboard)
+│   │   └── settings.html         # All settings tabs (General/Email/Common/Backup/Templates/Users)
+│   └── static/
+│       ├── sw.js                 # Service worker (network-first, offline fallback)
+│       ├── offline.html          # Self-contained offline fallback page (no CDN deps)
+│       └── icons/
+│           ├── icon-192.png      # PWA icon 192×192
+│           └── icon-512.png      # PWA icon 512×512
 ├── uploads/                      # Receipts — bind-mounted; YYYY/MM/DD/Buyer_file.ext
 ├── backups/                      # Backup archives — bind-mounted; bot_backup_*.tar.gz
 ├── mariadb-data/                 # MariaDB data — bind-mounted
+├── create_icons.py               # One-time stdlib icon generator (already run; output committed)
 ├── Dockerfile
 ├── docker-compose.yml
 ├── requirements.txt
@@ -368,6 +375,31 @@ Sample-point granularity: weekly if date range ≤ 90 days, monthly otherwise.
 
 ---
 
+## PWA Support
+
+The app is installable as a Progressive Web App on both Android and iOS with no App Store.
+
+### Files
+| File | Purpose |
+|------|---------|
+| `app/static/sw.js` | Service worker — network-first, caches only `offline.html` on install |
+| `app/static/offline.html` | Self-contained offline fallback (no CDN, inline styles) |
+| `app/static/icons/icon-192.png` | PWA icon 192×192 (committed output of `create_icons.py`) |
+| `app/static/icons/icon-512.png` | PWA icon 512×512 (committed output of `create_icons.py`) |
+| `create_icons.py` | One-time stdlib-only (no Pillow) icon generator; run once then commit output |
+
+### `/manifest.json` route (`app/app.py`)
+Dynamic Flask route (`pwa_manifest()`). `theme_color` is fetched live via `get_tpl('color_navbar')` so it always reflects the user's configured navbar color. Uses `app.response_class(json.dumps(data), mimetype='application/manifest+json')` — same pattern as the analytics JSON endpoint.
+
+### `base.html` additions
+- **`<head>`** (after viewport meta): `<link rel="manifest">`, `<meta name="theme-color">`, Apple PWA meta tags, `<link rel="apple-touch-icon">`, favicon link.
+- **`<body>` footer** (before `{% block scripts %}`): SW registration script with `scope: '/'` (needed because `sw.js` lives under `/static/` but must cover all app paths). Uses `skipWaiting()` + `clients.claim()` for immediate activation.
+
+### Cache versioning
+The CACHE constant in `sw.js` is `'bot-v1'`. Bump to `'bot-v2'` etc. on future deploys to evict old caches (the activate handler deletes all cache keys that don't match the current name).
+
+---
+
 ## Current State (as of last commit)
 
 All features are fully implemented and committed. Recent work in order:
@@ -388,6 +420,7 @@ All features are fully implemented and committed. Recent work in order:
 14. **Transaction notes field** — optional `notes` (Text) column on `Transaction`; registered in `_migrate_db()` for existing installs; textarea on add (all three tabs) and edit forms; displayed inline on transactions, search, and user detail pages; included in free-text search alongside description and item names
 15. **Email template tweaks** — (a) removed the hardcoded "You owe €X" / "You are owed €X" line from the weekly balance email HTML (the `[BalanceStatus]` placeholder remains available for custom template fields); (b) `build_admin_summary_email` gains an `include_emails=False` parameter — when `False` the Email column is omitted entirely from the summary table; controlled by the `admin_summary_include_emails` setting (default `0`), saved via a toggle in Settings → Templates → Admin Summary Email card and passed through by both `send_all_emails()` and `preview_admin_summary()`
 16. **Configurable currency symbol** — `currency_symbol` key in `Setting` (default `€`); 12-option dropdown in Settings → General; `inject_theme()` injects it as `currency_symbol` into every template; all HTML templates replace hardcoded `€` with `{{ currency_symbol }}`; `add_transaction.html` and `edit_transaction.html` expose it as `const CURRENCY_SYM` (parallel to `DECIMAL_SEP`); `analytics.html` uses `CURRENCY_SYM` in all chart tooltip callbacks, axis tick formatters, and dataset/axis title strings; `build_email_html()` and `build_admin_summary_email()` read it via `get_setting()` and apply it to all balance and amount strings
+17. **PWA support** — Web App Manifest at `/manifest.json` (dynamic `theme_color` from navbar setting); network-first service worker with offline fallback page; 192×192 and 512×512 PNG icons (stdlib-generated, committed); PWA meta tags and SW registration added to `base.html`; enables "Add to Home Screen" on Android Chrome and iOS Safari
 
 ---
 

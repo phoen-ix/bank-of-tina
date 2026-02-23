@@ -58,6 +58,14 @@ A self-hosted web application for tracking shared expenses and balances within a
 - **Backup status email** — when a site admin is configured, an optional email is sent after each *scheduled* backup with the result (success or failure), filename, backups kept, and number pruned; manual backups never trigger this email
 - **Debug log** — when debug mode is on, every backup step is written to the database and shown in the Settings UI
 
+### PWA — Install to Home Screen
+- **Web App Manifest** — served dynamically at `/manifest.json`; `theme_color` tracks the configured navbar color
+- **Service worker** — network-first strategy; always fetches fresh data; shows a self-contained offline page if the network is unavailable
+- **Icons** — 192×192 and 512×512 PNG icons (Bootstrap blue background, white bank silhouette)
+- **Android Chrome**: three-dot menu → "Add to home screen" (or automatic install banner)
+- **iOS Safari**: Share sheet → "Add to Home Screen" → correct icon, name, and standalone launch
+- No App Store required; no native build tools required
+
 ### UI
 - Flash notifications (success/error banners) auto-dismiss after 4 seconds; can still be closed manually at any time
 
@@ -221,9 +229,16 @@ bank-of-tina/
 │   │   ├── analytics.html        # Charts & Statistics page
 │   │   └── settings.html         # Settings (General / Email / Common / Backup / Templates / Users)
 │   └── static/
+│   └── static/
+│       ├── sw.js                 # Service worker (network-first, offline fallback)
+│       ├── offline.html          # Self-contained offline fallback page
+│       └── icons/
+│           ├── icon-192.png      # PWA icon 192×192
+│           └── icon-512.png      # PWA icon 512×512
 ├── uploads/                      # Receipts — organised as YYYY/MM/DD/
 ├── backups/                      # Backup archives (bot_backup_*.tar.gz)
 ├── mariadb-data/                 # MariaDB data directory (created on first run)
+├── create_icons.py               # One-time stdlib icon generator (run once, commit output)
 ├── Dockerfile
 ├── docker-compose.yml
 ├── requirements.txt
