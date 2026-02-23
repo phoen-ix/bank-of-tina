@@ -2143,24 +2143,11 @@ def analytics_data():
         'totals': [round(x[1]['total'], 2)      for x in top_sorted],
     }
 
-    # ── 5. Type Breakdown ──────────────────────────────────────────────────
-    type_stats = defaultdict(lambda: {'count': 0, 'amount': 0.0})
-    for tx in transactions:
-        t = tx.transaction_type or 'other'
-        type_stats[t]['count']  += 1
-        type_stats[t]['amount'] += tx.amount
-
-    type_breakdown = {
-        t: {'count': v['count'], 'amount': round(v['amount'], 2)}
-        for t, v in type_stats.items()
-    }
-
     return jsonify({
         'balances':            balances,
         'balance_history':     {'labels': history_labels, 'datasets': history_datasets},
         'transaction_volume':  transaction_volume,
         'top_items':           top_items,
-        'type_breakdown':      type_breakdown,
         'meta': {
             'date_from':          date_from_str,
             'date_to':            date_to_str,

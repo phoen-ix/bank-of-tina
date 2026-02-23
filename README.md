@@ -293,7 +293,6 @@ A dedicated **Charts** page (nav bar → Charts) with a shared filter bar and fi
 | **History** | Multi-line | Each user's running balance over time, reconstructed from the transaction log; weekly or monthly sample points depending on the selected range |
 | **Volume** | Bar + line combo | Transaction count (bars, left axis) and total amount (line, right axis) grouped by week or month |
 | **Top Items** | Horizontal bar | Top 15 expense line items by total amount or count; toggle between the two modes |
-| **Breakdown** | Two donuts | Transaction type split (expense / deposit / withdrawal) by count and by total amount, side by side |
 
 **Filter bar** — date range pickers, quick presets (30 d / 90 d / 1 yr / All time), multi-select user dropdown, Apply button.
 

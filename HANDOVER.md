@@ -333,7 +333,6 @@ Two new routes, no new DB tables — all data is derived from existing `Transact
   "balance_history":    {"labels": ["2025-01-06", ...], "datasets": {"Alice": [0, 5.0, ...], ...}},
   "transaction_volume": {"labels": ["Jan 06", ...], "counts": [3, ...], "amounts": [45.0, ...]},
   "top_items":          {"names": ["Coffee", ...], "counts": [12, ...], "totals": [48.0, ...]},
-  "type_breakdown":     {"expense": {"count": 30, "amount": 150.0}, ...},
   "meta":               {"date_from": "...", "date_to": "...", "transaction_count": 45, "user_count": 5}
 }
 ```
@@ -356,6 +355,7 @@ Sample-point granularity: weekly if date range ≤ 90 days, monthly otherwise.
 - Tab-switch resize: Bootstrap's `shown.bs.tab` event triggers `chart.resize()` on every canvas in the newly visible tab — fixes the zero-dimension bug that occurs when Chart.js initialises inside a hidden (`display:none`) tab pane
 - **Decimal separator**: `DECIMAL_SEP` constant (from `inject_theme`) and a `fmtMoney(v)` helper (`toFixed(2).replace('.', DECIMAL_SEP)`) are used in all tooltip callbacks and axis tick formatters for monetary values
 - **Currency symbol**: `CURRENCY_SYM` constant (from `inject_theme`) is used alongside `fmtMoney()` in all chart tooltip labels, axis tick formatters, and dataset/axis title strings; follows the same pattern as `DECIMAL_SEP`
+- **Tabs**: Balances, History, Volume, Top Items (Breakdown tab was removed)
 
 ### Print / PDF
 

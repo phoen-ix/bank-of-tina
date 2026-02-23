@@ -119,12 +119,6 @@
             <i class="bi bi-list-ol"></i> Top Items
         </button>
     </li>
-    <li class="nav-item">
-        <button class="nav-link" data-bs-toggle="tab"
-                data-bs-target="#tab-breakdown" type="button">
-            <i class="bi bi-pie-chart"></i> Breakdown
-        </button>
-    </li>
 </ul>
 
 <div class="tab-content border border-top-0 rounded-bottom p-3 bg-white mb-4"
@@ -191,29 +185,6 @@
         </p>
     </div>
 
-    <!-- ── Tab 5: Type Breakdown ──────────────────────────────────────── -->
-    <div class="tab-pane fade" id="tab-breakdown">
-        <p class="text-muted small mb-3">
-            How transactions split across types &mdash; by count and by total amount.
-        </p>
-        <div class="row g-3">
-            <div class="col-md-6">
-                <h6 class="text-center text-muted">By number of transactions</h6>
-                <div style="position:relative; height:300px;">
-                    <canvas id="chart-bd-count"></canvas>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <h6 class="text-center text-muted">By total amount ({{ currency_symbol }})</h6>
-                <div style="position:relative; height:300px;">
-                    <canvas id="chart-bd-amount"></canvas>
-                </div>
-            </div>
-        </div>
-        <p id="empty-breakdown" class="text-center text-muted py-4" style="display:none;">
-            No transactions in this period.
-        </p>
-    </div>
 
 </div><!-- /tab-content -->
 {% endblock %}
@@ -256,12 +227,6 @@
         height: 155mm !important;
         width:  100%  !important;
     }
-
-    /* Breakdown tab: two donuts side-by-side, each ≈ half the page width */
-    #tab-breakdown .col-md-6       { width: 50% !important; float: left; }
-    #tab-breakdown .row::after     { content: ''; display: table; clear: both; }
-    #tab-breakdown .col-md-6 > div { height: 138mm !important; }
-    #tab-breakdown h6              { margin-bottom: 3mm; }
 }
 </style>
 
@@ -283,14 +248,6 @@ const PALETTE = [
     '#59a14f','#edc948','#b07aa1','#ff9da7',
     '#9c755f','#bab0ac'
 ];
-
-const TYPE_CLR = {
-    expense:    '#f28e2b',
-    deposit:    '#59a14f',
-    withdrawal: '#e15759',
-    transfer:   '#4e79a7',
-    other:      '#76b7b2',
-};
 
 // ── Chart instance registry ───────────────────────────────────────────────
 const _charts = {};
@@ -376,7 +333,6 @@ function _renderAll(d) {
     _renderHistory(d.balance_history);
     _renderVolume(d.transaction_volume);
     _renderItems(d.top_items);
-    _renderBreakdown(d.type_breakdown);
 
     // Update print header
     const m = d.meta;
@@ -635,51 +591,6 @@ function _renderItems(items) {
             }
         }
     });
-}
-
-// ── Chart 5: Type Breakdown ───────────────────────────────────────────────
-function _renderBreakdown(bd) {
-    const empty = document.getElementById('empty-breakdown');
-    const types = Object.keys(bd);
-
-    if (!types.length) {
-        empty.style.display = 'block';
-        return;
-    }
-    empty.style.display = 'none';
-
-    const labels = types.map(t => t.charAt(0).toUpperCase() + t.slice(1));
-    const colors = types.map(t => TYPE_CLR[t] || '#76b7b2');
-    const counts  = types.map(t => bd[t].count);
-    const amounts = types.map(t => bd[t].amount);
-
-    const donutOpts = (data, fmtFn) => ({
-        type: 'doughnut',
-        data: {
-            labels,
-            datasets: [{
-                data,
-                backgroundColor: colors,
-                borderColor: '#fff',
-                borderWidth: 2,
-                hoverOffset: 6,
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '62%',
-            plugins: {
-                legend: { position: 'bottom' },
-                tooltip: {
-                    callbacks: { label: ctx => ' ' + fmtFn(ctx) }
-                }
-            }
-        }
-    });
-
-    mkChart('chart-bd-count',  donutOpts(counts,  ctx => `${ctx.label}: ${ctx.raw} transactions`));
-    mkChart('chart-bd-amount', donutOpts(amounts, ctx => `${ctx.label}: ${CURRENCY_SYM}${fmtMoney(ctx.raw)}`));
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────
