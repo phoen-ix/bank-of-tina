@@ -119,6 +119,7 @@ The `settings()` view builds a `cfg` dict from all keys and passes it to `settin
 | `backup_day/hour/minute` | `*, 3, 0` | Backup cron |
 | `backup_keep` | `7` | How many backups to keep (auto-prune) |
 | `decimal_separator` | `.` | `'.'` or `','`; applied to all monetary display and input |
+| `currency_symbol` | `€` | Symbol prepended to all monetary amounts in UI, charts, and emails; configurable via Settings → General dropdown (12 common currencies) |
 | `show_email_on_dashboard` | `0` | `'1'` shows the Email column in the dashboard user table |
 | `color_navbar` | `#0d6efd` | Theme: navbar background |
 | `color_email_grad_start/end` | `#667eea / #764ba2` | Theme: email header gradient |
@@ -192,8 +193,9 @@ to_local(dt)
 
 @app.context_processor inject_theme()
 # Injects theme_navbar, theme_navbar_rgb, theme_balance_positive, theme_balance_negative,
-# and decimal_sep into every template. base.html uses the theme values in an inline
-# <style> block; decimal_sep is used by JS (const DECIMAL_SEP) for input/display formatting.
+# decimal_sep, and currency_symbol into every template. base.html uses the theme values in
+# an inline <style> block; decimal_sep and currency_symbol are used by JS (const DECIMAL_SEP,
+# const CURRENCY_SYM) for input/display formatting.
 ```
 
 ---
@@ -353,6 +355,7 @@ Sample-point granularity: weekly if date range ≤ 90 days, monthly otherwise.
 - Chart instances are stored in `_charts{}` map; `mkChart(id, cfg)` destroys the old instance before creating a new one
 - Tab-switch resize: Bootstrap's `shown.bs.tab` event triggers `chart.resize()` on every canvas in the newly visible tab — fixes the zero-dimension bug that occurs when Chart.js initialises inside a hidden (`display:none`) tab pane
 - **Decimal separator**: `DECIMAL_SEP` constant (from `inject_theme`) and a `fmtMoney(v)` helper (`toFixed(2).replace('.', DECIMAL_SEP)`) are used in all tooltip callbacks and axis tick formatters for monetary values
+- **Currency symbol**: `CURRENCY_SYM` constant (from `inject_theme`) is used alongside `fmtMoney()` in all chart tooltip labels, axis tick formatters, and dataset/axis title strings; follows the same pattern as `DECIMAL_SEP`
 
 ### Print / PDF
 
@@ -384,6 +387,7 @@ All features are fully implemented and committed. Recent work in order:
 13. **Dashboard & user detail polish** — Actions column and redundant View button removed from dashboard (user name is a link); email column hidden by default, toggled via `show_email_on_dashboard` setting; user detail transaction history capped at 5 most recent; Settings page `?tab=<name>` URL parameter added so external links can open a specific tab directly
 14. **Transaction notes field** — optional `notes` (Text) column on `Transaction`; registered in `_migrate_db()` for existing installs; textarea on add (all three tabs) and edit forms; displayed inline on transactions, search, and user detail pages; included in free-text search alongside description and item names
 15. **Email template tweaks** — (a) removed the hardcoded "You owe €X" / "You are owed €X" line from the weekly balance email HTML (the `[BalanceStatus]` placeholder remains available for custom template fields); (b) `build_admin_summary_email` gains an `include_emails=False` parameter — when `False` the Email column is omitted entirely from the summary table; controlled by the `admin_summary_include_emails` setting (default `0`), saved via a toggle in Settings → Templates → Admin Summary Email card and passed through by both `send_all_emails()` and `preview_admin_summary()`
+16. **Configurable currency symbol** — `currency_symbol` key in `Setting` (default `€`); 12-option dropdown in Settings → General; `inject_theme()` injects it as `currency_symbol` into every template; all HTML templates replace hardcoded `€` with `{{ currency_symbol }}`; `add_transaction.html` and `edit_transaction.html` expose it as `const CURRENCY_SYM` (parallel to `DECIMAL_SEP`); `analytics.html` uses `CURRENCY_SYM` in all chart tooltip callbacks, axis tick formatters, and dataset/axis title strings; `build_email_html()` and `build_admin_summary_email()` read it via `get_setting()` and apply it to all balance and amount strings
 
 ---
 

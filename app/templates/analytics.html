@@ -204,7 +204,7 @@
                 </div>
             </div>
             <div class="col-md-6">
-                <h6 class="text-center text-muted">By total amount (€)</h6>
+                <h6 class="text-center text-muted">By total amount ({{ currency_symbol }})</h6>
                 <div style="position:relative; height:300px;">
                     <canvas id="chart-bd-amount"></canvas>
                 </div>
@@ -271,6 +271,7 @@ const CLR_POS  = '{{ theme_balance_positive }}';
 const CLR_NEG  = '{{ theme_balance_negative }}';
 const CLR_PRI  = '{{ theme_navbar }}';
 const DECIMAL_SEP = {{ decimal_sep | tojson }};
+const CURRENCY_SYM = {{ currency_symbol | tojson }};
 
 function fmtMoney(v) {
     return parseFloat(v).toFixed(2).replace('.', DECIMAL_SEP);
@@ -410,7 +411,7 @@ function _renderBalances(balances) {
         data: {
             labels,
             datasets: [{
-                label: 'Balance (€)',
+                label: `Balance (${CURRENCY_SYM})`,
                 data: values,
                 backgroundColor: colors.map(c => c + 'cc'),
                 borderColor: colors,
@@ -426,14 +427,14 @@ function _renderBalances(balances) {
                 legend: { display: false },
                 tooltip: {
                     callbacks: {
-                        label: ctx => ` €${fmtMoney(ctx.parsed.x)}`
+                        label: ctx => ` ${CURRENCY_SYM}${fmtMoney(ctx.parsed.x)}`
                     }
                 }
             },
             scales: {
                 x: {
                     grid: { color: '#e9ecef' },
-                    ticks: { callback: v => '€' + fmtMoney(v) }
+                    ticks: { callback: v => CURRENCY_SYM + fmtMoney(v) }
                 },
                 y: { grid: { display: false } }
             }
@@ -480,7 +481,7 @@ function _renderHistory(hist) {
                 legend: { display: names.length > 1, position: 'bottom' },
                 tooltip: {
                     callbacks: {
-                        label: ctx => ` ${ctx.dataset.label}: €${fmtMoney(ctx.parsed.y)}`
+                        label: ctx => ` ${ctx.dataset.label}: ${CURRENCY_SYM}${fmtMoney(ctx.parsed.y)}`
                     }
                 }
             },
@@ -491,7 +492,7 @@ function _renderHistory(hist) {
                 },
                 y: {
                     grid: { color: '#e9ecef' },
-                    ticks: { callback: v => '€' + fmtMoney(v) }
+                    ticks: { callback: v => CURRENCY_SYM + fmtMoney(v) }
                 }
             }
         }
@@ -528,7 +529,7 @@ function _renderVolume(vol) {
                 },
                 {
                     type: 'line',
-                    label: 'Total (€)',
+                    label: `Total (${CURRENCY_SYM})`,
                     data: vol.amounts,
                     borderColor:     '#e15759',
                     backgroundColor: '#e1575920',
@@ -550,7 +551,7 @@ function _renderVolume(vol) {
                     callbacks: {
                         label: ctx => ctx.datasetIndex === 0
                             ? ` ${ctx.raw} transactions`
-                            : ` €${fmtMoney(ctx.raw)}`
+                            : ` ${CURRENCY_SYM}${fmtMoney(ctx.raw)}`
                     }
                 }
             },
@@ -567,8 +568,8 @@ function _renderVolume(vol) {
                     type: 'linear',
                     position: 'right',
                     grid: { drawOnChartArea: false },
-                    ticks: { callback: v => '€' + fmtMoney(v) },
-                    title: { display: true, text: 'Amount (€)' }
+                    ticks: { callback: v => CURRENCY_SYM + fmtMoney(v) },
+                    title: { display: true, text: `Amount (${CURRENCY_SYM})` }
                 }
             }
         }
@@ -591,7 +592,7 @@ function _renderItems(items) {
 
     const byAmt  = _itemsMode === 'amount';
     const values = byAmt ? items.totals : items.counts;
-    const label  = byAmt ? 'Total Amount (€)' : 'Times ordered';
+    const label  = byAmt ? `Total Amount (${CURRENCY_SYM})` : 'Times ordered';
     const labels = items.names.map(n => n.length > 32 ? n.slice(0, 30) + '…' : n);
     const colors = PALETTE.slice(0, values.length);
 
@@ -620,15 +621,15 @@ function _renderItems(items) {
                 tooltip: {
                     callbacks: {
                         label: ctx => byAmt
-                            ? ` €${fmtMoney(ctx.parsed.x)}  (${items.counts[ctx.dataIndex]}×)`
-                            : ` ${ctx.parsed.x}×  (€${fmtMoney(items.totals[ctx.dataIndex])} total)`
+                            ? ` ${CURRENCY_SYM}${fmtMoney(ctx.parsed.x)}  (${items.counts[ctx.dataIndex]}×)`
+                            : ` ${ctx.parsed.x}×  (${CURRENCY_SYM}${fmtMoney(items.totals[ctx.dataIndex])} total)`
                     }
                 }
             },
             scales: {
                 x: {
                     grid: { color: '#e9ecef' },
-                    ticks: { callback: v => byAmt ? '€' + fmtMoney(v) : v }
+                    ticks: { callback: v => byAmt ? CURRENCY_SYM + fmtMoney(v) : v }
                 },
                 y: { grid: { display: false } }
             }
@@ -678,7 +679,7 @@ function _renderBreakdown(bd) {
     });
 
     mkChart('chart-bd-count',  donutOpts(counts,  ctx => `${ctx.label}: ${ctx.raw} transactions`));
-    mkChart('chart-bd-amount', donutOpts(amounts, ctx => `${ctx.label}: €${fmtMoney(ctx.raw)}`));
+    mkChart('chart-bd-amount', donutOpts(amounts, ctx => `${ctx.label}: ${CURRENCY_SYM}${fmtMoney(ctx.raw)}`));
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────

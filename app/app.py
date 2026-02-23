@@ -316,6 +316,7 @@ def inject_theme():
         theme_balance_positive=pos,
         theme_balance_negative=neg,
         decimal_sep=get_setting('decimal_separator', '.'),
+        currency_symbol=get_setting('currency_symbol', '€'),
     )
 
 # Email logic
@@ -349,12 +350,13 @@ def build_email_html(user):
         else:
             recent_transactions = base_q.limit(3).all()
 
+    sym = get_setting('currency_symbol', '€')
     if user.balance < 0:
         balance_class = "color: #dc3545;"
-        balance_status = f"You owe €{fmt_amount(abs(user.balance))}"
+        balance_status = f"You owe {sym}{fmt_amount(abs(user.balance))}"
     elif user.balance > 0:
         balance_class = "color: #28a745;"
-        balance_status = f"You are owed €{fmt_amount(user.balance)}"
+        balance_status = f"You are owed {sym}{fmt_amount(user.balance)}"
     else:
         balance_class = "color: #6c757d;"
         balance_status = "Your balance is settled"
@@ -387,7 +389,7 @@ def build_email_html(user):
                         {direction} {other_user}
                     </td>
                     <td style="padding: 8px; border-bottom: 1px solid #dee2e6; text-align: right; {amount_class}">
-                        {amount_sign}€{fmt_amount(trans.amount)}
+                        {amount_sign}{sym}{fmt_amount(trans.amount)}
                     </td>
                 </tr>
                 """
@@ -418,7 +420,7 @@ def build_email_html(user):
 
     grad_start = get_tpl('color_email_grad_start')
     grad_end   = get_tpl('color_email_grad_end')
-    tpl_vars   = dict(Name=user.name, Balance=f'€{fmt_amount(user.balance)}',
+    tpl_vars   = dict(Name=user.name, Balance=f'{sym}{fmt_amount(user.balance)}',
                       BalanceStatus=balance_status, Date=now_local().strftime('%Y-%m-%d'))
 
     greeting = apply_template(get_tpl('tpl_email_greeting'), **tpl_vars)
@@ -450,7 +452,7 @@ def build_email_html(user):
 
             <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
                 <p style="margin: 0 0 10px 0; color: #6c757d; text-transform: uppercase; font-size: 12px; font-weight: bold;">Current Balance</p>
-                <h2 style="margin: 0; font-size: 36px; {balance_class}">€{fmt_amount(user.balance)}</h2>
+                <h2 style="margin: 0; font-size: 36px; {balance_class}">{sym}{fmt_amount(user.balance)}</h2>
             </div>
 
             {transactions_section_html}
@@ -466,6 +468,7 @@ def build_email_html(user):
     return html
 
 def build_admin_summary_email(users, include_emails=False):
+    sym        = get_setting('currency_symbol', '€')
     date_str   = now_local().strftime('%Y-%m-%d')
     grad_start = get_tpl('color_email_grad_start')
     grad_end   = get_tpl('color_email_grad_end')
@@ -487,7 +490,7 @@ def build_admin_summary_email(users, include_emails=False):
             <tr>
                 <td style="padding: 10px 8px; border-bottom: 1px solid #dee2e6;">{user.name}</td>
                 {email_cell}
-                <td style="padding: 10px 8px; border-bottom: 1px solid #dee2e6; text-align: right; font-weight: bold; color: {color};">€{fmt_amount(user.balance)}</td>
+                <td style="padding: 10px 8px; border-bottom: 1px solid #dee2e6; text-align: right; font-weight: bold; color: {color};">{sym}{fmt_amount(user.balance)}</td>
             </tr>"""
 
     email_header = '<th style="padding: 10px 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Email</th>' if include_emails else ''
@@ -1472,6 +1475,7 @@ def settings():
         'backup_minute':       get_setting('backup_minute',       '0'),
         'backup_keep':         get_setting('backup_keep',         '7'),
         'decimal_separator':         get_setting('decimal_separator',         '.'),
+        'currency_symbol':           get_setting('currency_symbol',           '€'),
         'show_email_on_dashboard':   get_setting('show_email_on_dashboard',   '0'),
     }
     common_items        = CommonItem.query.order_by(CommonItem.name).all()
@@ -1582,6 +1586,7 @@ def settings_general():
     if sep not in ('.', ','):
         sep = '.'
     set_setting('decimal_separator', sep)
+    set_setting('currency_symbol', request.form.get('currency_symbol', '€'))
     set_setting('show_email_on_dashboard', '1' if request.form.get('show_email_on_dashboard') else '0')
     flash('General settings saved.', 'success')
     return redirect(url_for('settings'))

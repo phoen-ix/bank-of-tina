@@ -20,7 +20,7 @@
                     <dt class="col-sm-4">Balance:</dt>
                     <dd class="col-sm-8">
                         <h4 class="mb-0 {% if user.balance >= 0 %}balance-positive{% else %}balance-negative{% endif %}">
-                            €{{ user.balance|money }}
+                            {{ currency_symbol }}{{ user.balance|money }}
                         </h4>
                     </dd>
 
@@ -70,14 +70,14 @@
                             <p class="mb-1">
                                 {% if trans.from_user and trans.from_user.id == user.id %}
                                     <span class="text-danger">
-                                        <i class="bi bi-arrow-up"></i> Paid €{{ trans.amount|money }}
+                                        <i class="bi bi-arrow-up"></i> Paid {{ currency_symbol }}{{ trans.amount|money }}
                                     </span>
                                     {% if trans.to_user %}
                                         to <strong>{{ trans.to_user.name }}</strong>
                                     {% endif %}
                                 {% elif trans.to_user and trans.to_user.id == user.id %}
                                     <span class="text-success">
-                                        <i class="bi bi-arrow-down"></i> Received €{{ trans.amount|money }}
+                                        <i class="bi bi-arrow-down"></i> Received {{ currency_symbol }}{{ trans.amount|money }}
                                     </span>
                                     {% if trans.from_user %}
                                         from <strong>{{ trans.from_user.name }}</strong>
@@ -91,7 +91,7 @@
                                 <small class="text-muted">
                                     <strong>Items:</strong>
                                     {% for item in trans.items %}
-                                        {{ item.item_name }} (€{{ item.price|money }}){% if not loop.last %}, {% endif %}
+                                        {{ item.item_name }} ({{ currency_symbol }}{{ item.price|money }}){% if not loop.last %}, {% endif %}
                                     {% endfor %}
                                 </small>
                             {% endif %}

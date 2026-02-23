@@ -33,7 +33,7 @@
                     </div>
 
                     <div class="mb-3">
-                        <label for="amount" class="form-label">Amount (€)</label>
+                        <label for="amount" class="form-label">Amount ({{ currency_symbol }})</label>
                         <input type="text" inputmode="decimal" class="form-control" id="amount" name="amount"
                                value="{{ trans.amount|money }}" required>
                         <div id="amountNote" class="form-text" style="display:none">
@@ -88,7 +88,7 @@
                                     No items. Click "Add Item" to attach expense line items.
                                 </p>
                                 <div class="text-end">
-                                    <strong>Items total: €<span id="itemsTotal">0{{ decimal_sep }}00</span></strong>
+                                    <strong>Items total: {{ currency_symbol }}<span id="itemsTotal">0{{ decimal_sep }}00</span></strong>
                                 </div>
                             </div>
                         </div>
@@ -137,6 +137,7 @@
 {% block scripts %}
 <script>
 const DECIMAL_SEP = {{ decimal_sep | tojson }};
+const CURRENCY_SYM = {{ currency_symbol | tojson }};
 let rowCounter = 0;
 
 // Existing items from the server
@@ -177,7 +178,7 @@ function addItemRow(name = '', price = '') {
         '</div>' +
         '<div class="col-auto" style="width:130px">' +
             '<div class="input-group input-group-sm">' +
-                '<span class="input-group-text">€</span>' +
+                '<span class="input-group-text">' + CURRENCY_SYM + '</span>' +
                 '<input type="text" inputmode="decimal" class="form-control item-price" placeholder="0' + DECIMAL_SEP + '00"' +
                 ' value="' + escAttr(displayPrice) + '" oninput="syncTotal()">' +
             '</div>' +

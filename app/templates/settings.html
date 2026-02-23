@@ -116,6 +116,30 @@
                     </div>
 
                     <div class="mb-4">
+                      <label class="form-label">Currency symbol</label>
+                      <select class="form-select w-auto" name="currency_symbol">
+                        {% set currencies = [
+                            ('€', 'Euro — €'),
+                            ('$', 'US Dollar — $'),
+                            ('£', 'British Pound — £'),
+                            ('¥', 'Yen / Yuan — ¥'),
+                            ('Fr', 'Swiss Franc — Fr'),
+                            ('kr', 'Krone — kr'),
+                            ('₹', 'Indian Rupee — ₹'),
+                            ('A$', 'Australian Dollar — A$'),
+                            ('C$', 'Canadian Dollar — C$'),
+                            ('zł', 'Polish Złoty — zł'),
+                            ('R$', 'Brazilian Real — R$'),
+                            ('₪', 'Israeli Shekel — ₪'),
+                        ] %}
+                        {% for val, label in currencies %}
+                          <option value="{{ val }}" {% if cfg.currency_symbol == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                      </select>
+                      <div class="form-text">Symbol shown before all monetary amounts.</div>
+                    </div>
+
+                    <div class="mb-4">
                         <label class="form-label">Dashboard</label>
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" id="show_email_on_dashboard"
@@ -554,10 +578,10 @@
                 <div class="d-flex flex-wrap gap-2 mb-4">
                     {% for price in common_prices %}
                     <div class="badge bg-light text-dark border d-inline-flex align-items-center gap-1 px-2 py-2 fs-6 fw-normal">
-                        €{{ price.value|money }}
+                        {{ currency_symbol }}{{ price.value|money }}
                         <form method="POST" action="{{ url_for('delete_common_price', item_id=price.id) }}" class="d-inline m-0">
                             <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent text-danger lh-1"
-                                    title="Remove" onclick="return confirm('Remove €{{ price.value|money }} from common prices?')">
+                                    title="Remove" onclick="return confirm('Remove {{ currency_symbol }}{{ price.value|money }} from common prices?')">
                                 <i class="bi bi-x-lg" style="font-size:0.75rem"></i>
                             </button>
                         </form>
@@ -1307,7 +1331,7 @@
                                 <td class="text-muted">{{ user.email }}</td>
                                 <td class="text-end">
                                     <span class="{% if user.balance >= 0 %}balance-positive{% else %}balance-negative{% endif %}">
-                                        <strong>€{{ user.balance|money }}</strong>
+                                        <strong>{{ currency_symbol }}{{ user.balance|money }}</strong>
                                     </span>
                                 </td>
                                 <td>

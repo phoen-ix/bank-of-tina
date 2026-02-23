@@ -29,7 +29,7 @@
                                     {% if show_email %}<td>{{ user.email }}</td>{% endif %}
                                     <td class="text-end">
                                         <span class="{% if user.balance >= 0 %}balance-positive{% else %}balance-negative{% endif %}">
-                                            <strong>€{{ user.balance|money }}</strong>
+                                            <strong>{{ currency_symbol }}{{ user.balance|money }}</strong>
                                         </span>
                                     </td>
                                 </tr>
@@ -65,7 +65,7 @@
                                 {% if trans.to_user %}
                                     → <strong>{{ trans.to_user.name }}</strong>
                                 {% endif %}
-                                <span class="text-success ms-2"><strong>€{{ trans.amount|money }}</strong></span>
+                                <span class="text-success ms-2"><strong>{{ currency_symbol }}{{ trans.amount|money }}</strong></span>
                             </p>
                             {% if trans.receipt_path %}
                                 <small>
