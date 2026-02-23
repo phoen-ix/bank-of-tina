@@ -1288,6 +1288,28 @@ def view_receipt(filepath):
     from flask import send_from_directory
     return send_from_directory(app.config['UPLOAD_FOLDER'], filepath)
 
+@app.route('/manifest.json')
+def pwa_manifest():
+    color = get_tpl('color_navbar')
+    data = {
+        "name": "Bank of Tina",
+        "short_name": "Bank of Tina",
+        "description": "Track shared expenses and balances",
+        "start_url": "/",
+        "display": "standalone",
+        "background_color": "#ffffff",
+        "theme_color": color,
+        "icons": [
+            {"src": "/static/icons/icon-192.png",
+             "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+            {"src": "/static/icons/icon-512.png",
+             "sizes": "512x512", "type": "image/png", "purpose": "any maskable"},
+        ],
+    }
+    return app.response_class(
+        json.dumps(data), mimetype='application/manifest+json'
+    )
+
 @app.route('/transaction/<int:transaction_id>/edit', methods=['GET', 'POST'])
 def edit_transaction(transaction_id):
     trans = Transaction.query.get_or_404(transaction_id)
