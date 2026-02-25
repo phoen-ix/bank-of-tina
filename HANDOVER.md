@@ -128,6 +128,8 @@ The `settings()` view builds a `cfg` dict from all keys and passes it to `settin
 | `decimal_separator` | `.` | `'.'` or `','`; applied to all monetary display and input |
 | `currency_symbol` | `€` | Symbol prepended to all monetary amounts in UI, charts, and emails; configurable via Settings → General dropdown (12 common currencies) |
 | `show_email_on_dashboard` | `0` | `'1'` shows the Email column in the dashboard user table |
+| `icon_version` | `0` | Unix timestamp; cache-busting param appended to icon URLs |
+| `icon_mode` | `generated` | `'generated'` or `'custom'`; tracks whether the icon was regenerated or uploaded |
 | `color_navbar` | `#0d6efd` | Theme: navbar background |
 | `color_email_grad_start/end` | `#667eea / #764ba2` | Theme: email header gradient |
 | `color_balance_positive/negative` | `#28a745 / #dc3545` | Theme: balance colors |
@@ -200,9 +202,17 @@ to_local(dt)
 
 @app.context_processor inject_theme()
 # Injects theme_navbar, theme_navbar_rgb, theme_balance_positive, theme_balance_negative,
-# decimal_sep, and currency_symbol into every template. base.html uses the theme values in
-# an inline <style> block; decimal_sep and currency_symbol are used by JS (const DECIMAL_SEP,
-# const CURRENCY_SYM) for input/display formatting.
+# decimal_sep, currency_symbol, and icon_version into every template. base.html uses the
+# theme values in an inline <style> block; decimal_sep and currency_symbol are used by JS
+# (const DECIMAL_SEP, const CURRENCY_SYM) for input/display formatting; icon_version is
+# appended as ?v= to icon <link> tags for cache-busting.
+
+make_icon_png(size, bg_color, fg_color=(0xff, 0xff, 0xff))
+# Generates a square PNG with a bank silhouette. Ported from create_icons.py — stdlib only.
+
+generate_and_save_icons(bg_hex)
+# Parses a hex color, generates 192 and 512 PNGs, saves to static/icons/, updates
+# icon_version and icon_mode settings.
 ```
 
 ---
@@ -389,11 +399,19 @@ The app is installable as a Progressive Web App on both Android and iOS with no 
 | `create_icons.py` | One-time stdlib-only (no Pillow) icon generator; run once then commit output |
 
 ### `/manifest.json` route (`app/app.py`)
-Dynamic Flask route (`pwa_manifest()`). `theme_color` is fetched live via `get_tpl('color_navbar')` so it always reflects the user's configured navbar color. Uses `app.response_class(json.dumps(data), mimetype='application/manifest+json')` — same pattern as the analytics JSON endpoint.
+Dynamic Flask route (`pwa_manifest()`). `theme_color` is fetched live via `get_tpl('color_navbar')` so it always reflects the user's configured navbar color. Icon URLs include a `?v=` cache-busting param from the `icon_version` setting. Uses `app.response_class(json.dumps(data), mimetype='application/manifest+json')` — same pattern as the analytics JSON endpoint.
 
 ### `base.html` additions
-- **`<head>`** (after viewport meta): `<link rel="manifest">`, `<meta name="theme-color">`, Apple PWA meta tags, `<link rel="apple-touch-icon">`, favicon link.
+- **`<head>`** (after viewport meta): `<link rel="manifest">`, `<meta name="theme-color">`, Apple PWA meta tags, `<link rel="apple-touch-icon">`, favicon link. Icon `<link>` tags include `?v={{ icon_version }}` for cache-busting.
 - **`<body>` footer** (before `{% block scripts %}`): SW registration script with `scope: '/'` (needed because `sw.js` lives under `/static/` but must cover all app paths). Uses `skipWaiting()` + `clients.claim()` for immediate activation.
+
+### Icon management (Settings → Templates → App Icon card)
+Icons can be managed from the web UI — no need to re-run `create_icons.py`:
+- **Regenerate from navbar color** — re-generates the bank silhouette icons using the current `color_navbar` setting as the background color (stdlib-only, same algorithm as `create_icons.py`). The generation logic is ported into `app.py` as `make_icon_png(size, bg_color, fg_color)` and `generate_and_save_icons(bg_hex)`.
+- **Upload custom icon** — accepts a PNG/JPG upload, resizes to 192×192 and 512×512 using Pillow (`requirements.txt` includes `Pillow>=10.0`), saves to `static/icons/`.
+- **Reset to default** — regenerates with the default Bootstrap blue `#0d6efd`.
+- All three actions update the `icon_version` setting (unix timestamp) for cache-busting and set `icon_mode` to `generated` or `custom`.
+- Route: `POST /settings/icon` with `action` field (`generate`, `upload`, `reset`).
 
 ### Cache versioning
 The CACHE constant in `sw.js` is `'bot-v1'`. Bump to `'bot-v2'` etc. on future deploys to evict old caches (the activate handler deletes all cache keys that don't match the current name).
@@ -421,6 +439,7 @@ All features are fully implemented and committed. Recent work in order:
 15. **Email template tweaks** — (a) removed the hardcoded "You owe €X" / "You are owed €X" line from the weekly balance email HTML (the `[BalanceStatus]` placeholder remains available for custom template fields); (b) `build_admin_summary_email` gains an `include_emails=False` parameter — when `False` the Email column is omitted entirely from the summary table; controlled by the `admin_summary_include_emails` setting (default `0`), saved via a toggle in Settings → Templates → Admin Summary Email card and passed through by both `send_all_emails()` and `preview_admin_summary()`
 16. **Configurable currency symbol** — `currency_symbol` key in `Setting` (default `€`); 12-option dropdown in Settings → General; `inject_theme()` injects it as `currency_symbol` into every template; all HTML templates replace hardcoded `€` with `{{ currency_symbol }}`; `add_transaction.html` and `edit_transaction.html` expose it as `const CURRENCY_SYM` (parallel to `DECIMAL_SEP`); `analytics.html` uses `CURRENCY_SYM` in all chart tooltip callbacks, axis tick formatters, and dataset/axis title strings; `build_email_html()` and `build_admin_summary_email()` read it via `get_setting()` and apply it to all balance and amount strings
 17. **PWA support** — Web App Manifest at `/manifest.json` (dynamic `theme_color` from navbar setting); network-first service worker with offline fallback page; 192×192 and 512×512 PNG icons (stdlib-generated, committed); PWA meta tags and SW registration added to `base.html`; enables "Add to Home Screen" on Android Chrome and iOS Safari
+18. **PWA icon management** — "App Icon" card in Settings → Templates; regenerate bank silhouette icons using current navbar color (stdlib, no Pillow needed); upload a custom PNG/JPG (resized via Pillow to 192 and 512); reset to default blue; `icon_version` cache-busting on all icon URLs (base.html `<link>` tags and `/manifest.json`); Pillow added to `requirements.txt`
 
 ---
 

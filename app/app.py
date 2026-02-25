@@ -17,6 +17,9 @@ from email.mime.multipart import MIMEMultipart
 from apscheduler.schedulers.background import BackgroundScheduler
 import atexit
 import pytz
+import struct
+import zlib
+import time
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'change-this-to-a-random-secret-key'
@@ -294,6 +297,69 @@ def hex_to_rgb(hex_color):
     except Exception:
         return '0, 0, 0'
 
+DEFAULT_ICON_BG = '#0d6efd'
+
+def make_icon_png(size, bg_color, fg_color=(0xff, 0xff, 0xff)):
+    """Generate a square PNG of `size` pixels with a bank silhouette.
+    Ported from create_icons.py — stdlib only (struct + zlib)."""
+    width = height = size
+    pixels = [[bg_color] * width for _ in range(height)]
+
+    pad = size * 0.15
+    draw_w = size - 2 * pad
+    draw_h = size - 2 * pad
+
+    def fill_rect(x0f, y0f, x1f, y1f):
+        x0 = int(pad + x0f * draw_w)
+        y0 = int(pad + y0f * draw_h)
+        x1 = int(pad + x1f * draw_w)
+        y1 = int(pad + y1f * draw_h)
+        for row in range(max(0, y0), min(height, y1)):
+            for col in range(max(0, x0), min(width, x1)):
+                pixels[row][col] = fg_color
+
+    fill_rect(0.10, 0.00, 0.90, 0.18)
+    fill_rect(0.20, 0.18, 0.80, 0.26)
+    col_w = 0.10
+    for cx in (0.20, 0.45, 0.70):
+        fill_rect(cx, 0.26, cx + col_w, 0.78)
+    fill_rect(0.10, 0.78, 0.90, 0.88)
+    fill_rect(0.05, 0.88, 0.95, 1.00)
+
+    raw_rows = []
+    for row in pixels:
+        row_bytes = b'\x00' + b''.join(bytes(p) for p in row)
+        raw_rows.append(row_bytes)
+    raw = b''.join(raw_rows)
+    compressed = zlib.compress(raw, level=9)
+
+    def chunk(tag, data):
+        c = tag + data
+        return struct.pack('>I', len(data)) + c + struct.pack('>I', zlib.crc32(c) & 0xFFFFFFFF)
+
+    ihdr_data = struct.pack('>IIBBBBB', width, height, 8, 2, 0, 0, 0)
+    return (b'\x89PNG\r\n\x1a\n'
+            + chunk(b'IHDR', ihdr_data)
+            + chunk(b'IDAT', compressed)
+            + chunk(b'IEND', b''))
+
+
+def generate_and_save_icons(bg_hex):
+    """Generate bank silhouette icons with the given background color and save them."""
+    h = bg_hex.lstrip('#')
+    bg_rgb = (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+    icons_dir = os.path.join(app.root_path, 'static', 'icons')
+    os.makedirs(icons_dir, exist_ok=True)
+    for size in (192, 512):
+        path = os.path.join(icons_dir, f'icon-{size}.png')
+        with open(path, 'wb') as f:
+            f.write(make_icon_png(size, bg_rgb))
+    version = str(int(time.time()))
+    set_setting('icon_version', version)
+    set_setting('icon_mode', 'generated')
+    return version
+
+
 def detect_theme():
     """Return the key of the active preset theme, or 'custom'."""
     color_keys = ['color_navbar', 'color_email_grad_start', 'color_email_grad_end',
@@ -317,6 +383,7 @@ def inject_theme():
         theme_balance_negative=neg,
         decimal_sep=get_setting('decimal_separator', '.'),
         currency_symbol=get_setting('currency_symbol', '€'),
+        icon_version=get_setting('icon_version', '0'),
     )
 
 # Email logic
@@ -1300,9 +1367,9 @@ def pwa_manifest():
         "background_color": "#ffffff",
         "theme_color": color,
         "icons": [
-            {"src": "/static/icons/icon-192.png",
+            {"src": f"/static/icons/icon-192.png?v={get_setting('icon_version', '0')}",
              "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
-            {"src": "/static/icons/icon-512.png",
+            {"src": f"/static/icons/icon-512.png?v={get_setting('icon_version', '0')}",
              "sizes": "512x512", "type": "image/png", "purpose": "any maskable"},
         ],
     }
@@ -1819,6 +1886,56 @@ def settings_templates_reset():
     for key, val in TEMPLATE_DEFAULTS.items():
         set_setting(key, val)
     flash('Templates reset to defaults.', 'success')
+    return redirect(url_for('settings'))
+
+
+@app.route('/settings/icon', methods=['POST'])
+def settings_icon():
+    action = request.form.get('action', '')
+    icons_dir = os.path.join(app.root_path, 'static', 'icons')
+    os.makedirs(icons_dir, exist_ok=True)
+
+    if action == 'generate':
+        bg = get_tpl('color_navbar')
+        generate_and_save_icons(bg)
+        flash('Icon regenerated with current navbar color.', 'success')
+
+    elif action == 'reset':
+        generate_and_save_icons(DEFAULT_ICON_BG)
+        flash('Icon reset to default.', 'success')
+
+    elif action == 'upload':
+        file = request.files.get('icon_file')
+        if not file or not file.filename:
+            flash('No file selected.', 'danger')
+            return redirect(url_for('settings'))
+
+        ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
+        if ext not in ('png', 'jpg', 'jpeg'):
+            flash('Only PNG or JPG files are accepted.', 'danger')
+            return redirect(url_for('settings'))
+
+        try:
+            from PIL import Image
+            import io
+            img = Image.open(file.stream)
+            if img.mode != 'RGB':
+                img = img.convert('RGB')
+            for size in (192, 512):
+                resized = img.resize((size, size), Image.LANCZOS)
+                path = os.path.join(icons_dir, f'icon-{size}.png')
+                resized.save(path, 'PNG')
+            version = str(int(time.time()))
+            set_setting('icon_version', version)
+            set_setting('icon_mode', 'custom')
+            flash('Custom icon uploaded.', 'success')
+        except ImportError:
+            flash('Pillow is not installed — cannot process uploaded images.', 'danger')
+        except Exception as e:
+            flash(f'Failed to process image: {e}', 'danger')
+    else:
+        flash('Unknown action.', 'danger')
+
     return redirect(url_for('settings'))
 
 

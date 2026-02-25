@@ -61,7 +61,11 @@ A self-hosted web application for tracking shared expenses and balances within a
 ### PWA — Install to Home Screen
 - **Web App Manifest** — served dynamically at `/manifest.json`; `theme_color` tracks the configured navbar color
 - **Service worker** — network-first strategy; always fetches fresh data; shows a self-contained offline page if the network is unavailable
-- **Icons** — 192×192 and 512×512 PNG icons (Bootstrap blue background, white bank silhouette)
+- **Icons** — 192×192 and 512×512 PNG icons; manageable from Settings → Templates → App Icon:
+  - **Regenerate from navbar color** — one-click regeneration using the current theme color as background (white bank silhouette)
+  - **Upload custom icon** — upload any PNG or JPG; automatically resized to both 192×192 and 512×512
+  - **Reset to default** — restores the original Bootstrap blue icon
+  - Cache-busting ensures browsers and PWA pick up new icons immediately
 - **Android Chrome**: three-dot menu → "Add to home screen" (or automatic install banner)
 - **iOS Safari**: Share sheet → "Add to Home Screen" → correct icon, name, and standalone launch
 - No App Store required; no native build tools required
@@ -98,7 +102,7 @@ The Settings page is split into six tabs:
 | **Email** | SMTP credentials; enable/disable email sending; debug mode (logs runs to DB, surfaces SMTP errors in the UI); admin summary email toggle; send balance emails on demand; set a recurring auto-schedule |
 | **Common** | Global autocomplete toggle; manually manage item names, descriptions, and prices (each with its own blacklist); configure the auto-collect scheduled job and view its debug log |
 | **Backup** | Create/download/delete backups; restore from any backup or an uploaded file; configure an automatic backup schedule with auto-prune; backup status email to site admin (scheduled runs only); debug log |
-| **Templates** | Color palette + preset themes; editable subjects and body text for all three email types (balance, admin summary, backup status); preview buttons for each email |
+| **Templates** | Color palette + preset themes; editable subjects and body text for all three email types (balance, admin summary, backup status); preview buttons for each email; **App Icon** card — regenerate icons from navbar color, upload a custom icon, or reset to default |
 | **Users** | Add new users (including email opt-in and transaction scope preferences); view all users with their status and balance; deactivate or reactivate any user |
 
 ### Email Notifications

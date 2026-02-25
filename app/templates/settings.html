@@ -1254,6 +1254,66 @@
         <form id="reset-templates-form" method="POST"
               action="{{ url_for('settings_templates_reset') }}" class="d-none"></form>
 
+        <!-- App Icon -->
+        <div class="card mb-4 mt-4">
+            <div class="card-header">
+                <i class="bi bi-image"></i> App Icon
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Current icon</label>
+                    <div>
+                        <img src="/static/icons/icon-192.png?v={{ icon_version }}" alt="Current app icon"
+                             style="width: 96px; height: 96px; border-radius: 12px; border: 1px solid #dee2e6;"
+                             id="icon-preview">
+                    </div>
+                </div>
+
+                <div class="card bg-light mb-3">
+                    <div class="card-body py-2">
+                        <div class="fw-semibold mb-1">Generate from theme</div>
+                        <p class="text-muted small mb-2">
+                            Uses current navbar color as background with the bank silhouette in white.
+                        </p>
+                        <form method="POST" action="{{ url_for('settings_icon') }}">
+                            <input type="hidden" name="action" value="generate">
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                <i class="bi bi-arrow-repeat"></i> Regenerate with Navbar Color
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="text-center text-muted mb-3">&mdash; or &mdash;</div>
+
+                <div class="card bg-light mb-3">
+                    <div class="card-body py-2">
+                        <div class="fw-semibold mb-1">Upload custom icon</div>
+                        <p class="text-muted small mb-2">
+                            PNG or JPG, will be resized to 192&times;192 and 512&times;512.
+                        </p>
+                        <form method="POST" action="{{ url_for('settings_icon') }}" enctype="multipart/form-data">
+                            <input type="hidden" name="action" value="upload">
+                            <div class="d-flex gap-2 align-items-center">
+                                <input type="file" class="form-control form-control-sm" name="icon_file"
+                                       accept=".png,.jpg,.jpeg" style="max-width: 280px;">
+                                <button type="submit" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-upload"></i> Upload
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <form method="POST" action="{{ url_for('settings_icon') }}">
+                    <input type="hidden" name="action" value="reset">
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-arrow-counterclockwise"></i> Reset to Default
+                    </button>
+                </form>
+            </div>
+        </div>
+
     </div><!-- /tab-templates -->
 
     <!-- ── Users tab ── -->
