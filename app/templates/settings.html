@@ -1362,13 +1362,14 @@
             </div>
         </div>
 
-        <!-- User List -->
+        <!-- Active Users -->
         <div class="card">
             <div class="card-header">
-                <i class="bi bi-people"></i> All Users
+                <i class="bi bi-people"></i> Active Users
             </div>
             <div class="card-body">
-                {% if all_users %}
+                {% set active_users = all_users|selectattr('is_active')|list %}
+                {% if active_users %}
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
                         <thead>
@@ -1376,12 +1377,11 @@
                                 <th>Name</th>
                                 <th>Email</th>
                                 <th class="text-end">Balance</th>
-                                <th>Status</th>
                                 <th></th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for user in all_users %}
+                            {% for user in active_users %}
                             <tr>
                                 <td>
                                     <a href="{{ url_for('user_detail', user_id=user.id) }}" class="text-decoration-none">
@@ -1394,25 +1394,12 @@
                                         <strong>{{ currency_symbol }}{{ user.balance|money }}</strong>
                                     </span>
                                 </td>
-                                <td>
-                                    {% if user.is_active %}
-                                        <span class="badge bg-success">Active</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">Inactive</span>
-                                    {% endif %}
-                                </td>
                                 <td class="text-end">
                                     <form method="POST" action="{{ url_for('toggle_user_active', user_id=user.id) }}">
-                                        {% if user.is_active %}
                                         <button type="submit" class="btn btn-sm btn-outline-secondary"
                                                 onclick="return confirm('Deactivate {{ user.name }}?')">
                                             <i class="bi bi-person-dash"></i> Deactivate
                                         </button>
-                                        {% else %}
-                                        <button type="submit" class="btn btn-sm btn-outline-success">
-                                            <i class="bi bi-person-check"></i> Reactivate
-                                        </button>
-                                        {% endif %}
                                     </form>
                                 </td>
                             </tr>
@@ -1421,10 +1408,58 @@
                     </table>
                 </div>
                 {% else %}
-                <p class="text-muted mb-0">No users yet. Add your first user above.</p>
+                <p class="text-muted mb-0">No active users. Add your first user above.</p>
                 {% endif %}
             </div>
         </div>
+
+        <!-- Deactivated Users (hidden when none exist) -->
+        {% set deactivated_users = all_users|rejectattr('is_active')|list %}
+        {% if deactivated_users %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <i class="bi bi-person-slash"></i> Deactivated Users
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th class="text-end">Balance</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in deactivated_users %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('user_detail', user_id=user.id) }}" class="text-decoration-none">
+                                        <strong>{{ user.name }}</strong>
+                                    </a>
+                                </td>
+                                <td class="text-muted">{{ user.email }}</td>
+                                <td class="text-end">
+                                    <span class="{% if user.balance >= 0 %}balance-positive{% else %}balance-negative{% endif %}">
+                                        <strong>{{ currency_symbol }}{{ user.balance|money }}</strong>
+                                    </span>
+                                </td>
+                                <td class="text-end">
+                                    <form method="POST" action="{{ url_for('toggle_user_active', user_id=user.id) }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-success">
+                                            <i class="bi bi-person-check"></i> Reactivate
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
 
     </div><!-- /tab-users -->
 

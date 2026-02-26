@@ -103,7 +103,7 @@ The Settings page is split into six tabs:
 | **Common** | Global autocomplete toggle; manually manage item names, descriptions, and prices (each with its own blacklist); configure the auto-collect scheduled job and view its debug log |
 | **Backup** | Create/download/delete backups; restore from any backup or an uploaded file; configure an automatic backup schedule with auto-prune; backup status email to site admin (scheduled runs only); debug log |
 | **Templates** | Color palette + preset themes; editable subjects and body text for all three email types (balance, admin summary, backup status); preview buttons for each email; **App Icon** card — regenerate icons from navbar color, upload a custom icon, or reset to default |
-| **Users** | Add new users (including email opt-in and transaction scope preferences); view all users with their status and balance; deactivate or reactivate any user |
+| **Users** | Add new users (including email opt-in and transaction scope preferences); active users and deactivated users are shown in separate lists (the deactivated list is hidden when empty); deactivate or reactivate any user |
 
 ### Email Notifications
 - SMTP credentials are stored securely in the database (configured via Settings → Email)
@@ -210,8 +210,8 @@ That's it. SMTP credentials and the email schedule are configured from the **Set
 
 ### Managing Users
 1. **Settings** → **Users** tab
-2. All users are listed with their status (Active / Inactive) and current balance
-3. Click **Deactivate** to hide a user from the dashboard, or **Reactivate** to restore them
+2. Active users are shown in an **Active Users** list; deactivated users appear in a separate **Deactivated Users** list (hidden when no deactivated users exist)
+3. Click **Deactivate** to move a user to the deactivated list, or **Reactivate** to restore them to the active list
 4. Click a user's name to open their detail page, then **Edit User** to change their name, email, member-since date, or email preferences
 
 ---
