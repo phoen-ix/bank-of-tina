@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, g, abort
 from flask_sqlalchemy import SQLAlchemy
+from flask_wtf.csrf import CSRFProtect
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 import os
@@ -22,7 +23,15 @@ import zlib
 import time
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'change-this-to-a-random-secret-key'
+
+_secret = os.environ.get('SECRET_KEY', '')
+if not _secret or _secret == 'change-this-to-a-random-secret-key':
+    raise RuntimeError(
+        'SECRET_KEY is not set or is the insecure default. '
+        'Set a strong random value in your .env file. '
+        'Generate one with: python3 -c "import secrets; print(secrets.token_hex(32))"'
+    )
+app.config['SECRET_KEY'] = _secret
 _db_user = os.environ.get('DB_USER', 'tina')
 _db_pass = os.environ.get('DB_PASSWORD', 'tina')
 _db_host = os.environ.get('DB_HOST', 'localhost')
@@ -35,6 +44,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = '/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10 MB per chunk (chunked upload)
 BACKUP_DIR = '/backups'
+
+csrf = CSRFProtect(app)
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'}
 

@@ -29,7 +29,7 @@ services:
       - ./backups:/backups
     environment:
       - FLASK_APP=app.py
-      - SECRET_KEY=${SECRET_KEY:-change-this-to-a-random-secret-key}
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY must be set in .env — generate one with: python3 -c "import secrets; print(secrets.token_hex(32))"}
       - DB_HOST=db
       - DB_PORT=3306
       - DB_NAME=${DB_NAME:-bank_of_tina}

@@ -1519,7 +1519,8 @@ function startChunkedUpload() {
         fd.append('totalChunks', totalChunks);
         fd.append('chunk',       chunk);
 
-        fetch('/backups/upload-chunk', { method: 'POST', body: fd })
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        fetch('/backups/upload-chunk', { method: 'POST', body: fd, headers: {'X-CSRFToken': csrfToken} })
             .then(r => r.json())
             .then(data => {
                 chunkIndex++;
