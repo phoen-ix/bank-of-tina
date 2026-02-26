@@ -122,7 +122,7 @@ The Settings page is split into six tabs:
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/your-username/bank-of-tina.git
+git clone https://github.com/phoen-ix/bank-of-tina.git
 cd bank-of-tina
 ```
 
@@ -232,7 +232,6 @@ bank-of-tina/
 │   │   ├── user_detail.html
 │   │   ├── analytics.html        # Charts & Statistics page
 │   │   └── settings.html         # Settings (General / Email / Common / Backup / Templates / Users)
-│   └── static/
 │   └── static/
 │       ├── sw.js                 # Service worker (network-first, offline fallback)
 │       ├── offline.html          # Self-contained offline fallback page
