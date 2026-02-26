@@ -1946,6 +1946,7 @@ def preview_email():
         class _Dummy:
             name = 'Jane Doe'; email = 'jane@example.com'; balance = 12.50; id = 0
             from_user_id = None; to_user_id = None
+            email_transactions = 'last3'; email_opt_in = True
         user = _Dummy()
         # patch recent_transactions query to return empty list
         user._dummy = True

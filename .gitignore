@@ -9,6 +9,9 @@ database/
 uploads/*
 !uploads/.gitkeep
 
+# Backups
+backups/
+
 # Python
 __pycache__/
 *.py[cod]
