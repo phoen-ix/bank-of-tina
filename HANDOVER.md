@@ -21,14 +21,16 @@ This document gives a new Claude instance full context to continue development w
 |-------|-----------|
 | Backend | Python 3.11, Flask 3.0, Flask-SQLAlchemy 3.1 |
 | Database | MariaDB 11 (via PyMySQL) |
-| ORM | SQLAlchemy (no migrations — `db.create_all()` on startup) |
+| ORM | SQLAlchemy with Flask-Migrate (Alembic) for schema migrations |
 | Monetary types | `Decimal` / `db.Numeric(12, 2)` everywhere (no floats) |
+| Rate limiting | Flask-Limiter 3.5 (in-memory, per-route limits, no global default) |
 | Scheduler | APScheduler `BackgroundScheduler` |
 | Timezone | pytz |
 | Logging | Python `logging` to stdout, structured format |
+| Type hints | `from __future__ import annotations` on all modules |
 | Frontend | Bootstrap 5.3, Bootstrap Icons 1.11, vanilla JS |
-| Container | Docker + docker-compose, gunicorn (1 worker, 300 s timeout) |
-| Testing | pytest with SQLite in-memory (`FLASK_TESTING=1`) |
+| Container | Docker + docker-compose, gunicorn (1 worker, 300 s timeout), non-root user |
+| Testing | pytest with SQLite in-memory (`FLASK_TESTING=1`), 76 tests |
 | DB tools | `mariadb-client` installed in image for `mysqldump`/`mysql` CLI |
 
 ---
@@ -41,16 +43,21 @@ The backend was split from a single 2300-line `app.py` into a modular Flask Blue
 bank-of-tina/
 ├── app/
 │   ├── app.py                    # Thin entry point: create app, init extensions, register blueprints, start scheduler
-│   ├── extensions.py             # Shared instances: db (SQLAlchemy), csrf (CSRFProtect), scheduler (BackgroundScheduler)
+│   ├── extensions.py             # Shared instances: db, csrf, migrate, limiter, scheduler
 │   ├── config.py                 # Constants: THEMES, TEMPLATE_DEFAULTS, ALLOWED_EXTENSIONS, BACKUP_DIR, DEFAULT_ICON_BG
-│   ├── models.py                 # All 11 SQLAlchemy model classes
+│   ├── models.py                 # All 11 SQLAlchemy model classes (fully type-annotated)
 │   ├── helpers.py                # Utility functions (parse_amount, fmt_amount, save_receipt, update_balance, etc.)
 │   ├── email_service.py          # build_email_html, build_admin_summary_email, send_single_email, send_all_emails
 │   ├── backup_service.py         # run_backup, _backup_log, _prune_old_backups, _list_backups, build_backup_status_email
 │   ├── scheduler_jobs.py         # _add_email_job, _add_common_job, _add_backup_job, auto_collect_common, _restore_schedule
+│   ├── migrations/               # Alembic migrations (Flask-Migrate)
+│   │   ├── env.py
+│   │   ├── alembic.ini
+│   │   ├── script.py.mako
+│   │   └── versions/             # Migration scripts (initial schema + future)
 │   ├── routes/
 │   │   ├── __init__.py           # register_blueprints(app) — registers all 3 blueprints
-│   │   ├── main.py               # main_bp: dashboard, users, transactions, search, receipts, PWA manifest
+│   │   ├── main.py               # main_bp: health, dashboard, users, transactions, search, receipts, PWA
 │   │   ├── settings.py           # settings_bp: all settings, common items, backup, templates, icons, user management
 │   │   └── analytics.py          # analytics_bp: charts page + JSON data endpoint
 │   ├── templates/
@@ -70,10 +77,14 @@ bank-of-tina/
 │           ├── icon-192.png      # PWA icon 192×192
 │           └── icon-512.png      # PWA icon 512×512
 ├── tests/
-│   ├── conftest.py               # pytest fixtures: app (SQLite in-memory), client, clean_db
-│   ├── test_helpers.py           # parse_amount, fmt_amount with Decimal
-│   ├── test_models.py            # User creation, balance precision (10×0.10 == 1.00)
-│   └── test_routes.py            # Dashboard, add user, deposit, withdrawal, delete reversal, API JSON
+│   ├── conftest.py               # pytest fixtures: app, client, clean_db, make_user factory
+│   ├── test_helpers.py           # parse_amount, fmt_amount, hex_to_rgb, apply_template (14 tests)
+│   ├── test_models.py            # User, Transaction, ExpenseItem, Setting, CommonItem (12 tests)
+│   ├── test_routes.py            # Dashboard, transactions, search, edit, API (26 tests)
+│   ├── test_settings.py          # Settings CRUD, common items, templates, schedule (15 tests)
+│   ├── test_analytics.py         # Analytics page and data endpoint (5 tests)
+│   ├── test_health.py            # Health endpoint (2 tests)
+│   └── test_email_service.py     # Email building and sending (4 tests)
 ├── uploads/                      # Receipts — bind-mounted; YYYY/MM/DD/Buyer_file.ext
 ├── backups/                      # Backup archives — bind-mounted; bot_backup_*.tar.gz
 ├── mariadb-data/                 # MariaDB data — bind-mounted
@@ -90,7 +101,7 @@ bank-of-tina/
 ### Module Dependency Graph (no cycles)
 
 ```
-extensions.py  → (nothing)
+extensions.py  → flask_sqlalchemy, flask_wtf, flask_migrate, flask_limiter, apscheduler
 config.py      → (nothing)
 models.py      → extensions
 helpers.py     → extensions, models, config
@@ -119,7 +130,18 @@ app.py         → everything (assembly point)
 | `EmailLog` | `id`, `sent_at`, `level`, `recipient`, `message` | Capped at 500 rows |
 | `BackupLog` | `id`, `ran_at`, `level`, `message` | Capped at 500 rows |
 
-Schema is created by `db.create_all()` at startup. A lightweight `_migrate_db()` function (called immediately after `db.create_all()`) issues `ALTER TABLE … ADD COLUMN` for any columns added since initial install, swallowing duplicate-column errors. New columns must be registered there for existing installs to pick them up automatically. Note: `transaction` is a reserved word in MariaDB — use backtick-quoting (`\`transaction\``) in raw SQL inside `_migrate_db()`.
+Schema is managed by **Flask-Migrate (Alembic)**. On startup, `app.py` checks the database state:
+- **Existing DB without Alembic** — stamps at head (no migration needed, just marks the current version)
+- **New empty DB** — runs `upgrade()` to create all tables from the migration scripts
+- **DB with Alembic version** — runs `upgrade()` to apply any pending migrations
+
+To add a new column or change the schema:
+1. Edit `models.py`
+2. Run `flask db migrate -m "description"` to auto-generate a migration script
+3. Review the generated script in `app/migrations/versions/`
+4. The migration will run automatically on next app start
+
+The `env.py` uses `render_as_batch=True` for SQLite compatibility (important for tests).
 
 ---
 
@@ -358,7 +380,7 @@ Route: `GET /search` (in `routes/main.py`) — parameters: `q`, `type`, `user`, 
 
 ## Common Gotchas
 
-- **Adding a new column** — add it to the model in `models.py` *and* register an `ALTER TABLE` entry in `_migrate_db()` (in `app.py`) so existing installs pick it up automatically on the next container start.
+- **Adding a new column** — add it to the model in `models.py`, then run `flask db migrate -m "description"` to generate an Alembic migration script. The migration runs automatically on next app start.
 - **Monetary values use `Decimal`** — all model columns use `db.Numeric(12, 2)`, all Python code uses `Decimal`. Always use `parse_amount()` (not `float()`) to read form values and `fmt_amount()` / `|money` filter to display them, so the configured decimal separator is respected and there is no float drift.
 - **`datetime.now()` is UTC in Docker** — always use `now_local()` for display or filenames, never `datetime.now()` directly.
 - **Balance is stored, not derived** — never recalculate from transactions; mutate `user.balance` carefully.
@@ -367,7 +389,7 @@ Route: `GET /search` (in `routes/main.py`) — parameters: `q`, `type`, `user`, 
 - **Circular imports** — never import from `app.py` in other modules. Import `db`, `csrf`, `scheduler` from `extensions.py`. Import models from `models.py`.
 - **Blueprint url_for** — all `url_for()` calls in templates must be blueprint-prefixed: `url_for('main.index')`, `url_for('settings_bp.settings')`, `url_for('analytics_bp.analytics')`, etc.
 - **Single gunicorn worker** — the in-process APScheduler only works correctly with 1 worker. Scaling requires moving to a proper task queue.
-- **`db.create_all()` is idempotent** but won't add columns to existing tables — that's what `_migrate_db()` is for.
+- **Alembic migrations** — `db.create_all()` is no longer used in production; Flask-Migrate handles schema creation and evolution. Always generate migration scripts for schema changes.
 - **`FLASK_TESTING=1`** — set this env var to skip DB init, scheduler start, and migration at import time. The test suite sets it in `conftest.py` before importing `app`.
 
 ---
@@ -461,13 +483,21 @@ The CACHE constant in `sw.js` is `'bot-v1'`. Bump to `'bot-v2'` etc. on future d
 
 ## Current State (as of last commit)
 
-All features are fully implemented and committed. The codebase has been through a major refactoring:
+All features are fully implemented and committed. The codebase has been through two rounds of major refactoring:
 
-### Architecture improvements (most recent)
-20. **Automated test suite** — pytest with SQLite in-memory; 16 tests covering helpers, models, and routes; `FLASK_TESTING=1` init guard skips DB/scheduler setup; run with `FLASK_TESTING=1 python -m pytest tests/ -v`
-21. **Modular Blueprint architecture** — monolithic 2300-line `app.py` split into 11 modules: `extensions.py`, `config.py`, `models.py`, `helpers.py`, `email_service.py`, `backup_service.py`, `scheduler_jobs.py`, and `routes/` package with 3 blueprints (`main_bp`, `settings_bp`, `analytics_bp`); all template `url_for` calls updated to blueprint-prefixed endpoints
-22. **Structured logging** — Python `logging` to stdout with structured format (`timestamp level [module] message`); ~15 log statements across transactions, users, email, backup, scheduler; `LOG_LEVEL` env var (default `INFO`)
-23. **Decimal precision** — all monetary columns changed from `db.Float` to `db.Numeric(12, 2)`; all Python monetary code uses `Decimal` instead of `float`; custom `DecimalJSONProvider` for JSON serialization; `_migrate_db()` runs `ALTER TABLE MODIFY COLUMN` for existing installs
+### Round 2 improvements (most recent)
+25. **Health check endpoint** — `GET /health` verifies database connectivity; Dockerfile `HEALTHCHECK` and docker-compose healthcheck point to `/health`
+26. **Non-root Docker user** — container runs as `appuser` (UID/GID 1000) for reduced attack surface; bind-mounted volumes remain writable
+27. **Flask-Migrate (Alembic)** — replaces the hand-rolled `_migrate_db()` ALTER TABLE approach; existing databases are auto-stamped on first run; new databases are created via migration scripts
+28. **Rate limiting** — Flask-Limiter with in-memory storage; per-route limits on user add (10/min), transaction add (30/min POST), send-now (5/min), backup create (5/min), backup restore (3/min); 429 error handler with JSON and flash message support; disabled in tests via `RATELIMIT_ENABLED: False`
+29. **Type hints** — `from __future__ import annotations` and full type annotations on all functions and module-level variables across every `.py` file; bug fix in `email_service.py` (bare `return False` → `return False, 'SMTP credentials not configured'`)
+30. **Expanded test coverage** — 76 tests across 7 test modules (up from 16 in 3 modules); `make_user` factory fixture; new test files for settings, analytics, health, and email service
+
+### Round 1 improvements
+20. **Automated test suite** — pytest with SQLite in-memory; `FLASK_TESTING=1` init guard skips DB/scheduler setup
+21. **Modular Blueprint architecture** — monolithic 2300-line `app.py` split into 11 modules with 3 blueprints
+22. **Structured logging** — Python `logging` to stdout with structured format; `LOG_LEVEL` env var (default `INFO`)
+23. **Decimal precision** — all monetary columns changed from `db.Float` to `db.Numeric(12, 2)`; all Python monetary code uses `Decimal`
 24. **docker-compose cleanup** — removed deprecated `version: '3.8'` key
 
 ### Feature history
@@ -521,14 +551,20 @@ FLASK_TESTING=1 python -m pytest tests/ -v
 - Sets `FLASK_TESTING=1` and `SQLALCHEMY_DATABASE_URI=sqlite://` *before* importing `app`
 - `SECRET_KEY=test-key-not-for-production` (bypasses the strong-key check)
 - `WTF_CSRF_ENABLED=False` (no CSRF tokens needed in tests)
+- `RATELIMIT_ENABLED=False` (disables Flask-Limiter in tests)
 - Session-scoped `app` fixture; autouse `clean_db` fixture rolls back after each test
+- `make_user` factory fixture for quickly creating users with auto-incrementing names/emails
 
-### Test files
+### Test files (76 tests total)
 | File | Tests | Coverage |
 |------|-------|----------|
-| `test_helpers.py` | 6 | `parse_amount` (various formats), `fmt_amount` (period/comma separator) |
-| `test_models.py` | 4 | User creation, default balance, precision (10×0.10 == 1.00), `is_active` default |
-| `test_routes.py` | 6 | Index page, add user, deposit, withdrawal, delete reversal, API JSON |
+| `test_helpers.py` | 14 | `parse_amount` (dot, comma, negative, empty, invalid), `fmt_amount` (default/comma separator), `hex_to_rgb`, `apply_template` |
+| `test_models.py` | 12 | User CRUD, Transaction (all fields, types, relationships), ExpenseItem, Setting, CommonItem uniqueness, negative balance |
+| `test_routes.py` | 26 | Dashboard, add user, deposit/withdrawal, expense with items, edit transaction, delete reversal, search (text/type/date/amount/receipt), user detail/edit/toggle, duplicate validation, PWA manifest, API |
+| `test_settings.py` | 15 | Settings page, general/email update, common item/description/price/blacklist CRUD, template color/reset, schedule, send-now, common toggle, API endpoints, backup create |
+| `test_analytics.py` | 5 | Analytics page loads, data endpoint (no transactions, with transactions, user filter, date range) |
+| `test_health.py` | 2 | Health returns OK, correct JSON format |
+| `test_email_service.py` | 4 | `build_email_html`, `build_admin_summary_email`, `send_single_email` without SMTP, `build_backup_status_email` |
 
 ---
 

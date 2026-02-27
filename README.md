@@ -222,16 +222,21 @@ That's it. SMTP credentials and the email schedule are configured from the **Set
 bank-of-tina/
 ├── app/
 │   ├── app.py                    # Thin entry point: creates Flask app, inits extensions, starts scheduler
-│   ├── extensions.py             # Shared instances: db, csrf, scheduler (no app binding)
+│   ├── extensions.py             # Shared instances: db, csrf, migrate, limiter, scheduler
 │   ├── config.py                 # Constants: THEMES, TEMPLATE_DEFAULTS, ALLOWED_EXTENSIONS, BACKUP_DIR
-│   ├── models.py                 # All 11 SQLAlchemy models
+│   ├── models.py                 # All 11 SQLAlchemy models (fully type-annotated)
 │   ├── helpers.py                # Utility functions: parse_amount, fmt_amount, save_receipt, etc.
 │   ├── email_service.py          # Email building and sending (balance, admin summary, backup status)
 │   ├── backup_service.py         # Backup creation, restore, pruning, status email
 │   ├── scheduler_jobs.py         # APScheduler job setup and restore
+│   ├── migrations/               # Alembic migrations (managed by Flask-Migrate)
+│   │   ├── env.py
+│   │   ├── alembic.ini
+│   │   ├── script.py.mako
+│   │   └── versions/             # Migration scripts
 │   ├── routes/
 │   │   ├── __init__.py           # register_blueprints(app)
-│   │   ├── main.py               # main_bp: dashboard, users, transactions, search, receipts, PWA
+│   │   ├── main.py               # main_bp: health, dashboard, users, transactions, search, receipts, PWA
 │   │   ├── settings.py           # settings_bp: all settings, common items, backup, templates, icons
 │   │   └── analytics.py          # analytics_bp: charts page + data endpoint
 │   ├── templates/
@@ -251,10 +256,14 @@ bank-of-tina/
 │           ├── icon-192.png      # PWA icon 192×192
 │           └── icon-512.png      # PWA icon 512×512
 ├── tests/
-│   ├── conftest.py               # pytest fixtures (SQLite in-memory, no CSRF)
-│   ├── test_helpers.py           # Tests for parse_amount, fmt_amount
-│   ├── test_models.py            # Tests for User model, balance precision
-│   └── test_routes.py            # Tests for dashboard, transactions, API
+│   ├── conftest.py               # pytest fixtures (SQLite in-memory, no CSRF, make_user factory)
+│   ├── test_helpers.py           # Tests for parse_amount, fmt_amount, hex_to_rgb, apply_template
+│   ├── test_models.py            # Tests for User, Transaction, ExpenseItem, Setting, CommonItem
+│   ├── test_routes.py            # Tests for dashboard, transactions, search, edit, API
+│   ├── test_settings.py          # Tests for settings CRUD, common items, templates, schedule
+│   ├── test_analytics.py         # Tests for analytics page and data endpoint
+│   ├── test_health.py            # Tests for /health endpoint
+│   └── test_email_service.py     # Tests for email building and sending
 ├── uploads/                      # Receipts — organised as YYYY/MM/DD/
 ├── backups/                      # Backup archives (bot_backup_*.tar.gz)
 ├── mariadb-data/                 # MariaDB data directory (created on first run)
@@ -271,6 +280,8 @@ bank-of-tina/
 
 - Set a strong, random `SECRET_KEY` in your `.env` file
 - Never commit your `.env` file (it is in `.gitignore`)
+- The Docker container runs as a non-root user (`appuser`, UID 1000) to reduce attack surface
+- Per-route rate limiting is enabled on write-heavy endpoints (user add, transaction add, send-now, backup create/restore)
 - Use an **App Password** for Gmail rather than your main account password
 - Restrict network access to port 5000 — place behind a reverse proxy (nginx, Caddy) with authentication if the app is internet-facing
 - Back up the `mariadb-data/` directory regularly, or use the built-in **Backup** feature (Settings → Backup tab)
@@ -278,6 +289,14 @@ bank-of-tina/
 ---
 
 ## 🔧 Maintenance
+
+### Health check
+```bash
+curl http://localhost:5000/health
+# Returns {"status": "ok"} when the database is reachable
+```
+
+The Dockerfile includes a `HEALTHCHECK` instruction and the docker-compose web service uses `/health` for its healthcheck.
 
 ### View logs
 ```bash
@@ -345,7 +364,7 @@ Tests use an in-memory SQLite database and require no running services:
 FLASK_TESTING=1 python -m pytest tests/ -v
 ```
 
-The test suite covers helpers (amount parsing/formatting), models (user creation, balance precision), and routes (dashboard, transactions, deletion reversal, API).
+The test suite includes 76 tests across 7 test modules covering helpers, models, routes, settings, analytics, health check, and email service.
 
 ---
 
@@ -356,6 +375,7 @@ The test suite covers helpers (amount parsing/formatting), models (user creation
 - [ ] Exchange-rate-aware multi-currency support (currency symbol is already configurable)
 - [ ] OCR for automatic receipt parsing
 - [ ] Saved/pinned searches
+- [ ] Migrate from `Query.get()` to `Session.get()` (SQLAlchemy 2.0 legacy warnings)
 
 ---
 
