@@ -6,7 +6,7 @@ from decimal import Decimal
 from flask import Flask
 from flask.json.provider import DefaultJSONProvider
 
-from extensions import db, csrf, scheduler
+from extensions import db, csrf, migrate, scheduler
 from helpers import get_setting, get_tpl, hex_to_rgb, to_local
 from config import TEMPLATE_DEFAULTS
 
@@ -65,6 +65,7 @@ app.json_provider_class = DecimalJSONProvider
 app.json = DecimalJSONProvider(app)
 
 db.init_app(app)
+migrate.init_app(app, db)
 csrf.init_app(app)
 
 # Import models so they are registered with SQLAlchemy
@@ -109,41 +110,24 @@ def inject_theme():
     )
 
 
-def _migrate_db():
-    """Add any new columns / modify types that db.create_all() won't handle."""
-    with db.engine.connect() as conn:
-        for col, definition in [
-            ('email_opt_in',       'BOOLEAN NOT NULL DEFAULT 1'),
-            ('email_transactions', "VARCHAR(20) NOT NULL DEFAULT 'last3'"),
-        ]:
-            try:
-                conn.execute(db.text(f'ALTER TABLE user ADD COLUMN {col} {definition}'))
-                conn.commit()
-            except Exception:
-                pass
-        try:
-            conn.execute(db.text('ALTER TABLE `transaction` ADD COLUMN notes TEXT'))
-            conn.commit()
-        except Exception:
-            pass
-        for table, column in [
-            ('user', 'balance'),
-            ('`transaction`', 'amount'),
-            ('expense_item', 'price'),
-            ('common_price', 'value'),
-        ]:
-            try:
-                conn.execute(db.text(f'ALTER TABLE {table} MODIFY COLUMN {column} DECIMAL(12,2)'))
-                conn.commit()
-            except Exception:
-                pass
-
-
 if os.environ.get('FLASK_TESTING') != '1':
     with app.app_context():
-        db.create_all()
-        logger.info('Database tables created / verified')
-        _migrate_db()
+        from flask_migrate import upgrade, stamp
+        inspector = db.inspect(db.engine)
+        tables = inspector.get_table_names()
+        has_alembic = 'alembic_version' in tables
+        has_tables = 'user' in tables
+
+        if has_tables and not has_alembic:
+            stamp(revision='head')
+            logger.info('Existing database stamped at current migration head')
+        elif not has_tables:
+            upgrade()
+            logger.info('Database created via migrations')
+        else:
+            upgrade()
+            logger.info('Database migrations up to date')
+
         from scheduler_jobs import _restore_schedule
         _restore_schedule(app)
     scheduler.start()
