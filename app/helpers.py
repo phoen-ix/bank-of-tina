@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import re
 import struct
@@ -8,6 +10,7 @@ from decimal import Decimal, InvalidOperation
 
 import pytz
 from flask import current_app, g
+from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
 from extensions import db
@@ -15,11 +18,11 @@ from models import Setting, Transaction
 from config import ALLOWED_EXTENSIONS, TEMPLATE_DEFAULTS, DEFAULT_ICON_BG
 
 
-def allowed_file(filename):
+def allowed_file(filename: str) -> bool:
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-def save_receipt(file, buyer_name):
+def save_receipt(file: FileStorage | None, buyer_name: str) -> str | None:
     """Save an uploaded receipt to UPLOAD_FOLDER/YYYY/MM/DD/BUYER_filename."""
     if not file or not file.filename or not allowed_file(file.filename):
         return None
@@ -38,7 +41,7 @@ def save_receipt(file, buyer_name):
     return f"{rel_dir}/{filename}"
 
 
-def delete_receipt_file(receipt_path, exclude_transaction_id):
+def delete_receipt_file(receipt_path: str | None, exclude_transaction_id: int) -> None:
     """Delete a receipt file from disk only if no other transaction still references it."""
     if not receipt_path:
         return
@@ -55,7 +58,7 @@ def delete_receipt_file(receipt_path, exclude_transaction_id):
         pass
 
 
-def update_balance(user_id, amount):
+def update_balance(user_id: int, amount: Decimal) -> None:
     from models import User
     user = User.query.get(user_id)
     if user:
@@ -63,19 +66,19 @@ def update_balance(user_id, amount):
         db.session.commit()
 
 
-def get_setting(key, default=None):
+def get_setting(key: str, default: str | None = None) -> str | None:
     s = Setting.query.get(key)
     return s.value if s else default
 
 
-def set_setting(key, value):
+def set_setting(key: str, value: str) -> None:
     s = Setting.query.get(key) or Setting(key=key)
     s.value = value
     db.session.add(s)
     db.session.commit()
 
 
-def now_local():
+def now_local() -> datetime:
     """Return the current datetime in the configured app timezone."""
     tz_name = get_setting('timezone', 'UTC')
     try:
@@ -85,32 +88,32 @@ def now_local():
     return datetime.now(tz)
 
 
-def get_tpl(key):
+def get_tpl(key: str) -> str:
     """Get a template/theme setting, falling back to TEMPLATE_DEFAULTS."""
     return get_setting(key, TEMPLATE_DEFAULTS.get(key, ''))
 
 
-def apply_template(text, **kwargs):
+def apply_template(text: str, **kwargs: str | int | None) -> str:
     """Replace [Key] placeholders in text with provided values."""
     for key, value in kwargs.items():
         text = text.replace(f'[{key}]', str(value) if value is not None else '')
     return text
 
 
-def parse_amount(s):
+def parse_amount(s: str | None) -> Decimal:
     """Parse a user-supplied decimal string, accepting both '.' and ',' as separator."""
     if s is None:
         return Decimal('0')
     return Decimal(str(s).strip().replace(',', '.'))
 
 
-def fmt_amount(value):
+def fmt_amount(value: Decimal | int | float) -> str:
     """Format a numeric value with 2 decimal places using the configured decimal separator."""
     sep = get_setting('decimal_separator', '.')
     return f'{Decimal(str(value)):.2f}'.replace('.', sep)
 
 
-def hex_to_rgb(hex_color):
+def hex_to_rgb(hex_color: str) -> str:
     """Convert #rrggbb to 'r, g, b' string for CSS custom properties."""
     try:
         h = hex_color.lstrip('#')
@@ -119,16 +122,17 @@ def hex_to_rgb(hex_color):
         return '0, 0, 0'
 
 
-def make_icon_png(size, bg_color, fg_color=(0xff, 0xff, 0xff)):
+def make_icon_png(size: int, bg_color: tuple[int, int, int],
+                  fg_color: tuple[int, int, int] = (0xff, 0xff, 0xff)) -> bytes:
     """Generate a square PNG of `size` pixels with a bank silhouette."""
     width = height = size
-    pixels = [[bg_color] * width for _ in range(height)]
+    pixels: list[list[tuple[int, int, int]]] = [[bg_color] * width for _ in range(height)]
 
     pad = size * 0.15
     draw_w = size - 2 * pad
     draw_h = size - 2 * pad
 
-    def fill_rect(x0f, y0f, x1f, y1f):
+    def fill_rect(x0f: float, y0f: float, x1f: float, y1f: float) -> None:
         x0 = int(pad + x0f * draw_w)
         y0 = int(pad + y0f * draw_h)
         x1 = int(pad + x1f * draw_w)
@@ -145,14 +149,14 @@ def make_icon_png(size, bg_color, fg_color=(0xff, 0xff, 0xff)):
     fill_rect(0.10, 0.78, 0.90, 0.88)
     fill_rect(0.05, 0.88, 0.95, 1.00)
 
-    raw_rows = []
+    raw_rows: list[bytes] = []
     for row in pixels:
         row_bytes = b'\x00' + b''.join(bytes(p) for p in row)
         raw_rows.append(row_bytes)
     raw = b''.join(raw_rows)
     compressed = zlib.compress(raw, level=9)
 
-    def chunk(tag, data):
+    def chunk(tag: bytes, data: bytes) -> bytes:
         c = tag + data
         return struct.pack('>I', len(data)) + c + struct.pack('>I', zlib.crc32(c) & 0xFFFFFFFF)
 
@@ -163,7 +167,7 @@ def make_icon_png(size, bg_color, fg_color=(0xff, 0xff, 0xff)):
             + chunk(b'IEND', b''))
 
 
-def generate_and_save_icons(bg_hex):
+def generate_and_save_icons(bg_hex: str) -> str:
     """Generate bank silhouette icons with the given background color and save them."""
     h = bg_hex.lstrip('#')
     bg_rgb = (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
@@ -179,7 +183,7 @@ def generate_and_save_icons(bg_hex):
     return version
 
 
-def detect_theme():
+def detect_theme() -> str:
     """Return the key of the active preset theme, or 'custom'."""
     from config import THEMES
     color_keys = ['color_navbar', 'color_email_grad_start', 'color_email_grad_end',
@@ -191,7 +195,7 @@ def detect_theme():
     return 'custom'
 
 
-def parse_submitted_date(date_str):
+def parse_submitted_date(date_str: str) -> datetime:
     """Parse a datetime-local string entered in the app timezone and return a naive UTC datetime."""
     if not date_str:
         return datetime.utcnow()
@@ -206,7 +210,7 @@ def parse_submitted_date(date_str):
     return datetime.utcnow()
 
 
-def get_app_tz():
+def get_app_tz() -> pytz.BaseTzInfo:
     """Return the configured pytz timezone, cached for the duration of the request."""
     if 'app_tz' not in g:
         tz_name = get_setting('timezone', 'UTC')
@@ -217,7 +221,7 @@ def get_app_tz():
     return g.app_tz
 
 
-def to_local(dt):
+def to_local(dt: datetime | None) -> datetime | None:
     """Convert a naive UTC datetime to the configured local timezone."""
     if dt is None:
         return dt

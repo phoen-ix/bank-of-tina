@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import os
 import re
@@ -23,16 +25,16 @@ _db_port = os.environ.get('DB_PORT', '3306')
 _db_name = os.environ.get('DB_NAME', 'bank_of_tina')
 
 
-def _backup_log(level, message):
+def _backup_log(level: str, message: str) -> None:
     db.session.add(BackupLog(level=level, message=message))
     db.session.commit()
 
 
-def run_backup():
+def run_backup() -> tuple[bool, str]:
     """Create a full backup tar.gz in BACKUP_DIR. Returns (True, filename) or (False, error_msg)."""
     debug = get_setting('backup_debug', '0') == '1'
 
-    def log(level, msg):
+    def log(level: str, msg: str) -> None:
         if debug:
             _backup_log(level, msg)
 
@@ -91,7 +93,7 @@ def run_backup():
         return False, err
 
 
-def _prune_old_backups(keep):
+def _prune_old_backups(keep: int) -> None:
     """Delete oldest backups keeping only the most recent `keep` files."""
     if keep <= 0:
         return
@@ -103,9 +105,9 @@ def _prune_old_backups(keep):
         os.remove(os.path.join(BACKUP_DIR, files.pop(0)))
 
 
-def _list_backups():
+def _list_backups() -> list[dict[str, str | int | datetime]]:
     """Return list of dicts with backup file info, newest first."""
-    backups = []
+    backups: list[dict[str, str | int | datetime]] = []
     if os.path.exists(BACKUP_DIR):
         for f in sorted(os.listdir(BACKUP_DIR), reverse=True):
             if re.match(r'^bot_backup_[\d_-]+\.tar\.gz$', f):
@@ -119,7 +121,7 @@ def _list_backups():
     return backups
 
 
-def build_backup_status_email(ok, result, kept, pruned):
+def build_backup_status_email(ok: bool, result: str, kept: int, pruned: int) -> str:
     date_str   = now_local().strftime('%Y-%m-%d %H:%M')
     grad_start = get_tpl('color_email_grad_start')
     grad_end   = get_tpl('color_email_grad_end')

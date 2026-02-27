@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import logging
 from collections import defaultdict
@@ -5,7 +7,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 
 import calendar as cal_mod
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, current_app
+from flask import Blueprint, Response, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, current_app
 
 from extensions import db, limiter
 from models import User, Transaction, ExpenseItem
@@ -16,11 +18,11 @@ logger = logging.getLogger(__name__)
 
 main_bp = Blueprint('main', __name__)
 
-VALID_EMAIL_TX = {'none', 'last3', 'this_week', 'this_month'}
+VALID_EMAIL_TX: set[str] = {'none', 'last3', 'this_week', 'this_month'}
 
 
 @main_bp.route('/health')
-def health():
+def health() -> tuple[Response, int]:
     try:
         db.session.execute(db.text('SELECT 1'))
         return jsonify({'status': 'ok'}), 200
@@ -29,7 +31,7 @@ def health():
 
 
 @main_bp.route('/')
-def index():
+def index() -> str:
     users = User.query.filter_by(is_active=True).order_by(User.name).all()
     count = int(get_setting('recent_transactions_count', '5'))
     recent = Transaction.query.order_by(Transaction.date.desc()).limit(count).all() if count else []
@@ -40,7 +42,7 @@ def index():
 
 @main_bp.route('/user/add', methods=['POST'])
 @limiter.limit("10/minute")
-def add_user():
+def add_user() -> Response:
     name = request.form.get('name')
     email = request.form.get('email')
 
@@ -68,7 +70,7 @@ def add_user():
 
 
 @main_bp.route('/user/<int:user_id>/edit', methods=['POST'])
-def edit_user(user_id):
+def edit_user(user_id: int) -> Response:
     user = User.query.get_or_404(user_id)
     name = request.form.get('name', '').strip()
     email = request.form.get('email', '').strip()
@@ -108,7 +110,7 @@ def edit_user(user_id):
 
 
 @main_bp.route('/user/<int:user_id>/toggle-active', methods=['POST'])
-def toggle_user_active(user_id):
+def toggle_user_active(user_id: int) -> Response:
     user = User.query.get_or_404(user_id)
     user.is_active = not user.is_active
     db.session.commit()
@@ -120,7 +122,7 @@ def toggle_user_active(user_id):
 
 @main_bp.route('/transaction/add', methods=['GET', 'POST'])
 @limiter.limit("30/minute", methods=["POST"])
-def add_transaction():
+def add_transaction() -> str | Response:
     if request.method == 'GET':
         users = User.query.filter_by(is_active=True).order_by(User.name).all()
         default_item_rows = int(get_setting('default_item_rows', '3'))
@@ -221,7 +223,7 @@ def add_transaction():
 
 
 @main_bp.route('/transactions')
-def view_transactions():
+def view_transactions() -> str:
     today = datetime.today()
     year  = max(2000, min(2100, int(request.args.get('year',  today.year))))
     month = max(1,    min(12,   int(request.args.get('month', today.month))))
@@ -260,7 +262,7 @@ def view_transactions():
 
 
 @main_bp.route('/search')
-def search():
+def search() -> str:
     q           = request.args.get('q', '').strip()
     tx_type     = request.args.get('type', '')
     user_id     = request.args.get('user', None, type=int)
@@ -328,7 +330,7 @@ def search():
 
 
 @main_bp.route('/user/<int:user_id>')
-def user_detail(user_id):
+def user_detail(user_id: int) -> str:
     user = User.query.get_or_404(user_id)
     transactions = Transaction.query.filter(
         (Transaction.from_user_id == user_id) | (Transaction.to_user_id == user_id)
@@ -337,12 +339,12 @@ def user_detail(user_id):
 
 
 @main_bp.route('/receipt/<path:filepath>')
-def view_receipt(filepath):
+def view_receipt(filepath: str) -> Response:
     return send_from_directory(current_app.config['UPLOAD_FOLDER'], filepath)
 
 
 @main_bp.route('/manifest.json')
-def pwa_manifest():
+def pwa_manifest() -> Response:
     color = get_tpl('color_navbar')
     data = {
         "name": "Bank of Tina",
@@ -365,7 +367,7 @@ def pwa_manifest():
 
 
 @main_bp.route('/transaction/<int:transaction_id>/edit', methods=['GET', 'POST'])
-def edit_transaction(transaction_id):
+def edit_transaction(transaction_id: int) -> str | Response:
     trans = Transaction.query.get_or_404(transaction_id)
     users = User.query.order_by(User.name).all()
 
@@ -459,7 +461,7 @@ def edit_transaction(transaction_id):
 
 
 @main_bp.route('/transaction/<int:transaction_id>/delete', methods=['POST'])
-def delete_transaction(transaction_id):
+def delete_transaction(transaction_id: int) -> Response:
     trans = Transaction.query.get_or_404(transaction_id)
 
     if trans.from_user_id:
@@ -482,6 +484,6 @@ def delete_transaction(transaction_id):
 
 
 @main_bp.route('/api/users')
-def api_users():
+def api_users() -> Response:
     users = User.query.all()
     return jsonify([{'id': u.id, 'name': u.name, 'balance': u.balance} for u in users])

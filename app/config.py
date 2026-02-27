@@ -1,8 +1,10 @@
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'}
+from __future__ import annotations
 
-BACKUP_DIR = '/backups'
+ALLOWED_EXTENSIONS: set[str] = {'png', 'jpg', 'jpeg', 'pdf'}
 
-THEMES = {
+BACKUP_DIR: str = '/backups'
+
+THEMES: dict[str, dict[str, str]] = {
     'default': {
         'label': 'Default',
         'color_navbar': '#0d6efd',
@@ -45,7 +47,7 @@ THEMES = {
     },
 }
 
-TEMPLATE_DEFAULTS = {
+TEMPLATE_DEFAULTS: dict[str, str] = {
     'color_navbar':             '#0d6efd',
     'color_email_grad_start':   '#667eea',
     'color_email_grad_end':     '#764ba2',
@@ -63,4 +65,4 @@ TEMPLATE_DEFAULTS = {
     'tpl_backup_footer':   'This is an automated backup report from the Bank of Tina system.',
 }
 
-DEFAULT_ICON_BG = '#0d6efd'
+DEFAULT_ICON_BG: str = '#0d6efd'

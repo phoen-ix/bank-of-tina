@@ -1,9 +1,13 @@
+from __future__ import annotations
+
 import atexit
 import logging
 import os
+from datetime import datetime
 from decimal import Decimal
+from typing import Any
 
-from flask import Flask
+from flask import Flask, Response
 from flask.json.provider import DefaultJSONProvider
 
 from flask import request, redirect, url_for, flash, jsonify
@@ -12,7 +16,7 @@ from helpers import get_setting, get_tpl, hex_to_rgb, to_local
 from config import TEMPLATE_DEFAULTS
 
 
-def setup_logging():
+def setup_logging() -> None:
     """Configure structured logging to stdout."""
     log_level = os.environ.get('LOG_LEVEL', 'INFO').upper()
     handler = logging.StreamHandler()
@@ -32,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 class DecimalJSONProvider(DefaultJSONProvider):
     """Serialize Decimal values as floats so jsonify() works transparently."""
-    def default(self, o):
+    def default(self, o: Any) -> Any:
         if isinstance(o, Decimal):
             return float(o)
         return super().default(o)
@@ -78,7 +82,7 @@ register_blueprints(app)
 
 
 @app.errorhandler(429)
-def ratelimit_handler(e):
+def ratelimit_handler(e: Exception) -> tuple[Response, int] | Response:
     if request.is_json:
         return jsonify({'status': 'error', 'detail': str(e.description)}), 429
     flash('Too many requests. Please wait and try again.', 'error')
@@ -86,7 +90,7 @@ def ratelimit_handler(e):
 
 
 @app.template_filter('money')
-def money_filter(value):
+def money_filter(value: Any) -> str:
     from decimal import InvalidOperation
     from helpers import fmt_amount
     try:
@@ -97,14 +101,14 @@ def money_filter(value):
 
 
 @app.template_filter('localdt')
-def localdt_filter(dt, fmt='%Y-%m-%d %H:%M'):
+def localdt_filter(dt: datetime | None, fmt: str = '%Y-%m-%d %H:%M') -> str:
     if dt is None:
         return ''
     return to_local(dt).strftime(fmt)
 
 
 @app.context_processor
-def inject_theme():
+def inject_theme() -> dict[str, str]:
     """Inject theme colors into every template for dynamic CSS."""
     navbar = get_tpl('color_navbar')
     pos    = get_tpl('color_balance_positive')

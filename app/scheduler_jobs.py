@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import logging
 
 import pytz
+from flask import Flask
 from sqlalchemy import func
 
 from extensions import db, scheduler
@@ -13,7 +16,7 @@ from backup_service import run_backup, _prune_old_backups, _list_backups, build_
 logger = logging.getLogger(__name__)
 
 
-def _add_email_job(app):
+def _add_email_job(app: Flask) -> None:
     day    = get_setting('schedule_day', 'mon')
     hour   = int(get_setting('schedule_hour', '9'))
     minute = int(get_setting('schedule_minute', '0'))
@@ -23,7 +26,7 @@ def _add_email_job(app):
     except pytz.exceptions.UnknownTimeZoneError:
         tz = pytz.UTC
 
-    def job():
+    def job() -> None:
         with app.app_context():
             send_all_emails()
 
@@ -32,7 +35,7 @@ def _add_email_job(app):
     logger.info('Email job scheduled: day=%s hour=%s minute=%s tz=%s', day, hour, minute, tz_name)
 
 
-def auto_collect_common():
+def auto_collect_common() -> None:
     debug = get_setting('common_auto_debug', '0') == '1'
     added_count = 0
     skip_count = 0
@@ -109,7 +112,7 @@ def auto_collect_common():
         db.session.commit()
 
 
-def _add_common_job(app):
+def _add_common_job(app: Flask) -> None:
     day    = get_setting('common_auto_day', '*')
     hour   = int(get_setting('common_auto_hour', '2'))
     minute = int(get_setting('common_auto_minute', '0'))
@@ -118,7 +121,7 @@ def _add_common_job(app):
     except pytz.exceptions.UnknownTimeZoneError:
         tz = pytz.UTC
 
-    def job():
+    def job() -> None:
         with app.app_context():
             auto_collect_common()
 
@@ -127,7 +130,7 @@ def _add_common_job(app):
     logger.info('Common auto-collect job scheduled: day=%s hour=%s minute=%s', day, hour, minute)
 
 
-def _add_backup_job(app):
+def _add_backup_job(app: Flask) -> None:
     day    = get_setting('backup_day', '*')
     hour   = int(get_setting('backup_hour', '3'))
     minute = int(get_setting('backup_minute', '0'))
@@ -137,7 +140,7 @@ def _add_backup_job(app):
     except pytz.exceptions.UnknownTimeZoneError:
         tz = pytz.UTC
 
-    def job():
+    def job() -> None:
         with app.app_context():
             ok, result = run_backup()
             pruned = 0
@@ -162,7 +165,7 @@ def _add_backup_job(app):
     logger.info('Backup job scheduled: day=%s hour=%s minute=%s', day, hour, minute)
 
 
-def _restore_schedule(app):
+def _restore_schedule(app: Flask) -> None:
     if get_setting('schedule_enabled') == '1':
         _add_email_job(app)
     if get_setting('common_auto_enabled', '0') == '1':

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import smtplib
 from datetime import datetime, timedelta
@@ -13,11 +15,11 @@ from helpers import get_setting, get_tpl, apply_template, fmt_amount, now_local
 logger = logging.getLogger(__name__)
 
 
-def build_email_html(user):
+def build_email_html(user: User) -> str:
     tx_pref = user.email_transactions
 
     if tx_pref == 'none':
-        recent_transactions = []
+        recent_transactions: list[Transaction] = []
         show_tx_section = False
     else:
         show_tx_section = True
@@ -161,7 +163,7 @@ def build_email_html(user):
     return html
 
 
-def build_admin_summary_email(users, include_emails=False):
+def build_admin_summary_email(users: list[User], include_emails: bool = False) -> str:
     sym        = get_setting('currency_symbol', '\u20ac')
     date_str   = now_local().strftime('%Y-%m-%d')
     grad_start = get_tpl('color_email_grad_start')
@@ -219,7 +221,7 @@ def build_admin_summary_email(users, include_emails=False):
 </html>"""
 
 
-def send_single_email(to_email, to_name, subject, html):
+def send_single_email(to_email: str, to_name: str, subject: str, html: str) -> tuple[bool, str | None]:
     smtp_server   = get_setting('smtp_server', 'smtp.gmail.com')
     smtp_port     = int(get_setting('smtp_port', '587'))
     smtp_username = get_setting('smtp_username', '')
@@ -228,7 +230,7 @@ def send_single_email(to_email, to_name, subject, html):
     from_name     = get_setting('from_name', 'Bank of Tina')
 
     if not smtp_username or not smtp_password:
-        return False
+        return False, 'SMTP credentials not configured'
 
     msg = MIMEMultipart('alternative')
     msg['Subject'] = subject
@@ -249,14 +251,14 @@ def send_single_email(to_email, to_name, subject, html):
         return False, str(e)
 
 
-def send_all_emails():
+def send_all_emails() -> tuple[int, int, list[str]]:
     if get_setting('email_enabled', '1') != '1':
         return 0, 0, ['Email sending is disabled in General settings.']
 
     all_active_users = User.query.filter_by(is_active=True).all()
     opted_in_users   = [u for u in all_active_users if u.email_opt_in]
     success, fail = 0, 0
-    errors = []
+    errors: list[str] = []
     debug = get_setting('email_debug', '0') == '1'
     subject = apply_template(get_tpl('tpl_email_subject'), Date=now_local().strftime('%Y-%m-%d'))
     for user in opted_in_users:

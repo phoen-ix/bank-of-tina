@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import os
 import re
@@ -10,7 +12,7 @@ from datetime import datetime
 from decimal import Decimal
 
 import pytz
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, abort, current_app
+from flask import Blueprint, Response, render_template, request, redirect, url_for, flash, jsonify, abort, current_app
 
 from extensions import db, scheduler, limiter
 from models import (User, CommonItem, CommonDescription, CommonPrice, CommonBlacklist,
@@ -27,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 settings_bp = Blueprint('settings_bp', __name__)
 
-BACKUP_FILENAME_RE = re.compile(r'^bot_backup_[\d_-]+\.tar\.gz$')
+BACKUP_FILENAME_RE: re.Pattern[str] = re.compile(r'^bot_backup_[\d_-]+\.tar\.gz$')
 
 _db_user = os.environ.get('DB_USER', 'tina')
 _db_pass = os.environ.get('DB_PASSWORD', 'tina')
@@ -37,7 +39,7 @@ _db_name = os.environ.get('DB_NAME', 'bank_of_tina')
 
 
 @settings_bp.route('/settings')
-def settings():
+def settings() -> str:
     cfg = {
         'smtp_server':   get_setting('smtp_server', 'smtp.gmail.com'),
         'smtp_port':     get_setting('smtp_port', '587'),
@@ -117,7 +119,7 @@ def settings():
 
 
 @settings_bp.route('/settings/email', methods=['POST'])
-def settings_email():
+def settings_email() -> Response:
     set_setting('smtp_server',   request.form.get('smtp_server', '').strip())
     set_setting('smtp_port',     request.form.get('smtp_port', '587').strip())
     set_setting('smtp_username', request.form.get('smtp_username', '').strip())
@@ -138,7 +140,7 @@ def settings_email():
 
 @settings_bp.route('/settings/send-now', methods=['POST'])
 @limiter.limit("5/minute")
-def settings_send_now():
+def settings_send_now() -> Response:
     success, fail, errors = send_all_emails()
     flash(f'{success} email(s) sent, {fail} failed.', 'success' if fail == 0 else 'error')
     if errors and get_setting('email_debug', '0') == '1':
@@ -148,7 +150,7 @@ def settings_send_now():
 
 
 @settings_bp.route('/settings/email/clear-log', methods=['POST'])
-def settings_email_clear_log():
+def settings_email_clear_log() -> Response:
     EmailLog.query.delete()
     db.session.commit()
     flash('Email debug log cleared.', 'success')
@@ -156,7 +158,7 @@ def settings_email_clear_log():
 
 
 @settings_bp.route('/settings/schedule', methods=['POST'])
-def settings_schedule():
+def settings_schedule() -> Response:
     enabled = '1' if request.form.get('schedule_enabled') else '0'
     day    = request.form.get('schedule_day', 'mon')
     try:
@@ -182,7 +184,7 @@ def settings_schedule():
 
 
 @settings_bp.route('/settings/general', methods=['POST'])
-def settings_general():
+def settings_general() -> Response:
     try:
         rows = max(0, min(20, int(request.form.get('default_item_rows', '3'))))
     except ValueError:
@@ -214,7 +216,7 @@ def settings_general():
 
 
 @settings_bp.route('/api/common-items')
-def api_common_items():
+def api_common_items() -> Response:
     if get_setting('common_enabled', '1') != '1':
         return jsonify([])
     items = CommonItem.query.order_by(CommonItem.name).all()
@@ -222,7 +224,7 @@ def api_common_items():
 
 
 @settings_bp.route('/api/common-descriptions')
-def api_common_descriptions():
+def api_common_descriptions() -> Response:
     if get_setting('common_enabled', '1') != '1':
         return jsonify([])
     items = CommonDescription.query.order_by(CommonDescription.value).all()
@@ -230,7 +232,7 @@ def api_common_descriptions():
 
 
 @settings_bp.route('/api/common-prices')
-def api_common_prices():
+def api_common_prices() -> Response:
     if get_setting('common_enabled', '1') != '1':
         return jsonify([])
     items = CommonPrice.query.order_by(CommonPrice.value).all()
@@ -238,7 +240,7 @@ def api_common_prices():
 
 
 @settings_bp.route('/settings/common-items/add', methods=['POST'])
-def add_common_item():
+def add_common_item() -> Response:
     name = request.form.get('name', '').strip()
     if not name:
         flash('Item name is required.', 'error')
@@ -251,7 +253,7 @@ def add_common_item():
 
 
 @settings_bp.route('/settings/common-items/<int:item_id>/delete', methods=['POST'])
-def delete_common_item(item_id):
+def delete_common_item(item_id: int) -> Response:
     item = CommonItem.query.get_or_404(item_id)
     name = item.name
     db.session.delete(item)
@@ -261,7 +263,7 @@ def delete_common_item(item_id):
 
 
 @settings_bp.route('/settings/common-descriptions/add', methods=['POST'])
-def add_common_description():
+def add_common_description() -> Response:
     value = request.form.get('value', '').strip()
     if not value:
         flash('Description is required.', 'error')
@@ -274,7 +276,7 @@ def add_common_description():
 
 
 @settings_bp.route('/settings/common-descriptions/<int:item_id>/delete', methods=['POST'])
-def delete_common_description(item_id):
+def delete_common_description(item_id: int) -> Response:
     item = CommonDescription.query.get_or_404(item_id)
     value = item.value
     db.session.delete(item)
@@ -284,7 +286,7 @@ def delete_common_description(item_id):
 
 
 @settings_bp.route('/settings/common-prices/add', methods=['POST'])
-def add_common_price():
+def add_common_price() -> Response:
     try:
         value = parse_amount(request.form.get('value', ''))
     except (ValueError, TypeError):
@@ -298,7 +300,7 @@ def add_common_price():
 
 
 @settings_bp.route('/settings/common-prices/<int:item_id>/delete', methods=['POST'])
-def delete_common_price(item_id):
+def delete_common_price(item_id: int) -> Response:
     item = CommonPrice.query.get_or_404(item_id)
     value = item.value
     db.session.delete(item)
@@ -308,7 +310,7 @@ def delete_common_price(item_id):
 
 
 @settings_bp.route('/settings/common-blacklist/add', methods=['POST'])
-def add_common_blacklist():
+def add_common_blacklist() -> Response:
     bl_type = request.form.get('type', '').strip()
     value   = request.form.get('value', '').strip()
     if bl_type not in ('item', 'description', 'price') or not value:
@@ -322,7 +324,7 @@ def add_common_blacklist():
 
 
 @settings_bp.route('/settings/common-blacklist/<int:item_id>/delete', methods=['POST'])
-def delete_common_blacklist(item_id):
+def delete_common_blacklist(item_id: int) -> Response:
     item = CommonBlacklist.query.get_or_404(item_id)
     value, bl_type = item.value, item.type
     db.session.delete(item)
@@ -332,7 +334,7 @@ def delete_common_blacklist(item_id):
 
 
 @settings_bp.route('/settings/common', methods=['POST'])
-def settings_common():
+def settings_common() -> Response:
     enabled = '1' if request.form.get('common_enabled') else '0'
     set_setting('common_enabled', enabled)
     flash('Common autocomplete settings saved.', 'success')
@@ -340,7 +342,7 @@ def settings_common():
 
 
 @settings_bp.route('/settings/common-auto', methods=['POST'])
-def settings_common_auto():
+def settings_common_auto() -> Response:
     enabled = '1' if request.form.get('common_auto_enabled') else '0'
     debug   = '1' if request.form.get('common_auto_debug')   else '0'
     day     = request.form.get('common_auto_day', '*')
@@ -389,14 +391,14 @@ def settings_common_auto():
 
 
 @settings_bp.route('/settings/common-auto/run', methods=['POST'])
-def settings_common_auto_run():
+def settings_common_auto_run() -> Response:
     auto_collect_common()
     flash('Auto-collect job ran successfully.', 'success')
     return redirect(url_for('settings_bp.settings'))
 
 
 @settings_bp.route('/settings/common-auto/clear-log', methods=['POST'])
-def settings_common_auto_clear_log():
+def settings_common_auto_clear_log() -> Response:
     AutoCollectLog.query.delete()
     db.session.commit()
     flash('Debug log cleared.', 'success')
@@ -404,7 +406,7 @@ def settings_common_auto_clear_log():
 
 
 @settings_bp.route('/settings/templates', methods=['POST'])
-def settings_templates():
+def settings_templates() -> Response:
     color_keys = ['color_navbar', 'color_email_grad_start', 'color_email_grad_end',
                   'color_balance_positive', 'color_balance_negative']
     for key in color_keys:
@@ -426,7 +428,7 @@ def settings_templates():
 
 
 @settings_bp.route('/settings/templates/reset', methods=['POST'])
-def settings_templates_reset():
+def settings_templates_reset() -> Response:
     for key, val in TEMPLATE_DEFAULTS.items():
         set_setting(key, val)
     flash('Templates reset to defaults.', 'success')
@@ -434,7 +436,7 @@ def settings_templates_reset():
 
 
 @settings_bp.route('/settings/icon', methods=['POST'])
-def settings_icon():
+def settings_icon() -> Response:
     action = request.form.get('action', '')
     icons_dir = os.path.join(current_app.root_path, 'static', 'icons')
     os.makedirs(icons_dir, exist_ok=True)
@@ -483,7 +485,7 @@ def settings_icon():
 
 
 @settings_bp.route('/settings/templates/preview/email')
-def preview_email():
+def preview_email() -> str:
     user = User.query.filter_by(is_active=True).order_by(User.name).first()
     if not user:
         class _Dummy:
@@ -497,7 +499,7 @@ def preview_email():
 
 
 @settings_bp.route('/settings/templates/preview/admin-summary')
-def preview_admin_summary():
+def preview_admin_summary() -> str:
     users = User.query.filter_by(is_active=True).order_by(User.name).all()
     if not users:
         class _D:
@@ -509,13 +511,13 @@ def preview_admin_summary():
 
 
 @settings_bp.route('/settings/templates/preview/backup')
-def preview_backup():
+def preview_backup() -> str:
     return build_backup_status_email(
         True, f'bot_backup_{now_local().strftime("%Y_%m_%d")}_03-00-00.tar.gz', 5, 1)
 
 
 @settings_bp.route('/settings/backup', methods=['POST'])
-def settings_backup():
+def settings_backup() -> Response:
     enabled = '1' if request.form.get('backup_enabled') else '0'
     debug   = '1' if request.form.get('backup_debug')   else '0'
     day     = request.form.get('backup_day', '*')
@@ -551,7 +553,7 @@ def settings_backup():
 
 @settings_bp.route('/settings/backup/create', methods=['POST'])
 @limiter.limit("5/minute")
-def settings_backup_create():
+def settings_backup_create() -> Response:
     ok, result = run_backup()
     if ok:
         flash(f'Backup created: {result}', 'success')
@@ -561,7 +563,7 @@ def settings_backup_create():
 
 
 @settings_bp.route('/settings/backup/clear-log', methods=['POST'])
-def settings_backup_clear_log():
+def settings_backup_clear_log() -> Response:
     BackupLog.query.delete()
     db.session.commit()
     flash('Backup debug log cleared.', 'success')
@@ -569,7 +571,7 @@ def settings_backup_clear_log():
 
 
 @settings_bp.route('/backups/download/<filename>')
-def backup_download(filename):
+def backup_download(filename: str) -> Response:
     from flask import send_from_directory
     if not BACKUP_FILENAME_RE.match(filename):
         abort(404)
@@ -577,7 +579,7 @@ def backup_download(filename):
 
 
 @settings_bp.route('/backups/delete/<filename>', methods=['POST'])
-def backup_delete(filename):
+def backup_delete(filename: str) -> Response:
     if not BACKUP_FILENAME_RE.match(filename):
         flash('Invalid filename.', 'error')
         return redirect(url_for('settings_bp.settings'))
@@ -591,7 +593,7 @@ def backup_delete(filename):
 
 
 @settings_bp.route('/backups/upload-chunk', methods=['POST'])
-def backup_upload_chunk():
+def backup_upload_chunk() -> tuple[Response, int] | Response:
     upload_id   = request.form.get('uploadId', '')
     chunk_index = request.form.get('chunkIndex', '')
     total_chunks = request.form.get('totalChunks', '')
@@ -629,7 +631,7 @@ def backup_upload_chunk():
 
 @settings_bp.route('/backups/restore/<filename>', methods=['POST'])
 @limiter.limit("3/minute")
-def backup_restore(filename):
+def backup_restore(filename: str) -> Response:
     if not BACKUP_FILENAME_RE.match(filename):
         flash('Invalid filename.', 'error')
         return redirect(url_for('settings_bp.settings'))

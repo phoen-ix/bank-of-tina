@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 from collections import defaultdict
 from datetime import datetime, timedelta
 from decimal import Decimal
 
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, Response, render_template, request, jsonify
 
 from models import User, Transaction, ExpenseItem
 from helpers import now_local
@@ -11,7 +13,7 @@ analytics_bp = Blueprint('analytics_bp', __name__)
 
 
 @analytics_bp.route('/analytics')
-def analytics():
+def analytics() -> str:
     users = User.query.filter_by(is_active=True).order_by(User.name).all()
     today     = now_local().date()
     def_from  = (today - timedelta(days=90)).strftime('%Y-%m-%d')
@@ -21,7 +23,7 @@ def analytics():
 
 
 @analytics_bp.route('/analytics/data')
-def analytics_data():
+def analytics_data() -> Response:
     today = now_local().date()
 
     date_from_str = request.args.get('date_from', (today - timedelta(days=90)).strftime('%Y-%m-%d'))
@@ -60,7 +62,7 @@ def analytics_data():
 
     balances = [{'name': u.name, 'balance': round(u.balance, 2)} for u in users]
 
-    sample_dates = []
+    sample_dates: list[datetime.date] = []
     if delta_days <= 90:
         d = date_from.date()
         while d <= date_to.date():
@@ -79,14 +81,14 @@ def analytics_data():
         sample_dates.append(date_to.date())
 
     history_labels   = [d.strftime('%Y-%m-%d') for d in sample_dates]
-    history_datasets = {}
+    history_datasets: dict[str, list[float]] = {}
 
     for user in users:
         all_user_tx = Transaction.query.filter(
             (Transaction.from_user_id == user.id) | (Transaction.to_user_id == user.id)
         ).all()
 
-        series = []
+        series: list[float] = []
         for d in sample_dates:
             cutoff = datetime.combine(d, datetime.max.time())
             bal = user.balance
@@ -100,7 +102,7 @@ def analytics_data():
 
         history_datasets[user.name] = series
 
-    vol = defaultdict(lambda: {'count': 0, 'amount': Decimal('0')})
+    vol: dict[str, dict[str, int | Decimal]] = defaultdict(lambda: {'count': 0, 'amount': Decimal('0')})
     for tx in transactions:
         if delta_days <= 90:
             key = (tx.date.date() - timedelta(days=tx.date.weekday())).strftime('%Y-%m-%d')
@@ -122,7 +124,7 @@ def analytics_data():
     }
 
     expense_ids = [tx.id for tx in transactions if tx.transaction_type == 'expense']
-    item_stats  = defaultdict(lambda: {'count': 0, 'total': Decimal('0')})
+    item_stats: dict[str, dict[str, int | Decimal]] = defaultdict(lambda: {'count': 0, 'total': Decimal('0')})
 
     if expense_ids:
         for item in ExpenseItem.query.filter(ExpenseItem.transaction_id.in_(expense_ids)).all():
