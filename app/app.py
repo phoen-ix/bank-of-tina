@@ -19,12 +19,33 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from apscheduler.schedulers.background import BackgroundScheduler
 import atexit
+import logging
 import pytz
 import struct
 import zlib
 import time
 
 app = Flask(__name__)
+
+logger = logging.getLogger(__name__)
+
+
+def setup_logging(application):
+    """Configure structured logging to stdout."""
+    log_level = os.environ.get('LOG_LEVEL', 'INFO').upper()
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter(
+        '%(asctime)s %(levelname)s [%(name)s] %(message)s'
+    ))
+    root = logging.getLogger()
+    root.setLevel(getattr(logging, log_level, logging.INFO))
+    root.addHandler(handler)
+    # Quiet noisy loggers
+    logging.getLogger('apscheduler').setLevel(logging.WARNING)
+    logging.getLogger('werkzeug').setLevel(logging.WARNING)
+
+
+setup_logging(app)
 
 _secret = os.environ.get('SECRET_KEY', '')
 if not _secret or _secret == 'change-this-to-a-random-secret-key':
@@ -639,9 +660,10 @@ def send_single_email(to_email, to_name, subject, html):
         server.login(smtp_username, smtp_password)
         server.send_message(msg)
         server.quit()
+        logger.info('Email sent to %s', to_email)
         return True, None
     except Exception as e:
-        app.logger.error(f"Error sending email to {to_email}: {e}")
+        logger.error('Email failed to %s: %s', to_email, e)
         return False, str(e)
 
 def send_all_emails():
@@ -698,6 +720,7 @@ def send_all_emails():
             EmailLog.query.filter(EmailLog.id <= oldest_kept.id).delete()
         db.session.commit()
 
+    logger.info('Email batch complete: %d sent, %d failed', success, fail)
     return success, fail, errors
 
 # Backup logic
@@ -760,11 +783,13 @@ def run_backup():
                 tar.add(os.path.join(tmp, '.env'), arcname='.env')
 
         log('SUCCESS', f'Backup created: {filename}')
+        logger.info('Backup created: %s', filename)
         return True, filename
 
     except Exception as e:
         err = str(e)[:300]
         log('ERROR', err)
+        logger.error('Backup failed: %s', err)
         if os.path.exists(dest):
             os.remove(dest)
         return False, err
@@ -817,6 +842,7 @@ def _add_email_job():
 
     scheduler.add_job(job, 'cron', day_of_week=day, hour=hour, minute=minute,
                       timezone=tz, id='email_job', replace_existing=True)
+    logger.info('Email job scheduled: day=%s hour=%s minute=%s tz=%s', day, hour, minute, tz_name)
 
 def auto_collect_common():
     from sqlalchemy import func
@@ -912,6 +938,7 @@ def _add_common_job():
 
     scheduler.add_job(job, 'cron', day_of_week=day, hour=hour, minute=minute,
                       timezone=tz, id='common_job', replace_existing=True)
+    logger.info('Common auto-collect job scheduled: day=%s hour=%s minute=%s', day, hour, minute)
 
 
 def build_backup_status_email(ok, result, kept, pruned):
@@ -998,6 +1025,7 @@ def _add_backup_job():
 
     scheduler.add_job(job, 'cron', day_of_week=day, hour=hour, minute=minute,
                       timezone=tz, id='backup_job', replace_existing=True)
+    logger.info('Backup job scheduled: day=%s hour=%s minute=%s', day, hour, minute)
 
 
 def _migrate_db():
@@ -1115,6 +1143,7 @@ def add_user():
                 email_transactions=email_transactions)
     db.session.add(user)
     db.session.commit()
+    logger.info('User created: id=%s name=%s', user.id, name)
     flash(f'User {name} added successfully!', 'success')
     return redirect(url_for('settings'))
 
@@ -1153,6 +1182,7 @@ def edit_user(user_id):
         email_transactions = 'last3'
     user.email_transactions = email_transactions
     db.session.commit()
+    logger.info('User edited: id=%s name=%s', user_id, name)
     flash('User updated successfully!', 'success')
     return redirect(url_for('user_detail', user_id=user_id))
 
@@ -1163,6 +1193,7 @@ def toggle_user_active(user_id):
     user.is_active = not user.is_active
     db.session.commit()
     status = 'activated' if user.is_active else 'deactivated'
+    logger.info('User toggled: id=%s name=%s active=%s', user_id, user.name, user.is_active)
     flash(f'User {user.name} has been {status}.', 'success')
     return redirect(request.referrer or url_for('settings'))
 
@@ -1196,6 +1227,7 @@ def add_transaction():
         )
         db.session.add(transaction)
         update_balance(user_id, amount)
+        logger.info('Transaction created: deposit id=%s amount=%s', transaction.id, amount)
         flash(f'Deposit of €{fmt_amount(amount)} added successfully!', 'success')
 
     elif transaction_type == 'withdrawal':
@@ -1213,6 +1245,7 @@ def add_transaction():
         )
         db.session.add(transaction)
         update_balance(user_id, -amount)
+        logger.info('Transaction created: withdrawal id=%s amount=%s', transaction.id, amount)
         flash(f'Withdrawal of €{fmt_amount(amount)} processed successfully!', 'success')
 
     elif transaction_type == 'expense':
@@ -1267,6 +1300,7 @@ def add_transaction():
                         db.session.add(expense_item)
 
             db.session.commit()
+            logger.info('Transaction created: expense buyer_id=%s', buyer_id)
             flash('Expense recorded successfully!', 'success')
 
     return redirect(url_for('index'))
@@ -1510,6 +1544,7 @@ def edit_transaction(transaction_id):
             trans.receipt_path = saved
 
     db.session.commit()
+    logger.info('Transaction edited: id=%s type=%s amount=%s', trans.id, trans.transaction_type, trans.amount)
     flash('Transaction updated successfully!', 'success')
     return redirect(url_for('view_transactions'))
 
@@ -1532,6 +1567,7 @@ def delete_transaction(transaction_id):
     ExpenseItem.query.filter_by(transaction_id=trans.id).delete()
     db.session.delete(trans)
     db.session.commit()
+    logger.info('Transaction deleted: id=%s type=%s amount=%s', transaction_id, trans.transaction_type, trans.amount)
 
     flash('Transaction deleted.', 'success')
     return redirect(url_for('view_transactions'))
@@ -2172,10 +2208,12 @@ def backup_restore(filename):
                     flash(f'Database restore failed: {err}', 'error')
                     return redirect(url_for('settings'))
 
+        logger.info('Backup restored: %s', filename)
         flash(f'Restore from {filename} completed successfully. '
               f'Check the .env file inside the backup if credentials changed.', 'success')
 
     except Exception as e:
+        logger.error('Backup restore failed: %s', str(e)[:200])
         flash(f'Restore failed: {str(e)[:200]}', 'error')
 
     return redirect(url_for('settings'))
@@ -2336,10 +2374,12 @@ def analytics_data():
 # Initialize database
 with app.app_context():
     db.create_all()
+    logger.info('Database tables created / verified')
     _migrate_db()
     _restore_schedule()
 
 scheduler.start()
+logger.info('APScheduler started')
 atexit.register(lambda: scheduler.shutdown(wait=False))
 
 if __name__ == '__main__':
