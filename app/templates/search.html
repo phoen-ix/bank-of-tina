@@ -8,7 +8,7 @@
         <i class="bi bi-search me-1"></i> Search Transactions
     </div>
     <div class="card-body">
-        <form method="GET" action="{{ url_for('search') }}">
+        <form method="GET" action="{{ url_for('main.search') }}">
             <!-- Main search bar -->
             <div class="input-group mb-3">
                 <input class="form-control" type="search" name="q"
@@ -123,7 +123,7 @@
                             <td>{{ trans.description }}</td>
                             <td>
                                 {% if trans.from_user %}
-                                    <a href="{{ url_for('user_detail', user_id=trans.from_user.id) }}">
+                                    <a href="{{ url_for('main.user_detail', user_id=trans.from_user.id) }}">
                                         {{ trans.from_user.name }}
                                     </a>
                                 {% else %}
@@ -132,7 +132,7 @@
                             </td>
                             <td>
                                 {% if trans.to_user %}
-                                    <a href="{{ url_for('user_detail', user_id=trans.to_user.id) }}">
+                                    <a href="{{ url_for('main.user_detail', user_id=trans.to_user.id) }}">
                                         {{ trans.to_user.name }}
                                     </a>
                                 {% else %}
@@ -142,7 +142,7 @@
                             <td class="text-end"><strong>{{ currency_symbol }}{{ trans.amount|money }}</strong></td>
                             <td>
                                 {% if trans.receipt_path %}
-                                    <a href="{{ url_for('view_receipt', filepath=trans.receipt_path) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                    <a href="{{ url_for('main.view_receipt', filepath=trans.receipt_path) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
                                         <i class="bi bi-paperclip"></i> View
                                     </a>
                                 {% else %}
@@ -150,11 +150,11 @@
                                 {% endif %}
                             </td>
                             <td class="text-end text-nowrap">
-                                <a href="{{ url_for('edit_transaction', transaction_id=trans.id) }}"
+                                <a href="{{ url_for('main.edit_transaction', transaction_id=trans.id) }}"
                                    class="btn btn-sm btn-outline-primary">
                                     <i class="bi bi-pencil"></i>
                                 </a>
-                                <form method="POST" action="{{ url_for('delete_transaction', transaction_id=trans.id) }}"
+                                <form method="POST" action="{{ url_for('main.delete_transaction', transaction_id=trans.id) }}"
                                       class="d-inline"
                                       onsubmit="return confirm('Delete this transaction? Balances will be reversed.')">
                                     <button type="submit" class="btn btn-sm btn-outline-danger">

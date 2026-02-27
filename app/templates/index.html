@@ -22,7 +22,7 @@
                                 {% for user in users %}
                                 <tr>
                                     <td>
-                                        <a href="{{ url_for('user_detail', user_id=user.id) }}" class="text-decoration-none">
+                                        <a href="{{ url_for('main.user_detail', user_id=user.id) }}" class="text-decoration-none">
                                             <strong>{{ user.name }}</strong>
                                         </a>
                                     </td>
@@ -38,7 +38,7 @@
                         </table>
                     </div>
                 {% else %}
-                    <p class="text-muted">No users yet. <a href="{{ url_for('settings') }}?tab=users">Add users from Settings → Users</a>.</p>
+                    <p class="text-muted">No users yet. <a href="{{ url_for('settings_bp.settings') }}?tab=users">Add users from Settings → Users</a>.</p>
                 {% endif %}
             </div>
         </div>
@@ -70,14 +70,14 @@
                             {% if trans.receipt_path %}
                                 <small>
                                     <i class="bi bi-paperclip"></i>
-                                    <a href="{{ url_for('view_receipt', filepath=trans.receipt_path) }}" target="_blank">View Receipt</a>
+                                    <a href="{{ url_for('main.view_receipt', filepath=trans.receipt_path) }}" target="_blank">View Receipt</a>
                                 </small>
                             {% endif %}
                         </div>
                         {% endfor %}
                     </div>
                     <div class="mt-3 text-center">
-                        <a href="{{ url_for('view_transactions') }}" class="btn btn-outline-primary">
+                        <a href="{{ url_for('main.view_transactions') }}" class="btn btn-outline-primary">
                             View All Transactions
                         </a>
                     </div>
@@ -118,13 +118,13 @@
             </div>
             <div class="card-body">
                 <div class="d-grid gap-2">
-                    <a href="{{ url_for('add_transaction') }}?type=expense" class="btn btn-outline-primary">
+                    <a href="{{ url_for('main.add_transaction') }}?type=expense" class="btn btn-outline-primary">
                         <i class="bi bi-receipt"></i> Record Expense
                     </a>
-                    <a href="{{ url_for('add_transaction') }}?type=deposit" class="btn btn-outline-success">
+                    <a href="{{ url_for('main.add_transaction') }}?type=deposit" class="btn btn-outline-success">
                         <i class="bi bi-arrow-down-circle"></i> Add Money
                     </a>
-                    <a href="{{ url_for('add_transaction') }}?type=withdrawal" class="btn btn-outline-danger">
+                    <a href="{{ url_for('main.add_transaction') }}?type=withdrawal" class="btn btn-outline-danger">
                         <i class="bi bi-arrow-up-circle"></i> Withdraw Money
                     </a>
                 </div>

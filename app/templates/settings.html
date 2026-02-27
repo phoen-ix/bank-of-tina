@@ -58,7 +58,7 @@
                 <i class="bi bi-sliders"></i> General
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('settings_general') }}">
+                <form method="POST" action="{{ url_for('settings_bp.settings_general') }}">
                     <div class="mb-4">
                         <label for="default_item_rows" class="form-label">Default empty item rows</label>
                         <input type="number" class="form-control" id="default_item_rows"
@@ -185,7 +185,7 @@
                         <i class="bi bi-envelope"></i> Email Credentials
                     </div>
                     <div class="card-body">
-                        <form method="POST" action="{{ url_for('settings_email') }}">
+                        <form method="POST" action="{{ url_for('settings_bp.settings_email') }}">
                             <div class="mb-3">
                                 <label for="smtp_server" class="form-label">SMTP Server</label>
                                 <input type="text" class="form-control" id="smtp_server" name="smtp_server"
@@ -290,7 +290,7 @@
                             Send a balance-update email to every active user immediately using
                             the credentials configured on the left.
                         </p>
-                        <form method="POST" action="{{ url_for('settings_send_now') }}">
+                        <form method="POST" action="{{ url_for('settings_bp.settings_send_now') }}">
                             <button type="submit" class="btn btn-success w-100">
                                 <i class="bi bi-send-fill"></i> Send Emails Now
                             </button>
@@ -303,7 +303,7 @@
                         <i class="bi bi-clock"></i> Auto-Schedule
                     </div>
                     <div class="card-body">
-                        <form method="POST" action="{{ url_for('settings_schedule') }}">
+                        <form method="POST" action="{{ url_for('settings_bp.settings_schedule') }}">
 
                             <div class="form-check form-switch mb-3">
                                 <input class="form-check-input" type="checkbox" role="switch"
@@ -382,7 +382,7 @@
         <div class="card mt-4">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span><i class="bi bi-journal-text"></i> Email Debug Log</span>
-                <form method="POST" action="{{ url_for('settings_email_clear_log') }}" class="d-inline">
+                <form method="POST" action="{{ url_for('settings_bp.settings_email_clear_log') }}" class="d-inline">
                     <button type="submit" class="btn btn-sm btn-outline-danger"
                             onclick="return confirm('Clear the entire email debug log?')">
                         <i class="bi bi-trash"></i> Clear Log
@@ -411,7 +411,7 @@
                 <i class="bi bi-toggle-on"></i> Common Autocomplete
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('settings_common') }}">
+                <form method="POST" action="{{ url_for('settings_bp.settings_common') }}">
                     <div class="form-check form-switch mb-2">
                         <input class="form-check-input" type="checkbox" role="switch"
                                id="common_enabled" name="common_enabled" value="1"
@@ -439,7 +439,7 @@
                 <p class="text-muted mb-3">
                     These appear as autocomplete suggestions in expense item name fields.
                 </p>
-                <form method="POST" action="{{ url_for('add_common_item') }}" class="d-flex gap-2 mb-3">
+                <form method="POST" action="{{ url_for('settings_bp.add_common_item') }}" class="d-flex gap-2 mb-3">
                     <input type="text" class="form-control" name="name" placeholder="New item name" required>
                     <button type="submit" class="btn btn-success text-nowrap">
                         <i class="bi bi-plus"></i> Add
@@ -450,7 +450,7 @@
                     {% for item in common_items %}
                     <div class="badge bg-light text-dark border d-inline-flex align-items-center gap-1 px-2 py-2 fs-6 fw-normal">
                         {{ item.name }}
-                        <form method="POST" action="{{ url_for('delete_common_item', item_id=item.id) }}" class="d-inline m-0">
+                        <form method="POST" action="{{ url_for('settings_bp.delete_common_item', item_id=item.id) }}" class="d-inline m-0">
                             <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent text-danger lh-1"
                                     title="Remove" onclick="return confirm('Remove \'{{ item.name }}\' from common items?')">
                                 <i class="bi bi-x-lg" style="font-size:0.75rem"></i>
@@ -466,7 +466,7 @@
                 <hr>
                 <h6 class="text-muted mb-1">Blacklist</h6>
                 <p class="text-muted small mb-2">Values listed here are never auto-collected, even if they meet the threshold.</p>
-                <form method="POST" action="{{ url_for('add_common_blacklist') }}" class="d-flex gap-2 mb-3">
+                <form method="POST" action="{{ url_for('settings_bp.add_common_blacklist') }}" class="d-flex gap-2 mb-3">
                     <input type="hidden" name="type" value="item">
                     <input type="text" class="form-control" name="value" placeholder="Item name to blacklist" required>
                     <button type="submit" class="btn btn-outline-secondary text-nowrap">
@@ -479,7 +479,7 @@
                     {% for bl in item_blacklist %}
                     <div class="badge bg-warning text-dark border d-inline-flex align-items-center gap-1 px-2 py-2 fs-6 fw-normal">
                         {{ bl.value }}
-                        <form method="POST" action="{{ url_for('delete_common_blacklist', item_id=bl.id) }}" class="d-inline m-0">
+                        <form method="POST" action="{{ url_for('settings_bp.delete_common_blacklist', item_id=bl.id) }}" class="d-inline m-0">
                             <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent text-dark lh-1"
                                     title="Remove" onclick="return confirm('Remove \'{{ bl.value }}\' from item blacklist?')">
                                 <i class="bi bi-x-lg" style="font-size:0.75rem"></i>
@@ -503,7 +503,7 @@
                 <p class="text-muted mb-3">
                     These appear as autocomplete suggestions in the transaction description field.
                 </p>
-                <form method="POST" action="{{ url_for('add_common_description') }}" class="d-flex gap-2 mb-3">
+                <form method="POST" action="{{ url_for('settings_bp.add_common_description') }}" class="d-flex gap-2 mb-3">
                     <input type="text" class="form-control" name="value" placeholder="New description" required>
                     <button type="submit" class="btn btn-success text-nowrap">
                         <i class="bi bi-plus"></i> Add
@@ -514,7 +514,7 @@
                     {% for desc in common_descriptions %}
                     <div class="badge bg-light text-dark border d-inline-flex align-items-center gap-1 px-2 py-2 fs-6 fw-normal">
                         {{ desc.value }}
-                        <form method="POST" action="{{ url_for('delete_common_description', item_id=desc.id) }}" class="d-inline m-0">
+                        <form method="POST" action="{{ url_for('settings_bp.delete_common_description', item_id=desc.id) }}" class="d-inline m-0">
                             <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent text-danger lh-1"
                                     title="Remove" onclick="return confirm('Remove \'{{ desc.value }}\' from common descriptions?')">
                                 <i class="bi bi-x-lg" style="font-size:0.75rem"></i>
@@ -530,7 +530,7 @@
                 <hr>
                 <h6 class="text-muted mb-1">Blacklist</h6>
                 <p class="text-muted small mb-2">Values listed here are never auto-collected, even if they meet the threshold.</p>
-                <form method="POST" action="{{ url_for('add_common_blacklist') }}" class="d-flex gap-2 mb-3">
+                <form method="POST" action="{{ url_for('settings_bp.add_common_blacklist') }}" class="d-flex gap-2 mb-3">
                     <input type="hidden" name="type" value="description">
                     <input type="text" class="form-control" name="value" placeholder="Description to blacklist" required>
                     <button type="submit" class="btn btn-outline-secondary text-nowrap">
@@ -543,7 +543,7 @@
                     {% for bl in desc_blacklist %}
                     <div class="badge bg-warning text-dark border d-inline-flex align-items-center gap-1 px-2 py-2 fs-6 fw-normal">
                         {{ bl.value }}
-                        <form method="POST" action="{{ url_for('delete_common_blacklist', item_id=bl.id) }}" class="d-inline m-0">
+                        <form method="POST" action="{{ url_for('settings_bp.delete_common_blacklist', item_id=bl.id) }}" class="d-inline m-0">
                             <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent text-dark lh-1"
                                     title="Remove" onclick="return confirm('Remove \'{{ bl.value }}\' from description blacklist?')">
                                 <i class="bi bi-x-lg" style="font-size:0.75rem"></i>
@@ -567,7 +567,7 @@
                 <p class="text-muted mb-3">
                     These appear as autocomplete suggestions in the expense item price fields.
                 </p>
-                <form method="POST" action="{{ url_for('add_common_price') }}" class="d-flex gap-2 mb-3">
+                <form method="POST" action="{{ url_for('settings_bp.add_common_price') }}" class="d-flex gap-2 mb-3">
                     <input type="text" inputmode="decimal" class="form-control" name="value" placeholder="Price (e.g. 3{{ cfg.decimal_separator }}50)"
                            required style="max-width: 200px">
                     <button type="submit" class="btn btn-success text-nowrap">
@@ -579,7 +579,7 @@
                     {% for price in common_prices %}
                     <div class="badge bg-light text-dark border d-inline-flex align-items-center gap-1 px-2 py-2 fs-6 fw-normal">
                         {{ currency_symbol }}{{ price.value|money }}
-                        <form method="POST" action="{{ url_for('delete_common_price', item_id=price.id) }}" class="d-inline m-0">
+                        <form method="POST" action="{{ url_for('settings_bp.delete_common_price', item_id=price.id) }}" class="d-inline m-0">
                             <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent text-danger lh-1"
                                     title="Remove" onclick="return confirm('Remove {{ currency_symbol }}{{ price.value|money }} from common prices?')">
                                 <i class="bi bi-x-lg" style="font-size:0.75rem"></i>
@@ -595,7 +595,7 @@
                 <hr>
                 <h6 class="text-muted mb-1">Blacklist</h6>
                 <p class="text-muted small mb-2">Prices listed here are never auto-collected, even if they meet the threshold. Enter as decimal (e.g. 3{{ cfg.decimal_separator }}50).</p>
-                <form method="POST" action="{{ url_for('add_common_blacklist') }}" class="d-flex gap-2 mb-3">
+                <form method="POST" action="{{ url_for('settings_bp.add_common_blacklist') }}" class="d-flex gap-2 mb-3">
                     <input type="hidden" name="type" value="price">
                     <input type="text" inputmode="decimal" class="form-control" name="value" placeholder="Price to blacklist (e.g. 3{{ cfg.decimal_separator }}50)"
                            required style="max-width: 200px">
@@ -609,7 +609,7 @@
                     {% for bl in price_blacklist %}
                     <div class="badge bg-warning text-dark border d-inline-flex align-items-center gap-1 px-2 py-2 fs-6 fw-normal">
                         {{ bl.value }}
-                        <form method="POST" action="{{ url_for('delete_common_blacklist', item_id=bl.id) }}" class="d-inline m-0">
+                        <form method="POST" action="{{ url_for('settings_bp.delete_common_blacklist', item_id=bl.id) }}" class="d-inline m-0">
                             <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent text-dark lh-1"
                                     title="Remove" onclick="return confirm('Remove {{ bl.value }} from price blacklist?')">
                                 <i class="bi bi-x-lg" style="font-size:0.75rem"></i>
@@ -630,7 +630,7 @@
                 <i class="bi bi-clock-history"></i> Auto-Collect Schedule
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('settings_common_auto') }}">
+                <form method="POST" action="{{ url_for('settings_bp.settings_common_auto') }}">
 
                     <div class="form-check form-switch mb-2">
                         <input class="form-check-input" type="checkbox" role="switch"
@@ -761,7 +761,7 @@
                     </div>
                 </form>
 
-                <form method="POST" action="{{ url_for('settings_common_auto_run') }}" class="mt-2">
+                <form method="POST" action="{{ url_for('settings_bp.settings_common_auto_run') }}" class="mt-2">
                     <button type="submit" class="btn btn-outline-secondary">
                         <i class="bi bi-play-fill"></i> Run Now
                     </button>
@@ -771,7 +771,7 @@
                 <hr class="mt-4">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <h6 class="mb-0 text-muted">Debug Log</h6>
-                    <form method="POST" action="{{ url_for('settings_common_auto_clear_log') }}">
+                    <form method="POST" action="{{ url_for('settings_bp.settings_common_auto_clear_log') }}">
                         <button type="submit" class="btn btn-sm btn-outline-danger"
                                 onclick="return confirm('Clear the entire debug log?')">
                             <i class="bi bi-trash"></i> Clear Log
@@ -798,7 +798,7 @@
         <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span><i class="bi bi-archive"></i> Backups</span>
-                <form method="POST" action="{{ url_for('settings_backup_create') }}">
+                <form method="POST" action="{{ url_for('settings_bp.settings_backup_create') }}">
                     <button type="submit" class="btn btn-sm btn-success">
                         <i class="bi bi-plus-circle"></i> Create Backup Now
                     </button>
@@ -828,7 +828,7 @@
                                 <td class="text-muted small">{{ b.modified.strftime('%Y-%m-%d %H:%M') }}</td>
                                 <td class="text-end">
                                     <div class="d-flex gap-2 justify-content-end">
-                                        <a href="{{ url_for('backup_download', filename=b.filename) }}"
+                                        <a href="{{ url_for('settings_bp.backup_download', filename=b.filename) }}"
                                            class="btn btn-sm btn-outline-primary">
                                             <i class="bi bi-download"></i> Download
                                         </a>
@@ -836,7 +836,7 @@
                                                 onclick="confirmRestore('{{ b.filename }}')">
                                             <i class="bi bi-arrow-counterclockwise"></i> Restore
                                         </button>
-                                        <form method="POST" action="{{ url_for('backup_delete', filename=b.filename) }}"
+                                        <form method="POST" action="{{ url_for('settings_bp.backup_delete', filename=b.filename) }}"
                                               class="d-inline">
                                             <button type="submit" class="btn btn-sm btn-outline-danger"
                                                     onclick="return confirm('Delete {{ b.filename }}?')">
@@ -894,7 +894,7 @@
                 <i class="bi bi-clock"></i> Auto-Backup Schedule
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('settings_backup') }}">
+                <form method="POST" action="{{ url_for('settings_bp.settings_backup') }}">
 
                     <div class="form-check form-switch mb-2">
                         <input class="form-check-input" type="checkbox" role="switch"
@@ -1007,7 +1007,7 @@
         <div class="card mt-4">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span><i class="bi bi-journal-text"></i> Backup Debug Log</span>
-                <form method="POST" action="{{ url_for('settings_backup_clear_log') }}" class="d-inline">
+                <form method="POST" action="{{ url_for('settings_bp.settings_backup_clear_log') }}" class="d-inline">
                     <button type="submit" class="btn btn-sm btn-outline-danger"
                             onclick="return confirm('Clear the entire backup debug log?')">
                         <i class="bi bi-trash"></i> Clear Log
@@ -1029,7 +1029,7 @@
 
     <!-- ── Templates tab ── -->
     <div class="tab-pane fade" id="tab-templates">
-        <form method="POST" action="{{ url_for('settings_templates') }}">
+        <form method="POST" action="{{ url_for('settings_bp.settings_templates') }}">
 
             <!-- Colors / Theme -->
             <div class="card mb-4">
@@ -1124,7 +1124,7 @@
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <span><i class="bi bi-envelope"></i> Weekly Balance Email</span>
-                    <a href="{{ url_for('preview_email') }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                    <a href="{{ url_for('settings_bp.preview_email') }}" target="_blank" class="btn btn-sm btn-outline-secondary">
                         <i class="bi bi-eye"></i> Preview
                     </a>
                 </div>
@@ -1171,7 +1171,7 @@
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <span><i class="bi bi-person-badge"></i> Admin Summary Email</span>
-                    <a href="{{ url_for('preview_admin_summary') }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                    <a href="{{ url_for('settings_bp.preview_admin_summary') }}" target="_blank" class="btn btn-sm btn-outline-secondary">
                         <i class="bi bi-eye"></i> Preview
                     </a>
                 </div>
@@ -1216,7 +1216,7 @@
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <span><i class="bi bi-archive"></i> Backup Status Email</span>
-                    <a href="{{ url_for('preview_backup') }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                    <a href="{{ url_for('settings_bp.preview_backup') }}" target="_blank" class="btn btn-sm btn-outline-secondary">
                         <i class="bi bi-eye"></i> Preview
                     </a>
                 </div>
@@ -1252,7 +1252,7 @@
         </form>
 
         <form id="reset-templates-form" method="POST"
-              action="{{ url_for('settings_templates_reset') }}" class="d-none"></form>
+              action="{{ url_for('settings_bp.settings_templates_reset') }}" class="d-none"></form>
 
         <!-- App Icon -->
         <div class="card mb-4 mt-4">
@@ -1275,7 +1275,7 @@
                         <p class="text-muted small mb-2">
                             Uses current navbar color as background with the bank silhouette in white.
                         </p>
-                        <form method="POST" action="{{ url_for('settings_icon') }}">
+                        <form method="POST" action="{{ url_for('settings_bp.settings_icon') }}">
                             <input type="hidden" name="action" value="generate">
                             <button type="submit" class="btn btn-sm btn-primary">
                                 <i class="bi bi-arrow-repeat"></i> Regenerate with Navbar Color
@@ -1292,7 +1292,7 @@
                         <p class="text-muted small mb-2">
                             PNG or JPG, will be resized to 192&times;192 and 512&times;512.
                         </p>
-                        <form method="POST" action="{{ url_for('settings_icon') }}" enctype="multipart/form-data">
+                        <form method="POST" action="{{ url_for('settings_bp.settings_icon') }}" enctype="multipart/form-data">
                             <input type="hidden" name="action" value="upload">
                             <div class="d-flex gap-2 align-items-center">
                                 <input type="file" class="form-control form-control-sm" name="icon_file"
@@ -1305,7 +1305,7 @@
                     </div>
                 </div>
 
-                <form method="POST" action="{{ url_for('settings_icon') }}">
+                <form method="POST" action="{{ url_for('settings_bp.settings_icon') }}">
                     <input type="hidden" name="action" value="reset">
                     <button type="submit" class="btn btn-sm btn-outline-secondary">
                         <i class="bi bi-arrow-counterclockwise"></i> Reset to Default
@@ -1325,7 +1325,7 @@
                 <i class="bi bi-person-plus"></i> Add User
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('add_user') }}" class="row g-3">
+                <form method="POST" action="{{ url_for('main.add_user') }}" class="row g-3">
                     <div class="col-sm-6">
                         <label for="new_user_name" class="form-label">Name</label>
                         <input type="text" class="form-control" id="new_user_name" name="name" required>
@@ -1384,7 +1384,7 @@
                             {% for user in active_users %}
                             <tr>
                                 <td>
-                                    <a href="{{ url_for('user_detail', user_id=user.id) }}" class="text-decoration-none">
+                                    <a href="{{ url_for('main.user_detail', user_id=user.id) }}" class="text-decoration-none">
                                         <strong>{{ user.name }}</strong>
                                     </a>
                                 </td>
@@ -1395,7 +1395,7 @@
                                     </span>
                                 </td>
                                 <td class="text-end">
-                                    <form method="POST" action="{{ url_for('toggle_user_active', user_id=user.id) }}">
+                                    <form method="POST" action="{{ url_for('main.toggle_user_active', user_id=user.id) }}">
                                         <button type="submit" class="btn btn-sm btn-outline-secondary"
                                                 onclick="return confirm('Deactivate {{ user.name }}?')">
                                             <i class="bi bi-person-dash"></i> Deactivate
@@ -1435,7 +1435,7 @@
                             {% for user in deactivated_users %}
                             <tr>
                                 <td>
-                                    <a href="{{ url_for('user_detail', user_id=user.id) }}" class="text-decoration-none">
+                                    <a href="{{ url_for('main.user_detail', user_id=user.id) }}" class="text-decoration-none">
                                         <strong>{{ user.name }}</strong>
                                     </a>
                                 </td>
@@ -1446,7 +1446,7 @@
                                     </span>
                                 </td>
                                 <td class="text-end">
-                                    <form method="POST" action="{{ url_for('toggle_user_active', user_id=user.id) }}">
+                                    <form method="POST" action="{{ url_for('main.toggle_user_active', user_id=user.id) }}">
                                         <button type="submit" class="btn btn-sm btn-outline-success">
                                             <i class="bi bi-person-check"></i> Reactivate
                                         </button>

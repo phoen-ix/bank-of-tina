@@ -45,7 +45,7 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
-            <a class="navbar-brand" href="{{ url_for('index') }}">
+            <a class="navbar-brand" href="{{ url_for('main.index') }}">
                 <i class="bi bi-bank"></i> Bank of Tina
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -54,26 +54,26 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('index') }}">Dashboard</a>
+                        <a class="nav-link" href="{{ url_for('main.index') }}">Dashboard</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('add_transaction') }}">Add Transaction</a>
+                        <a class="nav-link" href="{{ url_for('main.add_transaction') }}">Add Transaction</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('view_transactions') }}">All Transactions</a>
+                        <a class="nav-link" href="{{ url_for('main.view_transactions') }}">All Transactions</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('analytics') }}">Charts</a>
+                        <a class="nav-link" href="{{ url_for('analytics_bp.analytics') }}">Charts</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('settings') }}">Settings</a>
+                        <a class="nav-link" href="{{ url_for('settings_bp.settings') }}">Settings</a>
                     </li>
                 </ul>
-                <form class="d-flex ms-3" action="{{ url_for('search') }}" method="GET">
+                <form class="d-flex ms-3" action="{{ url_for('main.search') }}" method="GET">
                     <div class="input-group input-group-sm">
                         <input class="form-control" type="search" name="q"
                                placeholder="Search transactions…"
-                               value="{{ request.args.get('q', '') if request.endpoint == 'search' else '' }}">
+                               value="{{ request.args.get('q', '') if request.endpoint == 'main.search' else '' }}">
                         <button class="btn btn-outline-light" type="submit">
                             <i class="bi bi-search"></i>
                         </button>

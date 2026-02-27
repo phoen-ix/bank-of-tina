@@ -29,7 +29,7 @@
                 <div class="tab-content" id="transactionTabContent">
                     <!-- Expense Tab -->
                     <div class="tab-pane fade show active" id="expense" role="tabpanel">
-                        <form method="POST" action="{{ url_for('add_transaction') }}" enctype="multipart/form-data" id="expenseForm">
+                        <form method="POST" action="{{ url_for('main.add_transaction') }}" enctype="multipart/form-data" id="expenseForm">
                             <input type="hidden" name="transaction_type" value="expense">
                             <input type="hidden" name="items_json" id="items_json">
                             <datalist id="commonItemsList"></datalist>
@@ -93,7 +93,7 @@
 
                     <!-- Deposit Tab -->
                     <div class="tab-pane fade" id="deposit" role="tabpanel">
-                        <form method="POST" action="{{ url_for('add_transaction') }}">
+                        <form method="POST" action="{{ url_for('main.add_transaction') }}">
                             <input type="hidden" name="transaction_type" value="deposit">
                             
                             <div class="mb-3">
@@ -135,7 +135,7 @@
 
                     <!-- Withdrawal Tab -->
                     <div class="tab-pane fade" id="withdrawal" role="tabpanel">
-                        <form method="POST" action="{{ url_for('add_transaction') }}">
+                        <form method="POST" action="{{ url_for('main.add_transaction') }}">
                             <input type="hidden" name="transaction_type" value="withdrawal">
                             
                             <div class="mb-3">
