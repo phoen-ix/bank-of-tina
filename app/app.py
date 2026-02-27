@@ -53,7 +53,8 @@ _db_pass = os.environ.get('DB_PASSWORD', 'tina')
 _db_host = os.environ.get('DB_HOST', 'localhost')
 _db_port = os.environ.get('DB_PORT', '3306')
 _db_name = os.environ.get('DB_NAME', 'bank_of_tina')
-app.config['SQLALCHEMY_DATABASE_URI'] = (
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
+    'SQLALCHEMY_DATABASE_URI',
     f'mysql+pymysql://{_db_user}:{_db_pass}@{_db_host}:{_db_port}/{_db_name}'
 )
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False

@@ -12,6 +12,7 @@ mariadb-data/
 .dockerignore
 README.md
 docker-compose.yml
+tests/
 
 # Python artefacts
 *.pyc
