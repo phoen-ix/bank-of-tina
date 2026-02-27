@@ -19,6 +19,15 @@ main_bp = Blueprint('main', __name__)
 VALID_EMAIL_TX = {'none', 'last3', 'this_week', 'this_month'}
 
 
+@main_bp.route('/health')
+def health():
+    try:
+        db.session.execute(db.text('SELECT 1'))
+        return jsonify({'status': 'ok'}), 200
+    except Exception as e:
+        return jsonify({'status': 'error', 'detail': str(e)}), 503
+
+
 @main_bp.route('/')
 def index():
     users = User.query.filter_by(is_active=True).order_by(User.name).all()
