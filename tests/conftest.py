@@ -46,3 +46,31 @@ def clean_db(app):
 def client(app):
     """A Flask test client."""
     return app.test_client()
+
+
+@pytest.fixture
+def make_user(app):
+    """Factory fixture to create users quickly.
+
+    Must be called inside a ``with app.app_context():`` block.
+    """
+    from decimal import Decimal
+    from models import User
+
+    _counter = [0]
+
+    def _make(name=None, email=None, balance=Decimal('0'), is_active=True,
+              email_opt_in=True, email_transactions='last3'):
+        _counter[0] += 1
+        if name is None:
+            name = f'User{_counter[0]}'
+        if email is None:
+            email = f'user{_counter[0]}@example.com'
+        user = User(name=name, email=email, balance=balance,
+                    is_active=is_active, email_opt_in=email_opt_in,
+                    email_transactions=email_transactions)
+        _db.session.add(user)
+        _db.session.commit()
+        return user
+
+    return _make
