@@ -16,6 +16,10 @@ COPY app/ .
 # Create necessary directories
 RUN mkdir -p /uploads /database /backups
 
+# Create non-root user
+RUN groupadd -r -g 1000 appuser && useradd -r -u 1000 -g appuser -d /app -s /sbin/nologin appuser
+RUN chown -R appuser:appuser /app /uploads /backups /database
+
 # Expose port
 EXPOSE 5000
 
@@ -25,6 +29,8 @@ ENV PYTHONUNBUFFERED=1
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD curl -f http://localhost:5000/health || exit 1
+
+USER appuser
 
 # Run with gunicorn for production
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--timeout", "300", "app:app"]
