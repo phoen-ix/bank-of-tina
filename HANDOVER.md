@@ -22,20 +22,37 @@ This document gives a new Claude instance full context to continue development w
 | Backend | Python 3.11, Flask 3.0, Flask-SQLAlchemy 3.1 |
 | Database | MariaDB 11 (via PyMySQL) |
 | ORM | SQLAlchemy (no migrations — `db.create_all()` on startup) |
+| Monetary types | `Decimal` / `db.Numeric(12, 2)` everywhere (no floats) |
 | Scheduler | APScheduler `BackgroundScheduler` |
 | Timezone | pytz |
+| Logging | Python `logging` to stdout, structured format |
 | Frontend | Bootstrap 5.3, Bootstrap Icons 1.11, vanilla JS |
 | Container | Docker + docker-compose, gunicorn (1 worker, 300 s timeout) |
+| Testing | pytest with SQLite in-memory (`FLASK_TESTING=1`) |
 | DB tools | `mariadb-client` installed in image for `mysqldump`/`mysql` CLI |
 
 ---
 
 ## File Structure
 
+The backend was split from a single 2300-line `app.py` into a modular Flask Blueprint architecture. The extensions pattern (`extensions.py` holds unbound instances; `app.py` binds them) prevents circular imports.
+
 ```
 bank-of-tina/
 ├── app/
-│   ├── app.py                    # Entire backend: models, routes, helpers, scheduler
+│   ├── app.py                    # Thin entry point: create app, init extensions, register blueprints, start scheduler
+│   ├── extensions.py             # Shared instances: db (SQLAlchemy), csrf (CSRFProtect), scheduler (BackgroundScheduler)
+│   ├── config.py                 # Constants: THEMES, TEMPLATE_DEFAULTS, ALLOWED_EXTENSIONS, BACKUP_DIR, DEFAULT_ICON_BG
+│   ├── models.py                 # All 11 SQLAlchemy model classes
+│   ├── helpers.py                # Utility functions (parse_amount, fmt_amount, save_receipt, update_balance, etc.)
+│   ├── email_service.py          # build_email_html, build_admin_summary_email, send_single_email, send_all_emails
+│   ├── backup_service.py         # run_backup, _backup_log, _prune_old_backups, _list_backups, build_backup_status_email
+│   ├── scheduler_jobs.py         # _add_email_job, _add_common_job, _add_backup_job, auto_collect_common, _restore_schedule
+│   ├── routes/
+│   │   ├── __init__.py           # register_blueprints(app) — registers all 3 blueprints
+│   │   ├── main.py               # main_bp: dashboard, users, transactions, search, receipts, PWA manifest
+│   │   ├── settings.py           # settings_bp: all settings, common items, backup, templates, icons, user management
+│   │   └── analytics.py          # analytics_bp: charts page + JSON data endpoint
 │   ├── templates/
 │   │   ├── base.html             # Shared layout; injects dynamic theme CSS + PWA tags
 │   │   ├── index.html            # Dashboard (active users only)
@@ -44,7 +61,7 @@ bank-of-tina/
 │   │   ├── transactions.html     # Month-by-month view
 │   │   ├── search.html           # Cross-month search with advanced filters
 │   │   ├── user_detail.html
-│   │   ├── analytics.html        # Charts & Statistics page (5-tab Chart.js dashboard)
+│   │   ├── analytics.html        # Charts & Statistics page (4-tab Chart.js dashboard)
 │   │   └── settings.html         # All settings tabs (General/Email/Common/Backup/Templates/Users)
 │   └── static/
 │       ├── sw.js                 # Service worker (network-first, offline fallback)
@@ -52,6 +69,11 @@ bank-of-tina/
 │       └── icons/
 │           ├── icon-192.png      # PWA icon 192×192
 │           └── icon-512.png      # PWA icon 512×512
+├── tests/
+│   ├── conftest.py               # pytest fixtures: app (SQLite in-memory), client, clean_db
+│   ├── test_helpers.py           # parse_amount, fmt_amount with Decimal
+│   ├── test_models.py            # User creation, balance precision (10×0.10 == 1.00)
+│   └── test_routes.py            # Dashboard, add user, deposit, withdrawal, delete reversal, API JSON
 ├── uploads/                      # Receipts — bind-mounted; YYYY/MM/DD/Buyer_file.ext
 ├── backups/                      # Backup archives — bind-mounted; bot_backup_*.tar.gz
 ├── mariadb-data/                 # MariaDB data — bind-mounted
@@ -65,19 +87,33 @@ bank-of-tina/
 └── .dockerignore
 ```
 
+### Module Dependency Graph (no cycles)
+
+```
+extensions.py  → (nothing)
+config.py      → (nothing)
+models.py      → extensions
+helpers.py     → extensions, models, config
+email_service  → extensions, models, helpers
+backup_service → extensions, models, helpers, config
+scheduler_jobs → extensions, helpers, email_service, backup_service
+routes/*       → extensions, models, helpers, config, services, scheduler_jobs
+app.py         → everything (assembly point)
+```
+
 ---
 
-## Database Models (`app/app.py`)
+## Database Models (`app/models.py`)
 
 | Model | Key fields | Notes |
 |-------|-----------|-------|
-| `User` | `id`, `name`, `email`, `balance` (Float), `is_active`, `email_opt_in` (Bool, default `True`), `email_transactions` (String, default `'last3'`) | Deactivated users are hidden from dashboard/search filter; `email_opt_in` controls whether the weekly email is sent; `email_transactions` values: `'none'` \| `'last3'` \| `'this_week'` \| `'this_month'` |
-| `Transaction` | `id`, `date`, `description`, `amount`, `from_user_id`, `to_user_id`, `transaction_type`, `receipt_path`, `notes` (Text, nullable) | Types: `expense`, `deposit`, `withdrawal`, `transfer` |
-| `ExpenseItem` | `id`, `transaction_id`, `item_name`, `price`, `buyer_id` | Child rows of an expense transaction |
+| `User` | `id`, `name`, `email`, `balance` (Numeric(12,2)), `is_active`, `email_opt_in` (Bool, default `True`), `email_transactions` (String, default `'last3'`) | Deactivated users are hidden from dashboard/search filter; `email_opt_in` controls whether the weekly email is sent; `email_transactions` values: `'none'` \| `'last3'` \| `'this_week'` \| `'this_month'` |
+| `Transaction` | `id`, `date`, `description`, `amount` (Numeric(12,2)), `from_user_id`, `to_user_id`, `transaction_type`, `receipt_path`, `notes` (Text, nullable) | Types: `expense`, `deposit`, `withdrawal`, `transfer` |
+| `ExpenseItem` | `id`, `transaction_id`, `item_name`, `price` (Numeric(12,2)), `buyer_id` | Child rows of an expense transaction |
 | `Setting` | `key` (PK), `value` | Key/value store for all configuration |
 | `CommonItem` | `id`, `name` | Autocomplete item names |
 | `CommonDescription` | `id`, `value` | Autocomplete descriptions |
-| `CommonPrice` | `id`, `value` | Autocomplete prices |
+| `CommonPrice` | `id`, `value` (Numeric(12,2)) | Autocomplete prices |
 | `CommonBlacklist` | `id`, `type`, `value` | Prevents auto-collection of specific values |
 | `AutoCollectLog` | `id`, `ran_at`, `level`, `category`, `message` | Capped at 500 rows |
 | `EmailLog` | `id`, `sent_at`, `level`, `recipient`, `message` | Capped at 500 rows |
@@ -96,7 +132,7 @@ get_setting(key, default=None)   # Returns value or default
 set_setting(key, value)          # Upserts
 ```
 
-The `settings()` view builds a `cfg` dict from all keys and passes it to `settings.html`. Each settings sub-route (e.g. `settings_general`, `settings_email`) POSTs and redirects back. Tab state is preserved in `sessionStorage` client-side. A `?tab=<name>` URL parameter (e.g. `?tab=users`) overrides `sessionStorage` on load, allowing external links to open a specific tab directly.
+The `settings()` view (in `routes/settings.py`) builds a `cfg` dict from all keys and passes it to `settings.html`. Each settings sub-route (e.g. `settings_general`, `settings_email`) POSTs and redirects back. Tab state is preserved in `sessionStorage` client-side. A `?tab=<name>` URL parameter (e.g. `?tab=users`) overrides `sessionStorage` on load, allowing external links to open a specific tab directly.
 
 ### Known Setting Keys
 
@@ -145,7 +181,7 @@ The `settings()` view builds a `cfg` dict from all keys and passes it to `settin
 
 ---
 
-## Key Helpers (`app/app.py`)
+## Key Helpers (`app/helpers.py`)
 
 ```python
 now_local()
@@ -161,14 +197,15 @@ apply_template(text, **kwargs)
 
 parse_amount(s)
 # Parses a user-supplied decimal string, normalising both '.' and ',' as separators.
-# parse_amount("1,99") → 1.99.  Used everywhere a monetary value is read from a form.
+# Returns a Decimal: parse_amount("1,99") → Decimal('1.99').
+# Used everywhere a monetary value is read from a form.
 
 fmt_amount(value)
-# Formats a float to 2 decimal places using the configured decimal_separator setting.
-# fmt_amount(1.99) → "1,99" when separator is comma.
+# Formats a Decimal to 2 decimal places using the configured decimal_separator setting.
+# fmt_amount(Decimal('1.99')) → "1,99" when separator is comma.
 
 @app.template_filter('money')
-# Jinja filter: {{ value|money }} — calls fmt_amount(float(value)).
+# Jinja filter: {{ value|money }} — calls fmt_amount(Decimal(str(value))).
 # Used in all templates instead of "%.2f"|format(value).
 
 hex_to_rgb(hex_color)
@@ -200,12 +237,13 @@ to_local(dt)
 # Jinja filter: {{ dt|localdt }} — calls to_local(dt).strftime('%Y-%m-%d %H:%M').
 # Used in all templates to display stored UTC datetimes in the configured timezone.
 
-@app.context_processor inject_theme()
-# Injects theme_navbar, theme_navbar_rgb, theme_balance_positive, theme_balance_negative,
-# decimal_sep, currency_symbol, and icon_version into every template. base.html uses the
-# theme values in an inline <style> block; decimal_sep and currency_symbol are used by JS
-# (const DECIMAL_SEP, const CURRENCY_SYM) for input/display formatting; icon_version is
-# appended as ?v= to icon <link> tags for cache-busting.
+### In `app.py` (template filters and context processor)
+
+@app.template_filter('money')        # {{ value|money }} → fmt_amount(Decimal(str(value)))
+@app.template_filter('localdt')      # {{ dt|localdt }} → to_local(dt).strftime(...)
+@app.context_processor inject_theme() # Injects theme_navbar, theme_navbar_rgb, etc. into every template
+
+### In `helpers.py`
 
 make_icon_png(size, bg_color, fg_color=(0xff, 0xff, 0xff))
 # Generates a square PNG with a bank silhouette. Ported from create_icons.py — stdlib only.
@@ -232,7 +270,7 @@ There is no derived-balance recalculation — the stored balance is the source o
 
 ## APScheduler
 
-A single `BackgroundScheduler` instance is created at module level. Three job slots (each replaced when settings are saved):
+A single `BackgroundScheduler` instance lives in `extensions.py`. Three job slots (each replaced when settings are saved):
 
 | Job ID | Trigger | What it does |
 |--------|---------|-------------|
@@ -240,7 +278,7 @@ A single `BackgroundScheduler` instance is created at module level. Three job sl
 | `common_job` | cron | scans transactions, promotes common values |
 | `backup_job` | cron | `run_backup()`, prunes old backups, emails admin if configured |
 
-Jobs are restored from the DB on startup via `_restore_schedule()`. The scheduler is shut down on process exit via `atexit`.
+Jobs are restored from the DB on startup via `_restore_schedule(app)` in `scheduler_jobs.py`. Each job setup function receives `app` as a parameter and uses `with app.app_context():` since background threads have no Flask request context. The scheduler is shut down on process exit via `atexit`.
 
 ---
 
@@ -300,7 +338,7 @@ Chunked upload: JS sends 5 MB chunks to `/backups/upload-chunk` with a shared `u
 
 ## Theming
 
-`THEMES` dict (5 presets) and `TEMPLATE_DEFAULTS` dict live near the top of `app.py`. Colors are stored in `Setting` and injected into every page via the `inject_theme` context processor. `base.html` applies them with an inline `<style>` block overriding Bootstrap CSS custom properties (`--bs-primary`, `--bs-primary-rgb`, button colors, nav tab active color, `.balance-positive`, `.balance-negative`).
+`THEMES` dict (5 presets) and `TEMPLATE_DEFAULTS` dict live in `config.py`. Colors are stored in `Setting` and injected into every page via the `inject_theme` context processor. `base.html` applies them with an inline `<style>` block overriding Bootstrap CSS custom properties (`--bs-primary`, `--bs-primary-rgb`, button colors, nav tab active color, `.balance-positive`, `.balance-negative`).
 
 ---
 
@@ -314,24 +352,27 @@ Chunked upload: JS sends 5 MB chunks to `/backups/upload-chunk` with a shared `u
 
 ## Search
 
-Route: `GET /search` — parameters: `q`, `type`, `user`, `date_from`, `date_to`, `amount_min`, `amount_max`, `has_receipt`. User dropdown only shows active users. Advanced filters panel auto-opens if any filter param is present in the URL (JS checks on load).
+Route: `GET /search` (in `routes/main.py`) — parameters: `q`, `type`, `user`, `date_from`, `date_to`, `amount_min`, `amount_max`, `has_receipt`. User dropdown only shows active users. Advanced filters panel auto-opens if any filter param is present in the URL (JS checks on load).
 
 ---
 
 ## Common Gotchas
 
-- **Adding a new column** — add it to the model *and* register an `ALTER TABLE` entry in `_migrate_db()` so existing installs pick it up automatically on the next container start.
-- **Monetary input/display** — always use `parse_amount()` (not `float()`) to read form values and `fmt_amount()` / `|money` filter to display them, so the configured decimal separator is respected everywhere.
+- **Adding a new column** — add it to the model in `models.py` *and* register an `ALTER TABLE` entry in `_migrate_db()` (in `app.py`) so existing installs pick it up automatically on the next container start.
+- **Monetary values use `Decimal`** — all model columns use `db.Numeric(12, 2)`, all Python code uses `Decimal`. Always use `parse_amount()` (not `float()`) to read form values and `fmt_amount()` / `|money` filter to display them, so the configured decimal separator is respected and there is no float drift.
 - **`datetime.now()` is UTC in Docker** — always use `now_local()` for display or filenames, never `datetime.now()` directly.
 - **Balance is stored, not derived** — never recalculate from transactions; mutate `user.balance` carefully.
 - **`/uploads` is a bind-mount** — cannot `rmtree` the directory itself; clear its contents only.
-- **Scheduler jobs need `with app.app_context()`** — background jobs have no Flask request context.
+- **Scheduler jobs receive `app` parameter** — use `with app.app_context():` since background threads have no Flask request context. Never import `app` directly in service modules; use `current_app` in request handlers or pass `app` explicitly to scheduler jobs.
+- **Circular imports** — never import from `app.py` in other modules. Import `db`, `csrf`, `scheduler` from `extensions.py`. Import models from `models.py`.
+- **Blueprint url_for** — all `url_for()` calls in templates must be blueprint-prefixed: `url_for('main.index')`, `url_for('settings_bp.settings')`, `url_for('analytics_bp.analytics')`, etc.
 - **Single gunicorn worker** — the in-process APScheduler only works correctly with 1 worker. Scaling requires moving to a proper task queue.
 - **`db.create_all()` is idempotent** but won't add columns to existing tables — that's what `_migrate_db()` is for.
+- **`FLASK_TESTING=1`** — set this env var to skip DB init, scheduler start, and migration at import time. The test suite sets it in `conftest.py` before importing `app`.
 
 ---
 
-## Analytics / Charts (`app/app.py` + `app/templates/analytics.html`)
+## Analytics / Charts (`app/routes/analytics.py` + `app/templates/analytics.html`)
 
 Two new routes, no new DB tables — all data is derived from existing `Transaction` and `ExpenseItem` rows.
 
@@ -398,7 +439,7 @@ The app is installable as a Progressive Web App on both Android and iOS with no 
 | `app/static/icons/icon-512.png` | PWA icon 512×512 (committed output of `create_icons.py`) |
 | `create_icons.py` | One-time stdlib-only (no Pillow) icon generator; run once then commit output |
 
-### `/manifest.json` route (`app/app.py`)
+### `/manifest.json` route (`app/routes/main.py`)
 Dynamic Flask route (`pwa_manifest()`). `theme_color` is fetched live via `get_tpl('color_navbar')` so it always reflects the user's configured navbar color. Icon URLs include a `?v=` cache-busting param from the `icon_version` setting. Uses `app.response_class(json.dumps(data), mimetype='application/manifest+json')` — same pattern as the analytics JSON endpoint.
 
 ### `base.html` additions
@@ -407,11 +448,11 @@ Dynamic Flask route (`pwa_manifest()`). `theme_color` is fetched live via `get_t
 
 ### Icon management (Settings → Templates → App Icon card)
 Icons can be managed from the web UI — no need to re-run `create_icons.py`:
-- **Regenerate from navbar color** — re-generates the bank silhouette icons using the current `color_navbar` setting as the background color (stdlib-only, same algorithm as `create_icons.py`). The generation logic is ported into `app.py` as `make_icon_png(size, bg_color, fg_color)` and `generate_and_save_icons(bg_hex)`.
+- **Regenerate from navbar color** — re-generates the bank silhouette icons using the current `color_navbar` setting as the background color (stdlib-only, same algorithm as `create_icons.py`). The generation logic lives in `helpers.py` as `make_icon_png(size, bg_color, fg_color)` and `generate_and_save_icons(bg_hex)`.
 - **Upload custom icon** — accepts a PNG/JPG upload, resizes to 192×192 and 512×512 using Pillow (`requirements.txt` includes `Pillow>=10.0`), saves to `static/icons/`.
 - **Reset to default** — regenerates with the default Bootstrap blue `#0d6efd`.
 - All three actions update the `icon_version` setting (unix timestamp) for cache-busting and set `icon_mode` to `generated` or `custom`.
-- Route: `POST /settings/icon` with `action` field (`generate`, `upload`, `reset`).
+- Route: `POST /settings/icon` in `routes/settings.py` with `action` field (`generate`, `upload`, `reset`).
 
 ### Cache versioning
 The CACHE constant in `sw.js` is `'bot-v1'`. Bump to `'bot-v2'` etc. on future deploys to evict old caches (the activate handler deletes all cache keys that don't match the current name).
@@ -420,8 +461,16 @@ The CACHE constant in `sw.js` is `'bot-v1'`. Bump to `'bot-v2'` etc. on future d
 
 ## Current State (as of last commit)
 
-All features are fully implemented and committed. Recent work in order:
+All features are fully implemented and committed. The codebase has been through a major refactoring:
 
+### Architecture improvements (most recent)
+20. **Automated test suite** — pytest with SQLite in-memory; 16 tests covering helpers, models, and routes; `FLASK_TESTING=1` init guard skips DB/scheduler setup; run with `FLASK_TESTING=1 python -m pytest tests/ -v`
+21. **Modular Blueprint architecture** — monolithic 2300-line `app.py` split into 11 modules: `extensions.py`, `config.py`, `models.py`, `helpers.py`, `email_service.py`, `backup_service.py`, `scheduler_jobs.py`, and `routes/` package with 3 blueprints (`main_bp`, `settings_bp`, `analytics_bp`); all template `url_for` calls updated to blueprint-prefixed endpoints
+22. **Structured logging** — Python `logging` to stdout with structured format (`timestamp level [module] message`); ~15 log statements across transactions, users, email, backup, scheduler; `LOG_LEVEL` env var (default `INFO`)
+23. **Decimal precision** — all monetary columns changed from `db.Float` to `db.Numeric(12, 2)`; all Python monetary code uses `Decimal` instead of `float`; custom `DecimalJSONProvider` for JSON serialization; `_migrate_db()` runs `ALTER TABLE MODIFY COLUMN` for existing installs
+24. **docker-compose cleanup** — removed deprecated `version: '3.8'` key
+
+### Feature history
 1. Backup/Restore (chunked upload, auto-prune, scheduled runs)
 2. Site admin + admin summary email
 3. Backup status email to admin (scheduled only)
@@ -431,16 +480,55 @@ All features are fully implemented and committed. Recent work in order:
 7. Search: active-users-only filter, has-receipt toggle
 8. Edit transaction: receipt upload / replace / remove
 9. `.dockerignore` updated (excludes `backups/`, `mariadb-data/`, `*.tar.gz`)
-10. **Per-user email preferences** — `email_opt_in` and `email_transactions` fields on `User`; `_migrate_db()` for existing installs; opt-in filtering in `send_all_emails()`; preference-driven transaction query in `build_email_html()`; controls in Add User form (settings.html) and Edit User modal (user_detail.html)
-11. **Charts & Statistics page** — `/analytics` + `/analytics/data` JSON endpoint; 5-tab Chart.js dashboard (Balances, History, Volume, Top Items, Breakdown); shared filter bar (date range + user multi-select + quick presets); A4 landscape print/PDF with per-tab canvas resize via `beforeprint`
-12. **Decimal separator setting** — `decimal_separator` key in `Setting` (`.` or `,`); configured in Settings → General; `parse_amount()` helper normalises all user input; `fmt_amount()` / `|money` Jinja filter applied to all monetary display; `DECIMAL_SEP` JS constant injected via `inject_theme` context processor and used in `add_transaction.html` and `edit_transaction.html` for live total display and item serialisation; all monetary inputs changed from `type="number"` to `type="text" inputmode="decimal"`; Charts page uses the same `DECIMAL_SEP` constant via a `fmtMoney()` JS helper applied to all tooltip labels and axis ticks
-13. **Dashboard & user detail polish** — Actions column and redundant View button removed from dashboard (user name is a link); email column hidden by default, toggled via `show_email_on_dashboard` setting; user detail transaction history capped at 5 most recent; Settings page `?tab=<name>` URL parameter added so external links can open a specific tab directly
-14. **Transaction notes field** — optional `notes` (Text) column on `Transaction`; registered in `_migrate_db()` for existing installs; textarea on add (all three tabs) and edit forms; displayed inline on transactions, search, and user detail pages; included in free-text search alongside description and item names
-15. **Email template tweaks** — (a) removed the hardcoded "You owe €X" / "You are owed €X" line from the weekly balance email HTML (the `[BalanceStatus]` placeholder remains available for custom template fields); (b) `build_admin_summary_email` gains an `include_emails=False` parameter — when `False` the Email column is omitted entirely from the summary table; controlled by the `admin_summary_include_emails` setting (default `0`), saved via a toggle in Settings → Templates → Admin Summary Email card and passed through by both `send_all_emails()` and `preview_admin_summary()`
-16. **Configurable currency symbol** — `currency_symbol` key in `Setting` (default `€`); 12-option dropdown in Settings → General; `inject_theme()` injects it as `currency_symbol` into every template; all HTML templates replace hardcoded `€` with `{{ currency_symbol }}`; `add_transaction.html` and `edit_transaction.html` expose it as `const CURRENCY_SYM` (parallel to `DECIMAL_SEP`); `analytics.html` uses `CURRENCY_SYM` in all chart tooltip callbacks, axis tick formatters, and dataset/axis title strings; `build_email_html()` and `build_admin_summary_email()` read it via `get_setting()` and apply it to all balance and amount strings
-17. **PWA support** — Web App Manifest at `/manifest.json` (dynamic `theme_color` from navbar setting); network-first service worker with offline fallback page; 192×192 and 512×512 PNG icons (stdlib-generated, committed); PWA meta tags and SW registration added to `base.html`; enables "Add to Home Screen" on Android Chrome and iOS Safari
-18. **PWA icon management** — "App Icon" card in Settings → Templates; regenerate bank silhouette icons using current navbar color (stdlib, no Pillow needed); upload a custom PNG/JPG (resized via Pillow to 192 and 512); reset to default blue; `icon_version` cache-busting on all icon URLs (base.html `<link>` tags and `/manifest.json`); Pillow added to `requirements.txt`
-19. **Separated user lists** — Settings → Users tab now splits the single "All Users" table into two: "Active Users" and "Deactivated Users"; the deactivated card is hidden entirely when no deactivated users exist; the Status badge column was removed since list membership conveys the status
+10. **Per-user email preferences** — `email_opt_in` and `email_transactions` fields on `User`
+11. **Charts & Statistics page** — `/analytics` + `/analytics/data` JSON endpoint; 4-tab Chart.js dashboard
+12. **Decimal separator setting** — `decimal_separator` key in `Setting`; `parse_amount()` normalises input; `fmt_amount()` / `|money` for display
+13. **Dashboard & user detail polish** — user name as link; email column hidden by default; user detail capped at 5 recent
+14. **Transaction notes field** — optional `notes` (Text) column on `Transaction`
+15. **Email template tweaks** — removed hardcoded balance status line; admin summary `include_emails` toggle
+16. **Configurable currency symbol** — 12-option dropdown; applied to UI, charts, and emails
+17. **PWA support** — Web App Manifest, service worker, installable on mobile
+18. **PWA icon management** — regenerate/upload/reset icons from Settings
+19. **Separated user lists** — active and deactivated users in separate lists
+
+---
+
+## Structured Logging
+
+Configured in `app.py` via `setup_logging()`. All log output goes to stdout in the format:
+
+```
+2025-01-15 09:30:00,123 INFO [app] Database tables created / verified
+2025-01-15 09:30:01,456 INFO [routes.main] Transaction created: deposit #42 amount=50.00
+```
+
+- `LOG_LEVEL` env var controls verbosity (default `INFO`)
+- APScheduler and Werkzeug loggers are quieted to `WARNING`
+- Key events logged: app lifecycle, transaction CRUD, user CRUD, email send/fail, backup create/restore, scheduler job registration
+- DB log models (`EmailLog`, `AutoCollectLog`, `BackupLog`) are unchanged — they still power the in-app debug UI
+
+---
+
+## Test Suite
+
+Located in `tests/`. Run with:
+
+```bash
+FLASK_TESTING=1 python -m pytest tests/ -v
+```
+
+### Setup (`conftest.py`)
+- Sets `FLASK_TESTING=1` and `SQLALCHEMY_DATABASE_URI=sqlite://` *before* importing `app`
+- `SECRET_KEY=test-key-not-for-production` (bypasses the strong-key check)
+- `WTF_CSRF_ENABLED=False` (no CSRF tokens needed in tests)
+- Session-scoped `app` fixture; autouse `clean_db` fixture rolls back after each test
+
+### Test files
+| File | Tests | Coverage |
+|------|-------|----------|
+| `test_helpers.py` | 6 | `parse_amount` (various formats), `fmt_amount` (period/comma separator) |
+| `test_models.py` | 4 | User creation, default balance, precision (10×0.10 == 1.00), `is_active` default |
+| `test_routes.py` | 6 | Index page, add user, deposit, withdrawal, delete reversal, API JSON |
 
 ---
 

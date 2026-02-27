@@ -221,7 +221,19 @@ That's it. SMTP credentials and the email schedule are configured from the **Set
 ```
 bank-of-tina/
 ├── app/
-│   ├── app.py                    # Flask application (routes, models, scheduler)
+│   ├── app.py                    # Thin entry point: creates Flask app, inits extensions, starts scheduler
+│   ├── extensions.py             # Shared instances: db, csrf, scheduler (no app binding)
+│   ├── config.py                 # Constants: THEMES, TEMPLATE_DEFAULTS, ALLOWED_EXTENSIONS, BACKUP_DIR
+│   ├── models.py                 # All 11 SQLAlchemy models
+│   ├── helpers.py                # Utility functions: parse_amount, fmt_amount, save_receipt, etc.
+│   ├── email_service.py          # Email building and sending (balance, admin summary, backup status)
+│   ├── backup_service.py         # Backup creation, restore, pruning, status email
+│   ├── scheduler_jobs.py         # APScheduler job setup and restore
+│   ├── routes/
+│   │   ├── __init__.py           # register_blueprints(app)
+│   │   ├── main.py               # main_bp: dashboard, users, transactions, search, receipts, PWA
+│   │   ├── settings.py           # settings_bp: all settings, common items, backup, templates, icons
+│   │   └── analytics.py          # analytics_bp: charts page + data endpoint
 │   ├── templates/
 │   │   ├── base.html             # Shared layout with dynamic theme CSS
 │   │   ├── index.html            # Dashboard (active users only)
@@ -238,6 +250,11 @@ bank-of-tina/
 │       └── icons/
 │           ├── icon-192.png      # PWA icon 192×192
 │           └── icon-512.png      # PWA icon 512×512
+├── tests/
+│   ├── conftest.py               # pytest fixtures (SQLite in-memory, no CSRF)
+│   ├── test_helpers.py           # Tests for parse_amount, fmt_amount
+│   ├── test_models.py            # Tests for User model, balance precision
+│   └── test_routes.py            # Tests for dashboard, transactions, API
 ├── uploads/                      # Receipts — organised as YYYY/MM/DD/
 ├── backups/                      # Backup archives (bot_backup_*.tar.gz)
 ├── mariadb-data/                 # MariaDB data directory (created on first run)
@@ -264,9 +281,11 @@ bank-of-tina/
 
 ### View logs
 ```bash
-docker compose logs -f web
+docker compose logs -f web    # Structured log output (timestamp, level, module, message)
 docker compose logs -f db
 ```
+
+Set the `LOG_LEVEL` environment variable to control verbosity (`DEBUG`, `INFO`, `WARNING`, `ERROR`). Default is `INFO`.
 
 ### Backup & restore
 Use the built-in **Settings → Backup** tab for creating, downloading, uploading, and restoring backups.
@@ -315,6 +334,18 @@ A dedicated **Charts** page (nav bar → Charts) with a shared filter bar and fi
 **Filter bar** — date range pickers, quick presets (30 d / 90 d / 1 yr / All time), multi-select user dropdown, Apply button.
 
 **Print / PDF** — prints only the currently active tab, formatted for A4 landscape; chart canvas is resized to fill the page before the browser captures it. Open browser print dialog → Save as PDF.
+
+---
+
+## 🧪 Running Tests
+
+Tests use an in-memory SQLite database and require no running services:
+
+```bash
+FLASK_TESTING=1 python -m pytest tests/ -v
+```
+
+The test suite covers helpers (amount parsing/formatting), models (user creation, balance precision), and routes (dashboard, transactions, deletion reversal, API).
 
 ---
 
