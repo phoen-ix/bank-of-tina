@@ -12,7 +12,7 @@ from decimal import Decimal
 import pytz
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, abort, current_app
 
-from extensions import db, scheduler
+from extensions import db, scheduler, limiter
 from models import (User, CommonItem, CommonDescription, CommonPrice, CommonBlacklist,
                     AutoCollectLog, EmailLog, BackupLog)
 from helpers import (get_setting, set_setting, get_tpl, parse_amount, fmt_amount,
@@ -137,6 +137,7 @@ def settings_email():
 
 
 @settings_bp.route('/settings/send-now', methods=['POST'])
+@limiter.limit("5/minute")
 def settings_send_now():
     success, fail, errors = send_all_emails()
     flash(f'{success} email(s) sent, {fail} failed.', 'success' if fail == 0 else 'error')
@@ -549,6 +550,7 @@ def settings_backup():
 
 
 @settings_bp.route('/settings/backup/create', methods=['POST'])
+@limiter.limit("5/minute")
 def settings_backup_create():
     ok, result = run_backup()
     if ok:
@@ -626,6 +628,7 @@ def backup_upload_chunk():
 
 
 @settings_bp.route('/backups/restore/<filename>', methods=['POST'])
+@limiter.limit("3/minute")
 def backup_restore(filename):
     if not BACKUP_FILENAME_RE.match(filename):
         flash('Invalid filename.', 'error')

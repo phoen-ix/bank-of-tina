@@ -6,7 +6,8 @@ from decimal import Decimal
 from flask import Flask
 from flask.json.provider import DefaultJSONProvider
 
-from extensions import db, csrf, migrate, scheduler
+from flask import request, redirect, url_for, flash, jsonify
+from extensions import db, csrf, migrate, limiter, scheduler
 from helpers import get_setting, get_tpl, hex_to_rgb, to_local
 from config import TEMPLATE_DEFAULTS
 
@@ -67,12 +68,21 @@ app.json = DecimalJSONProvider(app)
 db.init_app(app)
 migrate.init_app(app, db)
 csrf.init_app(app)
+limiter.init_app(app)
 
 # Import models so they are registered with SQLAlchemy
 import models  # noqa: F401
 
 from routes import register_blueprints
 register_blueprints(app)
+
+
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    if request.is_json:
+        return jsonify({'status': 'error', 'detail': str(e.description)}), 429
+    flash('Too many requests. Please wait and try again.', 'error')
+    return redirect(request.referrer or url_for('main.index'))
 
 
 @app.template_filter('money')

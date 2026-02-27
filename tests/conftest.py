@@ -20,6 +20,7 @@ def app():
     _app.config.update({
         'TESTING': True,
         'WTF_CSRF_ENABLED': False,
+        'RATELIMIT_ENABLED': False,
         'SQLALCHEMY_DATABASE_URI': 'sqlite://',
         'UPLOAD_FOLDER': '/tmp/bot_test_uploads',
     })

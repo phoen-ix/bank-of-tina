@@ -7,7 +7,7 @@ from decimal import Decimal
 import calendar as cal_mod
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, current_app
 
-from extensions import db
+from extensions import db, limiter
 from models import User, Transaction, ExpenseItem
 from helpers import (get_setting, get_tpl, parse_amount, fmt_amount, update_balance,
                      save_receipt, delete_receipt_file, parse_submitted_date, get_app_tz, to_local)
@@ -39,6 +39,7 @@ def index():
 
 
 @main_bp.route('/user/add', methods=['POST'])
+@limiter.limit("10/minute")
 def add_user():
     name = request.form.get('name')
     email = request.form.get('email')
@@ -118,6 +119,7 @@ def toggle_user_active(user_id):
 
 
 @main_bp.route('/transaction/add', methods=['GET', 'POST'])
+@limiter.limit("30/minute", methods=["POST"])
 def add_transaction():
     if request.method == 'GET':
         users = User.query.filter_by(is_active=True).order_by(User.name).all()
