@@ -1,4 +1,6 @@
+from decimal import Decimal, InvalidOperation
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, g, abort
+from flask.json.provider import DefaultJSONProvider
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFProtect
 from datetime import datetime, timedelta
@@ -46,6 +48,17 @@ app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10 MB per chunk (chunked 
 BACKUP_DIR = '/backups'
 
 csrf = CSRFProtect(app)
+
+
+class DecimalJSONProvider(DefaultJSONProvider):
+    """Serialize Decimal values as floats so jsonify() works transparently."""
+    def default(self, o):
+        if isinstance(o, Decimal):
+            return float(o)
+        return super().default(o)
+
+app.json_provider_class = DecimalJSONProvider
+app.json = DecimalJSONProvider(app)
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'}
 
@@ -119,7 +132,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True, nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
-    balance = db.Column(db.Float, default=0.0)
+    balance = db.Column(db.Numeric(12, 2), default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_active = db.Column(db.Boolean, default=True)
     email_opt_in = db.Column(db.Boolean, default=True)
@@ -133,7 +146,7 @@ class Transaction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     date = db.Column(db.DateTime, default=datetime.utcnow)
     description = db.Column(db.String(500), nullable=False)
-    amount = db.Column(db.Float, nullable=False)
+    amount = db.Column(db.Numeric(12, 2), nullable=False)
     from_user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     to_user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     transaction_type = db.Column(db.String(50))  # 'transfer', 'deposit', 'withdrawal', 'expense'
@@ -150,7 +163,7 @@ class ExpenseItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     transaction_id = db.Column(db.Integer, db.ForeignKey('transaction.id'))
     item_name = db.Column(db.String(200), nullable=False)
-    price = db.Column(db.Float, nullable=False)
+    price = db.Column(db.Numeric(12, 2), nullable=False)
     buyer_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
     transaction = db.relationship('Transaction', backref='items')
@@ -173,7 +186,7 @@ class CommonDescription(db.Model):
 
 class CommonPrice(db.Model):
     id    = db.Column(db.Integer, primary_key=True)
-    value = db.Column(db.Float, nullable=False, unique=True)
+    value = db.Column(db.Numeric(12, 2), nullable=False, unique=True)
 
 class CommonBlacklist(db.Model):
     id    = db.Column(db.Integer, primary_key=True)
@@ -283,20 +296,20 @@ def apply_template(text, **kwargs):
 def parse_amount(s):
     """Parse a user-supplied decimal string, accepting both '.' and ',' as separator."""
     if s is None:
-        return 0.0
-    return float(str(s).strip().replace(',', '.'))
+        return Decimal('0')
+    return Decimal(str(s).strip().replace(',', '.'))
 
 def fmt_amount(value):
-    """Format a float with 2 decimal places using the configured decimal separator."""
+    """Format a numeric value with 2 decimal places using the configured decimal separator."""
     sep = get_setting('decimal_separator', '.')
-    return f'{value:.2f}'.replace('.', sep)
+    return f'{Decimal(str(value)):.2f}'.replace('.', sep)
 
 @app.template_filter('money')
 def money_filter(value):
-    """Jinja filter: format a float as 2 decimal places using the configured decimal separator."""
+    """Jinja filter: format a numeric value as 2 decimal places using the configured decimal separator."""
     try:
-        return fmt_amount(float(value))
-    except (ValueError, TypeError):
+        return fmt_amount(Decimal(str(value)))
+    except (ValueError, TypeError, InvalidOperation):
         sep = get_setting('decimal_separator', '.')
         return '0' + sep + '00'
 
@@ -1004,6 +1017,18 @@ def _migrate_db():
             conn.commit()
         except Exception:
             pass
+        # Migrate float columns to DECIMAL for precision
+        for table, column in [
+            ('user', 'balance'),
+            ('`transaction`', 'amount'),
+            ('expense_item', 'price'),
+            ('common_price', 'value'),
+        ]:
+            try:
+                conn.execute(db.text(f'ALTER TABLE {table} MODIFY COLUMN {column} DECIMAL(12,2)'))
+                conn.commit()
+            except Exception:
+                pass
 
 
 def _restore_schedule():
@@ -1435,7 +1460,7 @@ def edit_transaction(transaction_id):
         try:
             items = json.loads(items_json_str)
             if items:
-                total = 0.0
+                total = Decimal('0')
                 for item in items:
                     price = parse_amount(item['price'])
                     db.session.add(ExpenseItem(
@@ -1955,7 +1980,7 @@ def preview_email():
     user = User.query.filter_by(is_active=True).order_by(User.name).first()
     if not user:
         class _Dummy:
-            name = 'Jane Doe'; email = 'jane@example.com'; balance = 12.50; id = 0
+            name = 'Jane Doe'; email = 'jane@example.com'; balance = Decimal('12.50'); id = 0
             from_user_id = None; to_user_id = None
             email_transactions = 'last3'; email_opt_in = True
         user = _Dummy()
@@ -1971,9 +1996,9 @@ def preview_admin_summary():
     if not users:
         class _D:
             def __init__(self, n, e, b): self.name=n; self.email=e; self.balance=b
-        users = [_D('Alice Smith','alice@example.com',24.50),
-                 _D('Bob Jones','bob@example.com',-12.00),
-                 _D('Carol White','carol@example.com',0.00)]
+        users = [_D('Alice Smith','alice@example.com',Decimal('24.50')),
+                 _D('Bob Jones','bob@example.com',Decimal('-12.00')),
+                 _D('Carol White','carol@example.com',Decimal('0.00'))]
     return build_admin_summary_email(users, include_emails=get_setting('admin_summary_include_emails', '0') == '1')
 
 
@@ -2255,7 +2280,7 @@ def analytics_data():
         history_datasets[user.name] = series
 
     # ── 3. Transaction Volume ──────────────────────────────────────────────
-    vol = defaultdict(lambda: {'count': 0, 'amount': 0.0})
+    vol = defaultdict(lambda: {'count': 0, 'amount': Decimal('0')})
     for tx in transactions:
         if delta_days <= 90:
             # Group by week (Monday)
@@ -2279,7 +2304,7 @@ def analytics_data():
 
     # ── 4. Top Expense Items ───────────────────────────────────────────────
     expense_ids = [tx.id for tx in transactions if tx.transaction_type == 'expense']
-    item_stats  = defaultdict(lambda: {'count': 0, 'total': 0.0})
+    item_stats  = defaultdict(lambda: {'count': 0, 'total': Decimal('0')})
 
     if expense_ids:
         for item in ExpenseItem.query.filter(ExpenseItem.transaction_id.in_(expense_ids)).all():
