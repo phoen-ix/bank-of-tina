@@ -282,7 +282,7 @@ bank-of-tina/
 
 - Set a strong, random `SECRET_KEY` in your `.env` file
 - Never commit your `.env` file (it is in `.gitignore`)
-- The Docker container runs as a non-root user (`appuser`, UID 1000) to reduce attack surface
+- The Docker container starts as root only to fix bind-mount directory ownership, then immediately drops to a non-root user (`appuser`, UID 1000) via `gosu`
 - Per-route rate limiting is enabled on write-heavy endpoints (user add, transaction add, send-now, backup create/restore)
 - Use an **App Password** for Gmail rather than your main account password
 - Restrict network access to port 5000 — place behind a reverse proxy (nginx, Caddy) with authentication if the app is internet-facing
