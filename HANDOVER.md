@@ -486,7 +486,7 @@ Dynamic Flask route (`pwa_manifest()`). `theme_color` is fetched live via `get_t
 ### Icon management (Settings → Templates → App Icon card)
 Icons can be managed from the web UI — no need to re-run `create_icons.py`:
 - **Regenerate from navbar color** — re-generates the bank silhouette icons using the current `color_navbar` setting as the background color (stdlib-only, same algorithm as `create_icons.py`). The generation logic lives in `helpers.py` as `make_icon_png(size, bg_color, fg_color)` and `generate_and_save_icons(bg_hex)`.
-- **Upload custom icon** — accepts a PNG/JPG upload, resizes to 192×192 and 512×512 using Pillow (`requirements.txt` includes `Pillow>=10.0`), saves to `static/icons/`.
+- **Upload custom icon** — accepts a PNG/JPG upload, resizes to 32×32, 192×192, and 512×512 using Pillow (`requirements.txt` includes `Pillow>=10.0`), saves to `static/icons/`.
 - **Reset to default** — regenerates with the default Bootstrap blue `#0d6efd`.
 - All three actions update the `icon_version` setting (unix timestamp) for cache-busting and set `icon_mode` to `generated` or `custom`.
 - Route: `POST /settings/icon` in `routes/settings.py` with `action` field (`generate`, `upload`, `reset`).

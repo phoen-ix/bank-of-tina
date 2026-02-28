@@ -63,7 +63,7 @@ A self-hosted web application for tracking shared expenses and balances within a
 - **Service worker** — network-first strategy; always fetches fresh data; shows a self-contained offline page when the network is down or the server returns an HTTP error (e.g. 503); served from `/sw.js` via a Flask route so it can control the entire app scope
 - **Icons** — 32×32, 192×192, and 512×512 PNG icons; persisted on the host via bind mount (`./icons/`) so they survive container rebuilds; auto-generated with the default theme color on first run; `/favicon.ico` route serves the 32px icon; manageable from Settings → Templates → App Icon:
   - **Regenerate from navbar color** — one-click regeneration using the current theme color as background (white bank silhouette)
-  - **Upload custom icon** — upload any PNG or JPG; automatically resized to both 192×192 and 512×512
+  - **Upload custom icon** — upload any PNG or JPG; automatically resized to 32×32, 192×192, and 512×512
   - **Reset to default** — restores the original Bootstrap blue icon
   - Cache-busting ensures browsers and PWA pick up new icons immediately
 - **Android Chrome**: three-dot menu → "Add to home screen" (or automatic install banner)
