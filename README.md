@@ -60,7 +60,7 @@ A self-hosted web application for tracking shared expenses and balances within a
 
 ### PWA — Install to Home Screen
 - **Web App Manifest** — served dynamically at `/manifest.json`; `theme_color` tracks the configured navbar color
-- **Service worker** — network-first strategy; always fetches fresh data; shows a self-contained offline page if the network is unavailable
+- **Service worker** — network-first strategy; always fetches fresh data; shows a self-contained offline page when the network is down or the server returns an HTTP error (e.g. 503); served from `/sw.js` via a Flask route so it can control the entire app scope
 - **Icons** — 192×192 and 512×512 PNG icons; persisted on the host via bind mount (`./icons/`) so they survive container rebuilds; auto-generated with the default theme color on first run; manageable from Settings → Templates → App Icon:
   - **Regenerate from navbar color** — one-click regeneration using the current theme color as background (white bank silhouette)
   - **Upload custom icon** — upload any PNG or JPG; automatically resized to both 192×192 and 512×512
@@ -253,6 +253,16 @@ bank-of-tina/
 │   └── static/
 │       ├── sw.js                 # Service worker (network-first, offline fallback)
 │       ├── offline.html          # Self-contained offline fallback page
+│       ├── vendor/               # Self-hosted frontend dependencies (no CDN)
+│       │   ├── css/
+│       │   │   ├── bootstrap.min.css       # Bootstrap 5.3.0
+│       │   │   └── bootstrap-icons.css     # Bootstrap Icons 1.11.0
+│       │   ├── js/
+│       │   │   ├── bootstrap.bundle.min.js # Bootstrap 5.3.0 (with Popper)
+│       │   │   └── chart.umd.min.js        # Chart.js 4.4.0
+│       │   └── fonts/
+│       │       ├── bootstrap-icons.woff2
+│       │       └── bootstrap-icons.woff
 │       └── icons/                # Bind-mounted from ./icons/ at runtime
 │           ├── icon-192.png      # PWA icon 192×192 (auto-generated on first run)
 │           └── icon-512.png      # PWA icon 512×512 (auto-generated on first run)

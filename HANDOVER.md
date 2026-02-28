@@ -28,7 +28,7 @@ This document gives a new Claude instance full context to continue development w
 | Timezone | pytz |
 | Logging | Python `logging` to stdout, structured format |
 | Type hints | `from __future__ import annotations` on all modules |
-| Frontend | Bootstrap 5.3, Bootstrap Icons 1.11, vanilla JS |
+| Frontend | Bootstrap 5.3, Bootstrap Icons 1.11, Chart.js 4.4, vanilla JS (all self-hosted under `static/vendor/`, no CDN) |
 | Container | Docker + docker-compose, gunicorn (1 worker, 300 s timeout), non-root user via gosu entrypoint |
 | Testing | pytest with SQLite in-memory (`FLASK_TESTING=1`), 76 tests |
 | DB tools | `mariadb-client` installed in image for `mysqldump`/`mysql` CLI |
@@ -72,8 +72,12 @@ bank-of-tina/
 │   │   ├── analytics.html        # Charts & Statistics page (4-tab Chart.js dashboard)
 │   │   └── settings.html         # All settings tabs (General/Email/Common/Backup/Templates/Users)
 │   └── static/
-│       ├── sw.js                 # Service worker (network-first, offline fallback)
-│       ├── offline.html          # Self-contained offline fallback page (no CDN deps)
+│       ├── sw.js                 # Service worker (network-first, offline fallback for network errors and HTTP errors)
+│       ├── offline.html          # Self-contained offline fallback page (no external deps)
+│       ├── vendor/               # Self-hosted frontend dependencies (no CDN)
+│       │   ├── css/              # bootstrap.min.css, bootstrap-icons.css
+│       │   ├── js/               # bootstrap.bundle.min.js, chart.umd.min.js
+│       │   └── fonts/            # bootstrap-icons.woff2, bootstrap-icons.woff
 │       └── icons/
 │           ├── icon-192.png      # PWA icon 192×192
 │           └── icon-512.png      # PWA icon 512×512
@@ -438,7 +442,7 @@ Sample-point granularity: weekly if date range ≤ 90 days, monthly otherwise.
 
 ### Chart.js notes
 
-- Version 4.4.0 loaded from CDN (no npm/build step)
+- Version 4.4.0 self-hosted under `static/vendor/js/chart.umd.min.js` (no CDN, no npm/build step)
 - All charts use `maintainAspectRatio: false` inside fixed-height wrapper `<div>`s
 - Chart instances are stored in `_charts{}` map; `mkChart(id, cfg)` destroys the old instance before creating a new one
 - Tab-switch resize: Bootstrap's `shown.bs.tab` event triggers `chart.resize()` on every canvas in the newly visible tab — fixes the zero-dimension bug that occurs when Chart.js initialises inside a hidden (`display:none`) tab pane
@@ -464,7 +468,7 @@ The app is installable as a Progressive Web App on both Android and iOS with no 
 ### Files
 | File | Purpose |
 |------|---------|
-| `app/static/sw.js` | Service worker — network-first, caches only `offline.html` on install |
+| `app/static/sw.js` | Service worker — network-first, caches only `offline.html` on install; handles both network errors and HTTP errors (e.g. 503) for offline fallback; served via `/sw.js` Flask route for root-scope control |
 | `app/static/offline.html` | Self-contained offline fallback (no CDN, inline styles) |
 | `app/static/icons/icon-192.png` | PWA icon 192×192 (bind-mounted from `./icons/`; auto-generated on first run) |
 | `app/static/icons/icon-512.png` | PWA icon 512×512 (bind-mounted from `./icons/`; auto-generated on first run) |
@@ -474,8 +478,8 @@ The app is installable as a Progressive Web App on both Android and iOS with no 
 Dynamic Flask route (`pwa_manifest()`). `theme_color` is fetched live via `get_tpl('color_navbar')` so it always reflects the user's configured navbar color. Icon URLs include a `?v=` cache-busting param from the `icon_version` setting. Uses `app.response_class(json.dumps(data), mimetype='application/manifest+json')` — same pattern as the analytics JSON endpoint.
 
 ### `base.html` additions
-- **`<head>`** (after viewport meta): `<link rel="manifest">`, `<meta name="theme-color">`, Apple PWA meta tags, `<link rel="apple-touch-icon">`, favicon link. Icon `<link>` tags include `?v={{ icon_version }}` for cache-busting.
-- **`<body>` footer** (before `{% block scripts %}`): SW registration script with `scope: '/'` (needed because `sw.js` lives under `/static/` but must cover all app paths). Uses `skipWaiting()` + `clients.claim()` for immediate activation.
+- **`<head>`** (after viewport meta): `<link rel="manifest">`, `<meta name="theme-color">`, `<meta name="mobile-web-app-capable">`, Apple PWA meta tags, `<link rel="apple-touch-icon">`, favicon link. Icon `<link>` tags include `?v={{ icon_version }}` for cache-busting. All CSS/JS loaded from `static/vendor/` (no CDN).
+- **`<body>` footer** (before `{% block scripts %}`): SW registration script — registers `/sw.js` (Flask route that serves `static/sw.js` from root path, enabling root-scope control). Uses `skipWaiting()` + `clients.claim()` for immediate activation.
 
 ### Icon management (Settings → Templates → App Icon card)
 Icons can be managed from the web UI — no need to re-run `create_icons.py`:
@@ -486,15 +490,21 @@ Icons can be managed from the web UI — no need to re-run `create_icons.py`:
 - Route: `POST /settings/icon` in `routes/settings.py` with `action` field (`generate`, `upload`, `reset`).
 
 ### Cache versioning
-The CACHE constant in `sw.js` is `'bot-v1'`. Bump to `'bot-v2'` etc. on future deploys to evict old caches (the activate handler deletes all cache keys that don't match the current name).
+The CACHE constant in `sw.js` is `'bot-v2'`. Bump to `'bot-v3'` etc. on future deploys to evict old caches (the activate handler deletes all cache keys that don't match the current name).
 
 ---
 
 ## Current State (as of last commit)
 
-All features are fully implemented and committed. The codebase has been through two rounds of major refactoring:
+All features are fully implemented and committed. The codebase has been through multiple rounds of improvements:
 
-### Round 4 improvements (most recent)
+### Round 5 improvements (most recent)
+42. **Self-hosted vendor assets** — Bootstrap 5.3.0 CSS/JS, Bootstrap Icons 1.11.0 CSS/fonts, and Chart.js 4.4.0 all served from `static/vendor/`; eliminates CDN dependencies and avoids browser tracking prevention blocks
+41. **SW scope fix** — added `/sw.js` Flask route that serves the service worker from the root path, allowing it to control all app URLs; previously failed with SecurityError because `/static/sw.js` could only control `/static/*`
+40. **Offline fallback for HTTP errors** — service worker `.then()` handler now checks `response.ok` on navigation requests; returns cached offline page for HTTP errors (e.g. 503 when Docker is down), not just network failures
+39. **Deprecated meta tag fix** — added `<meta name="mobile-web-app-capable" content="yes">` (non-deprecated equivalent of the Apple-specific tag)
+
+### Round 4 improvements
 38. **Full SQLAlchemy 2.0 migration** — all remaining ~68 `Model.query.*` calls across 9 files replaced with `db.session.execute(db.select(Model))` patterns; zero `Model.query` calls remain in app or test code; `Model.query.delete()` replaced with `db.session.execute(db.delete(Model))`
 37. **Pagination** — search results paginated at 25/page using `db.paginate()`; user detail transaction history paginated at 20/page; reusable `_pagination.html` Bootstrap 5 partial with prev/next and page numbers; pagination links preserve all query params
 36. **Enhanced health check** — `/health` returns structured JSON: `{"status": "ok", "checks": {"database": "ok", "scheduler": "ok", "icons_writable": "ok"}}`; returns 503 only when database is unreachable
