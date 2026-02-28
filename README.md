@@ -269,6 +269,7 @@ bank-of-tina/
 ├── icons/                        # PWA icons (bind-mounted; auto-generated on first run)
 ├── mariadb-data/                 # MariaDB data directory (bind-mounted)
 ├── create_icons.py               # One-time stdlib icon generator (run once, commit output)
+├── entrypoint.sh                 # Docker entrypoint: fixes bind-mount ownership, drops to appuser
 ├── Dockerfile
 ├── docker-compose.yml
 ├── requirements.txt

@@ -29,7 +29,7 @@ This document gives a new Claude instance full context to continue development w
 | Logging | Python `logging` to stdout, structured format |
 | Type hints | `from __future__ import annotations` on all modules |
 | Frontend | Bootstrap 5.3, Bootstrap Icons 1.11, vanilla JS |
-| Container | Docker + docker-compose, gunicorn (1 worker, 300 s timeout), non-root user |
+| Container | Docker + docker-compose, gunicorn (1 worker, 300 s timeout), non-root user via gosu entrypoint |
 | Testing | pytest with SQLite in-memory (`FLASK_TESTING=1`), 76 tests |
 | DB tools | `mariadb-client` installed in image for `mysqldump`/`mysql` CLI |
 
@@ -90,6 +90,7 @@ bank-of-tina/
 ├── icons/                        # PWA icons — bind-mounted; persists across rebuilds
 ├── mariadb-data/                 # MariaDB data — bind-mounted
 ├── create_icons.py               # One-time stdlib icon generator (already run; output committed)
+├── entrypoint.sh                 # Docker entrypoint: fixes bind-mount ownership, drops to appuser via gosu
 ├── Dockerfile
 ├── docker-compose.yml
 ├── requirements.txt
@@ -493,7 +494,7 @@ All features are fully implemented and committed. The codebase has been through 
 
 ### Round 2 improvements
 25. **Health check endpoint** — `GET /health` verifies database connectivity; Dockerfile `HEALTHCHECK` and docker-compose healthcheck point to `/health`
-26. **Non-root Docker user** — container runs as `appuser` (UID/GID 1000) for reduced attack surface; bind-mounted volumes remain writable
+26. **Non-root Docker user** — container runs as `appuser` (UID/GID 1000) via `gosu` in `entrypoint.sh`; the entrypoint runs as root to fix bind-mount directory ownership (Docker creates missing host dirs as root), then drops to appuser before starting gunicorn
 27. **Flask-Migrate (Alembic)** — replaces the hand-rolled `_migrate_db()` ALTER TABLE approach; existing databases are auto-stamped on first run; new databases are created via migration scripts
 28. **Rate limiting** — Flask-Limiter with in-memory storage; per-route limits on user add (10/min), transaction add (30/min POST), send-now (5/min), backup create (5/min), backup restore (3/min); 429 error handler with JSON and flash message support; disabled in tests via `RATELIMIT_ENABLED: False`
 29. **Type hints** — `from __future__ import annotations` and full type annotations on all functions and module-level variables across every `.py` file; bug fix in `email_service.py` (bare `return False` → `return False, 'SMTP credentials not configured'`)
