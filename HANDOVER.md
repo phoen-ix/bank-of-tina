@@ -152,8 +152,8 @@ The `env.py` uses `render_as_batch=True` for SQLite compatibility (important for
 All runtime config is stored in the `Setting` table as key/value strings. Two helpers manage it:
 
 ```python
-get_setting(key, default=None)   # Returns value or default
-set_setting(key, value)          # Upserts
+get_setting(key, default=None)   # Returns value or default; uses db.session.get()
+set_setting(key, value)          # Upserts; uses db.session.get()
 ```
 
 The `settings()` view (in `routes/settings.py`) builds a `cfg` dict from all keys and passes it to `settings.html`. Each settings sub-route (e.g. `settings_general`, `settings_email`) POSTs and redirects back. Tab state is preserved in `sessionStorage` client-side. A `?tab=<name>` URL parameter (e.g. `?tab=users`) overrides `sessionStorage` on load, allowing external links to open a specific tab directly.
@@ -388,6 +388,7 @@ Route: `GET /search` (in `routes/main.py`) — parameters: `q`, `type`, `user`, 
 - **Balance is stored, not derived** — never recalculate from transactions; mutate `user.balance` carefully.
 - **`/uploads` and `/app/static/icons` are bind-mounts** — cannot `rmtree` the directories themselves; clear their contents only. Icons are auto-generated on first startup if missing.
 - **Scheduler jobs receive `app` parameter** — use `with app.app_context():` since background threads have no Flask request context. Never import `app` directly in service modules; use `current_app` in request handlers or pass `app` explicitly to scheduler jobs.
+- **Use `db.session.get()` not `Model.query.get()`** — `Query.get()` is deprecated in SQLAlchemy 2.0. Always use `db.session.get(Model, id)` for primary-key lookups. `Model.query.filter_by()` and `Model.query.filter()` are fine.
 - **Circular imports** — never import from `app.py` in other modules. Import `db`, `csrf`, `scheduler` from `extensions.py`. Import models from `models.py`.
 - **Blueprint url_for** — all `url_for()` calls in templates must be blueprint-prefixed: `url_for('main.index')`, `url_for('settings_bp.settings')`, `url_for('analytics_bp.analytics')`, etc.
 - **Single gunicorn worker** — the in-process APScheduler only works correctly with 1 worker. Scaling requires moving to a proper task queue.
@@ -489,7 +490,8 @@ The CACHE constant in `sw.js` is `'bot-v1'`. Bump to `'bot-v2'` etc. on future d
 All features are fully implemented and committed. The codebase has been through two rounds of major refactoring:
 
 ### Round 3 improvements (most recent)
-32. **Persistent PWA icons** — `./icons:/app/static/icons` bind mount added to `docker-compose.yml` so icons survive container rebuilds; `app.py` auto-generates default icons on first startup when the directory is empty; `icons/` added to `.gitignore` and `.dockerignore`
+33. **SQLAlchemy 2.0 migration** — all `Model.query.get(id)` calls replaced with `db.session.get(Model, id)` across app code and tests; eliminates ~1750 `LegacyAPIWarning` deprecation warnings per test run
+32. **Persistent PWA icons** — `./icons:/app/static/icons` bind mount added to `docker-compose.yml` so icons survive container rebuilds; `app.py` auto-generates default icons on first startup when the directory is empty; `icons/` added to `.gitignore` and `.dockerignore`; `entrypoint.sh` added with `gosu` to fix bind-mount directory ownership before dropping to `appuser`
 31. **Hardcoded credential removal** — `DB_USER` and `DB_PASSWORD` no longer fall back to `'tina'`; `app.py` raises `RuntimeError` at startup if they are missing (unless `SQLALCHEMY_DATABASE_URI` is set directly); `backup_service.py` and `routes/settings.py` default to empty string so `mysqldump`/`mysql` commands fail clearly; README backup example uses `$DB_USER`/`$DB_PASSWORD` variables instead of literal credentials
 
 ### Round 2 improvements
@@ -579,6 +581,6 @@ FLASK_TESTING=1 python -m pytest tests/ -v
 
 - CSV / Excel export of transactions
 - User authentication / login system
-- Multiple currency support
+- Exchange-rate-aware multi-currency support (currency symbol is already configurable)
 - OCR for automatic receipt parsing
 - Saved/pinned searches
