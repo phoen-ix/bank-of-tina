@@ -156,7 +156,7 @@
                                 </a>
                                 <form method="POST" action="{{ url_for('main.delete_transaction', transaction_id=trans.id) }}"
                                       class="d-inline"
-                                      onsubmit="return confirm('Delete this transaction? Balances will be reversed.')">
+                                      data-confirm="Delete this transaction? Balances will be reversed.">
                                     <button type="submit" class="btn btn-sm btn-outline-danger">
                                         <i class="bi bi-trash"></i>
                                     </button>
@@ -201,7 +201,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ csp_nonce }}">
 (function () {
     var advancedParams = ['type', 'user', 'date_from', 'date_to', 'amount_min', 'amount_max', 'has_receipt'];
     var params = new URLSearchParams(window.location.search);

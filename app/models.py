@@ -41,12 +41,12 @@ class Transaction(db.Model):
     notes: str | None
 
     id = db.Column(db.Integer, primary_key=True)
-    date = db.Column(db.DateTime, default=lambda: datetime.now(UTC).replace(tzinfo=None))
+    date = db.Column(db.DateTime, default=lambda: datetime.now(UTC).replace(tzinfo=None), index=True)
     description = db.Column(db.String(500), nullable=False)
     amount = db.Column(db.Numeric(12, 2), nullable=False)
-    from_user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    to_user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    transaction_type = db.Column(db.String(50))
+    from_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), index=True)
+    to_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), index=True)
+    transaction_type = db.Column(db.String(50), index=True)
     receipt_path = db.Column(db.String(500))
     notes = db.Column(db.Text, nullable=True)
 
@@ -65,7 +65,7 @@ class ExpenseItem(db.Model):
     buyer_id: int
 
     id = db.Column(db.Integer, primary_key=True)
-    transaction_id = db.Column(db.Integer, db.ForeignKey('transaction.id'))
+    transaction_id = db.Column(db.Integer, db.ForeignKey('transaction.id'), index=True)
     item_name = db.Column(db.String(200), nullable=False)
     price = db.Column(db.Numeric(12, 2), nullable=False)
     buyer_id = db.Column(db.Integer, db.ForeignKey('user.id'))

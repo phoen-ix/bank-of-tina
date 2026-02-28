@@ -60,7 +60,7 @@
                             <div class="card mb-3">
                                 <div class="card-header d-flex justify-content-between align-items-center">
                                     <span>Items</span>
-                                    <button type="button" class="btn btn-sm btn-success" onclick="addExpenseItem()">
+                                    <button type="button" class="btn btn-sm btn-success" id="btn-add-item">
                                         <i class="bi bi-plus"></i> Add Item
                                     </button>
                                 </div>
@@ -182,7 +182,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ csp_nonce }}">
 const DECIMAL_SEP = {{ decimal_sep | tojson }};
 const CURRENCY_SYM = {{ currency_symbol | tojson }};
 let itemCounter = 0;
@@ -202,7 +202,7 @@ function addExpenseItem() {
                         <input type="text" class="form-control item-name" placeholder="Item name" list="commonItemsList">
                     </div>
                     <div class="col-md-3">
-                        <input type="text" inputmode="decimal" class="form-control item-price" placeholder="0${DECIMAL_SEP}00" list="commonPricesList" onchange="updateTotal()">
+                        <input type="text" inputmode="decimal" class="form-control item-price" placeholder="0${DECIMAL_SEP}00" list="commonPricesList">
                     </div>
                     <div class="col-md-3">
                         <select class="form-select item-debtor">
@@ -213,7 +213,7 @@ function addExpenseItem() {
                         </select>
                     </div>
                     <div class="col-md-1">
-                        <button type="button" class="btn btn-sm btn-danger" onclick="removeItem(${itemCounter})">
+                        <button type="button" class="btn btn-sm btn-danger btn-remove-item" data-item-id="${itemCounter}">
                             <i class="bi bi-trash"></i>
                         </button>
                     </div>
@@ -311,6 +311,18 @@ fetch('/api/common-prices')
             dl.appendChild(opt);
         });
     });
+
+// Wire up Add Item button
+document.getElementById('btn-add-item').addEventListener('click', addExpenseItem);
+
+// Delegate change/click events on the expense items container
+document.getElementById('expenseItems').addEventListener('change', function(e) {
+    if (e.target.classList.contains('item-price')) updateTotal();
+});
+document.getElementById('expenseItems').addEventListener('click', function(e) {
+    var btn = e.target.closest('.btn-remove-item');
+    if (btn) removeItem(btn.dataset.itemId);
+});
 
 // Pre-fill default empty item rows
 for (let i = 0; i < {{ default_item_rows }}; i++) { addExpenseItem(); }

@@ -54,11 +54,11 @@
                         <li><hr class="dropdown-divider my-1"></li>
                         <li>
                             <a class="dropdown-item small py-1" href="#"
-                               onclick="toggleAllUsers(true);return false;">Select all</a>
+                               data-action="select-all">Select all</a>
                         </li>
                         <li>
                             <a class="dropdown-item small py-1" href="#"
-                               onclick="toggleAllUsers(false);return false;">Clear all</a>
+                               data-action="clear-all">Clear all</a>
                         </li>
                     </ul>
                 </div>
@@ -67,18 +67,18 @@
             <div class="col-auto">
                 <label class="form-label mb-1 small fw-semibold">Quick range</label>
                 <div class="btn-group btn-group-sm">
-                    <button class="btn btn-outline-secondary" onclick="setPreset(30)">30 d</button>
-                    <button class="btn btn-outline-secondary" onclick="setPreset(90)">90 d</button>
-                    <button class="btn btn-outline-secondary" onclick="setPreset(365)">1 yr</button>
-                    <button class="btn btn-outline-secondary" onclick="setPreset(0)">All</button>
+                    <button class="btn btn-outline-secondary" data-preset="30">30 d</button>
+                    <button class="btn btn-outline-secondary" data-preset="90">90 d</button>
+                    <button class="btn btn-outline-secondary" data-preset="365">1 yr</button>
+                    <button class="btn btn-outline-secondary" data-preset="0">All</button>
                 </div>
             </div>
 
             <div class="col-auto ms-auto d-flex gap-2">
-                <button class="btn btn-primary btn-sm" onclick="loadData()">
+                <button class="btn btn-primary btn-sm" id="btn-apply">
                     <i class="bi bi-funnel"></i> Apply
                 </button>
-                <button class="btn btn-outline-secondary btn-sm" onclick="window.print()">
+                <button class="btn btn-outline-secondary btn-sm" id="btn-print">
                     <i class="bi bi-printer"></i> Print / PDF
                 </button>
             </div>
@@ -87,11 +87,12 @@
     </div>
 </div>
 
-<!-- Loading indicator -->
-<div id="loading-bar" style="display:none;" class="text-center py-5">
-    <div class="spinner-border text-primary" role="status"></div>
-    <p class="text-muted mt-2 mb-0">Loading data&hellip;</p>
-</div>
+<!-- Skeleton loading placeholder (hidden once data arrives) -->
+<style>
+.skeleton { background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
+  background-size: 200% 100%; animation: skeleton-pulse 1.5s ease-in-out infinite; border-radius: .375rem; }
+@keyframes skeleton-pulse { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+</style>
 
 <!-- Chart tabs -->
 <ul class="nav nav-tabs mb-0" id="chartTabs">
@@ -130,7 +131,14 @@
             Current balance for each user. Reflects all-time transactions &mdash;
             not limited to the selected date range.
         </p>
-        <div id="wrap-balances" style="position:relative; height:300px;">
+        <div class="skeleton-placeholder" id="skel-balances">
+            <div class="skeleton mb-2" style="height:24px;width:85%"></div>
+            <div class="skeleton mb-2" style="height:24px;width:70%"></div>
+            <div class="skeleton mb-2" style="height:24px;width:55%"></div>
+            <div class="skeleton mb-2" style="height:24px;width:40%"></div>
+            <div class="skeleton mb-2" style="height:24px;width:30%"></div>
+        </div>
+        <div id="wrap-balances" style="position:relative; height:300px; display:none;">
             <canvas id="chart-balances"></canvas>
         </div>
         <p id="empty-balances" class="text-center text-muted py-4" style="display:none;">
@@ -144,7 +152,10 @@
             Each user's running balance sampled at regular intervals across the
             selected date range.
         </p>
-        <div id="wrap-history" style="position:relative; height:380px;">
+        <div class="skeleton-placeholder" id="skel-history">
+            <div class="skeleton" style="height:300px;width:100%"></div>
+        </div>
+        <div id="wrap-history" style="position:relative; height:380px; display:none;">
             <canvas id="chart-history"></canvas>
         </div>
         <p id="empty-history" class="text-center text-muted py-4" style="display:none;">
@@ -158,7 +169,10 @@
             Number of transactions (bars, left axis) and total amount (line, right axis)
             grouped by week (ranges &le; 90 days) or month (longer ranges).
         </p>
-        <div id="wrap-volume" style="position:relative; height:360px;">
+        <div class="skeleton-placeholder" id="skel-volume">
+            <div class="skeleton" style="height:300px;width:100%"></div>
+        </div>
+        <div id="wrap-volume" style="position:relative; height:360px; display:none;">
             <canvas id="chart-volume"></canvas>
         </div>
         <p id="empty-volume" class="text-center text-muted py-4" style="display:none;">
@@ -168,13 +182,20 @@
 
     <!-- ── Tab 4: Top Expense Items ──────────────────────────────────── -->
     <div class="tab-pane fade" id="tab-items">
+        <div class="skeleton-placeholder" id="skel-items">
+            <div class="skeleton mb-2" style="height:24px;width:90%"></div>
+            <div class="skeleton mb-2" style="height:24px;width:75%"></div>
+            <div class="skeleton mb-2" style="height:24px;width:60%"></div>
+            <div class="skeleton mb-2" style="height:24px;width:45%"></div>
+            <div class="skeleton mb-2" style="height:24px;width:35%"></div>
+        </div>
         <div class="d-flex justify-content-between align-items-center mb-3">
             <p class="text-muted small mb-0">Top 15 expense line items in the selected period.</p>
             <div class="btn-group btn-group-sm" role="group">
                 <button class="btn btn-outline-secondary active" id="btn-items-amount"
-                        onclick="switchItemMode('amount')">By Amount</button>
+                        data-item-mode="amount">By Amount</button>
                 <button class="btn btn-outline-secondary" id="btn-items-count"
-                        onclick="switchItemMode('count')">By Count</button>
+                        data-item-mode="count">By Count</button>
             </div>
         </div>
         <div id="wrap-items" style="position:relative;">
@@ -191,7 +212,7 @@
 
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='vendor/js/chart.umd.min.js') }}"></script>
+<script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='vendor/js/chart.umd.min.js') }}"></script>
 
 <style>
 /* ── Print styles ──────────────────────────────────────────────────────── */
@@ -204,7 +225,7 @@
     @page { size: A4 landscape; margin: 10mm 12mm; }
 
     nav.navbar, footer, #filter-card, #chartTabs,
-    .btn, .btn-group, #loading-bar,
+    .btn, .btn-group, .skeleton-placeholder,
     .tab-pane > p.text-muted,
     .tab-pane .d-flex > p.text-muted { display: none !important; }
 
@@ -230,7 +251,7 @@
 }
 </style>
 
-<script>
+<script nonce="{{ csp_nonce }}">
 // ── Theme colours injected from Flask ─────────────────────────────────────
 const CLR_POS  = '{{ theme_balance_positive }}';
 const CLR_NEG  = '{{ theme_balance_negative }}';
@@ -312,8 +333,11 @@ async function loadData() {
     if (to)   params.set('date_to',   to);
     if (uids) params.set('users',     uids);
 
-    document.getElementById('loading-bar').style.display    = 'block';
-    document.getElementById('chartTabContent').style.opacity = '0.35';
+    // Show skeletons, hide chart canvases
+    document.querySelectorAll('.skeleton-placeholder').forEach(el => el.style.display = '');
+    ['wrap-balances','wrap-history','wrap-volume','wrap-items'].forEach(id => {
+        document.getElementById(id).style.display = 'none';
+    });
 
     try {
         const res = await fetch('/analytics/data?' + params.toString());
@@ -323,8 +347,8 @@ async function loadData() {
     } catch (e) {
         console.error('Analytics fetch failed:', e);
     } finally {
-        document.getElementById('loading-bar').style.display    = 'none';
-        document.getElementById('chartTabContent').style.opacity = '1';
+        // Hide skeletons
+        document.querySelectorAll('.skeleton-placeholder').forEach(el => el.style.display = 'none');
     }
 }
 
@@ -597,6 +621,22 @@ function _renderItems(items) {
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.user-checkbox').forEach(cb => {
         cb.addEventListener('change', _syncDropdownLabel);
+    });
+
+    // Event delegation for filter bar buttons
+    document.getElementById('btn-apply').addEventListener('click', loadData);
+    document.getElementById('btn-print').addEventListener('click', () => window.print());
+    document.querySelectorAll('[data-preset]').forEach(btn => {
+        btn.addEventListener('click', () => setPreset(parseInt(btn.dataset.preset, 10)));
+    });
+    document.querySelectorAll('[data-action]').forEach(el => {
+        el.addEventListener('click', e => {
+            e.preventDefault();
+            toggleAllUsers(el.dataset.action === 'select-all');
+        });
+    });
+    document.querySelectorAll('[data-item-mode]').forEach(btn => {
+        btn.addEventListener('click', () => switchItemMode(btn.dataset.itemMode));
     });
 
     // Chart.js global defaults

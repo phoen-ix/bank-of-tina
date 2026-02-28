@@ -175,7 +175,7 @@ def generate_and_save_icons(bg_hex: str) -> str:
     bg_rgb = (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
     icons_dir = os.path.join(current_app.root_path, 'static', 'icons')
     os.makedirs(icons_dir, exist_ok=True)
-    for size in (192, 512):
+    for size in (32, 192, 512):
         path = os.path.join(icons_dir, f'icon-{size}.png')
         with open(path, 'wb') as f:
             f.write(make_icon_png(size, bg_rgb))

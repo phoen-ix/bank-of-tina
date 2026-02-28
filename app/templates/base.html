@@ -11,6 +11,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Bank of Tina">
     <link rel="apple-touch-icon" href="/static/icons/icon-192.png?v={{ icon_version }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/icon-32.png?v={{ icon_version }}">
     <link rel="icon" type="image/png" sizes="192x192" href="/static/icons/icon-192.png?v={{ icon_version }}">
     <title>{% block title %}Bank of Tina{% endblock %}</title>
     <link href="{{ url_for('static', filename='vendor/css/bootstrap.min.css') }}" rel="stylesheet">
@@ -84,18 +85,23 @@
         </div>
     </nav>
 
-    <div class="container mt-4">
+    <!-- Toast container -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" id="toastContainer" style="z-index:1080;">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    <div class="toast align-items-center text-bg-{{ 'success' if category == 'success' else 'danger' }} border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="4000">
+                        <div class="d-flex">
+                            <div class="toast-body">{{ message }}</div>
+                            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                        </div>
                     </div>
                 {% endfor %}
             {% endif %}
         {% endwith %}
+    </div>
 
+    <div class="container mt-4">
         {% block content %}{% endblock %}
     </div>
 
@@ -105,13 +111,22 @@
         </div>
     </footer>
 
-    <script src="{{ url_for('static', filename='vendor/js/bootstrap.bundle.min.js') }}"></script>
-    <script>
-    document.querySelectorAll('.alert.alert-dismissible').forEach(function(el) {
-        setTimeout(function() {
-            bootstrap.Alert.getOrCreateInstance(el).close();
-        }, 4000);
+    <script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='vendor/js/bootstrap.bundle.min.js') }}"></script>
+    <script nonce="{{ csp_nonce }}">
+    document.querySelectorAll('#toastContainer .toast').forEach(function(el) {
+        bootstrap.Toast.getOrCreateInstance(el).show();
     });
+    function showToast(message, type) {
+        var container = document.getElementById('toastContainer');
+        var div = document.createElement('div');
+        div.className = 'toast align-items-center text-bg-' + (type || 'success') + ' border-0';
+        div.setAttribute('role', 'alert');
+        div.setAttribute('data-bs-delay', '4000');
+        div.innerHTML = '<div class="d-flex"><div class="toast-body">' + message + '</div>' +
+            '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>';
+        container.appendChild(div);
+        bootstrap.Toast.getOrCreateInstance(div).show();
+    }
     // Auto-inject CSRF token into all POST forms
     (function() {
         var token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -125,8 +140,16 @@
             }
         });
     })();
+    // Generic confirm delegation for data-confirm attributes
+    document.addEventListener('click', function(e) {
+        var el = e.target.closest('[data-confirm]');
+        if (el && !confirm(el.dataset.confirm)) e.preventDefault();
+    });
+    document.addEventListener('submit', function(e) {
+        if (e.target.dataset.confirm && !confirm(e.target.dataset.confirm)) e.preventDefault();
+    }, true);
     </script>
-    <script>
+    <script nonce="{{ csp_nonce }}">
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js')
             .catch(e => console.warn('SW registration failed:', e));

@@ -110,7 +110,7 @@
                                 </a>
                                 <form method="POST" action="{{ url_for('main.delete_transaction', transaction_id=trans.id) }}"
                                       class="d-inline"
-                                      onsubmit="return confirm('Delete this transaction? Balances will be reversed.')">
+                                      data-confirm="Delete this transaction? Balances will be reversed.">
                                     <button type="submit" class="btn btn-sm btn-outline-danger">
                                         <i class="bi bi-trash"></i>
                                     </button>
@@ -154,7 +154,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ csp_nonce }}">
 (function () {
     function jump() {
         var m = document.getElementById('jump-month').value;

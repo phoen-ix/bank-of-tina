@@ -309,7 +309,7 @@
                                 <input class="form-check-input" type="checkbox" role="switch"
                                        id="schedule_enabled" name="schedule_enabled" value="1"
                                        {% if cfg.schedule_enabled == '1' %}checked{% endif %}
-                                       onchange="toggleScheduleFields(this)">
+                                       data-toggle-target="schedule_fields">
                                 <label class="form-check-label" for="schedule_enabled">
                                     Enable automatic schedule
                                 </label>
@@ -384,7 +384,7 @@
                 <span><i class="bi bi-journal-text"></i> Email Debug Log</span>
                 <form method="POST" action="{{ url_for('settings_bp.settings_email_clear_log') }}" class="d-inline">
                     <button type="submit" class="btn btn-sm btn-outline-danger"
-                            onclick="return confirm('Clear the entire email debug log?')">
+                            data-confirm="Clear the entire email debug log?">
                         <i class="bi bi-trash"></i> Clear Log
                     </button>
                 </form>
@@ -452,7 +452,7 @@
                         {{ item.name }}
                         <form method="POST" action="{{ url_for('settings_bp.delete_common_item', item_id=item.id) }}" class="d-inline m-0">
                             <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent text-danger lh-1"
-                                    title="Remove" onclick="return confirm('Remove \'{{ item.name }}\' from common items?')">
+                                    title="Remove" data-confirm="Remove '{{ item.name }}' from common items?">
                                 <i class="bi bi-x-lg" style="font-size:0.75rem"></i>
                             </button>
                         </form>
@@ -481,7 +481,7 @@
                         {{ bl.value }}
                         <form method="POST" action="{{ url_for('settings_bp.delete_common_blacklist', item_id=bl.id) }}" class="d-inline m-0">
                             <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent text-dark lh-1"
-                                    title="Remove" onclick="return confirm('Remove \'{{ bl.value }}\' from item blacklist?')">
+                                    title="Remove" data-confirm="Remove '{{ bl.value }}' from item blacklist?">
                                 <i class="bi bi-x-lg" style="font-size:0.75rem"></i>
                             </button>
                         </form>
@@ -516,7 +516,7 @@
                         {{ desc.value }}
                         <form method="POST" action="{{ url_for('settings_bp.delete_common_description', item_id=desc.id) }}" class="d-inline m-0">
                             <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent text-danger lh-1"
-                                    title="Remove" onclick="return confirm('Remove \'{{ desc.value }}\' from common descriptions?')">
+                                    title="Remove" data-confirm="Remove '{{ desc.value }}' from common descriptions?">
                                 <i class="bi bi-x-lg" style="font-size:0.75rem"></i>
                             </button>
                         </form>
@@ -545,7 +545,7 @@
                         {{ bl.value }}
                         <form method="POST" action="{{ url_for('settings_bp.delete_common_blacklist', item_id=bl.id) }}" class="d-inline m-0">
                             <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent text-dark lh-1"
-                                    title="Remove" onclick="return confirm('Remove \'{{ bl.value }}\' from description blacklist?')">
+                                    title="Remove" data-confirm="Remove '{{ bl.value }}' from description blacklist?">
                                 <i class="bi bi-x-lg" style="font-size:0.75rem"></i>
                             </button>
                         </form>
@@ -581,7 +581,7 @@
                         {{ currency_symbol }}{{ price.value|money }}
                         <form method="POST" action="{{ url_for('settings_bp.delete_common_price', item_id=price.id) }}" class="d-inline m-0">
                             <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent text-danger lh-1"
-                                    title="Remove" onclick="return confirm('Remove {{ currency_symbol }}{{ price.value|money }} from common prices?')">
+                                    title="Remove" data-confirm="Remove {{ currency_symbol }}{{ price.value|money }} from common prices?">
                                 <i class="bi bi-x-lg" style="font-size:0.75rem"></i>
                             </button>
                         </form>
@@ -611,7 +611,7 @@
                         {{ bl.value }}
                         <form method="POST" action="{{ url_for('settings_bp.delete_common_blacklist', item_id=bl.id) }}" class="d-inline m-0">
                             <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent text-dark lh-1"
-                                    title="Remove" onclick="return confirm('Remove {{ bl.value }} from price blacklist?')">
+                                    title="Remove" data-confirm="Remove {{ bl.value }} from price blacklist?">
                                 <i class="bi bi-x-lg" style="font-size:0.75rem"></i>
                             </button>
                         </form>
@@ -636,7 +636,7 @@
                         <input class="form-check-input" type="checkbox" role="switch"
                                id="common_auto_enabled" name="common_auto_enabled" value="1"
                                {% if cfg.common_auto_enabled == '1' %}checked{% endif %}
-                               onchange="toggleCommonAutoFields(this)">
+                               data-toggle-target="common_auto_fields">
                         <label class="form-check-label" for="common_auto_enabled">
                             Enable auto-collect
                         </label>
@@ -773,7 +773,7 @@
                     <h6 class="mb-0 text-muted">Debug Log</h6>
                     <form method="POST" action="{{ url_for('settings_bp.settings_common_auto_clear_log') }}">
                         <button type="submit" class="btn btn-sm btn-outline-danger"
-                                onclick="return confirm('Clear the entire debug log?')">
+                                data-confirm="Clear the entire debug log?">
                             <i class="bi bi-trash"></i> Clear Log
                         </button>
                     </form>
@@ -833,13 +833,13 @@
                                             <i class="bi bi-download"></i> Download
                                         </a>
                                         <button type="button" class="btn btn-sm btn-outline-success"
-                                                onclick="confirmRestore('{{ b.filename }}')">
+                                                data-restore-file="{{ b.filename }}">
                                             <i class="bi bi-arrow-counterclockwise"></i> Restore
                                         </button>
                                         <form method="POST" action="{{ url_for('settings_bp.backup_delete', filename=b.filename) }}"
                                               class="d-inline">
                                             <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                    onclick="return confirm('Delete {{ b.filename }}?')">
+                                                    data-confirm="Delete {{ b.filename }}?">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </form>
@@ -874,7 +874,7 @@
                     <input type="file" class="form-control" id="backupFileInput" accept=".tar.gz,.gz">
                 </div>
 
-                <button type="button" class="btn btn-primary" id="uploadBtn" onclick="startChunkedUpload()">
+                <button type="button" class="btn btn-primary" id="uploadBtn">
                     <i class="bi bi-upload"></i> Upload
                 </button>
 
@@ -900,7 +900,7 @@
                         <input class="form-check-input" type="checkbox" role="switch"
                                id="backup_enabled" name="backup_enabled" value="1"
                                {% if cfg.backup_enabled == '1' %}checked{% endif %}
-                               onchange="toggleBackupFields(this)">
+                               data-toggle-target="backup_schedule_fields">
                         <label class="form-check-label" for="backup_enabled">
                             Enable automatic backups
                         </label>
@@ -1009,7 +1009,7 @@
                 <span><i class="bi bi-journal-text"></i> Backup Debug Log</span>
                 <form method="POST" action="{{ url_for('settings_bp.settings_backup_clear_log') }}" class="d-inline">
                     <button type="submit" class="btn btn-sm btn-outline-danger"
-                            onclick="return confirm('Clear the entire backup debug log?')">
+                            data-confirm="Clear the entire backup debug log?">
                         <i class="bi bi-trash"></i> Clear Log
                     </button>
                 </form>
@@ -1040,8 +1040,7 @@
                     <!-- Preset selector -->
                     <div class="mb-4">
                         <label class="form-label">Preset theme</label>
-                        <select class="form-select" id="theme_preset" style="max-width: 220px"
-                                onchange="applyThemePreset(this.value)">
+                        <select class="form-select" id="theme_preset" style="max-width: 220px">
                             <option value="custom" {% if current_theme == 'custom' %}selected{% endif %}>— Custom —</option>
                             {% for key, theme in themes.items() %}
                             <option value="{{ key }}" {% if current_theme == key %}selected{% endif %}>{{ theme.label }}</option>
@@ -1057,11 +1056,11 @@
                                 <input type="color" class="form-control form-control-color"
                                        id="color_navbar" name="color_navbar"
                                        value="{{ cfg.color_navbar }}"
-                                       onchange="setCustomTheme()">
-                                <input type="text" class="form-control font-monospace"
+                                       class="color-picker">
+                                <input type="text" class="form-control font-monospace hex-input"
                                        id="color_navbar_hex" value="{{ cfg.color_navbar }}"
                                        maxlength="7" style="max-width: 90px"
-                                       oninput="syncHexInput(this, 'color_navbar')">
+                                       data-picker="color_navbar">
                             </div>
                         </div>
                         <div class="col-sm-6 col-lg-4">
@@ -1070,11 +1069,11 @@
                                 <input type="color" class="form-control form-control-color"
                                        id="color_email_grad_start" name="color_email_grad_start"
                                        value="{{ cfg.color_email_grad_start }}"
-                                       onchange="setCustomTheme()">
-                                <input type="text" class="form-control font-monospace"
+                                       class="color-picker">
+                                <input type="text" class="form-control font-monospace hex-input"
                                        id="color_email_grad_start_hex" value="{{ cfg.color_email_grad_start }}"
                                        maxlength="7" style="max-width: 90px"
-                                       oninput="syncHexInput(this, 'color_email_grad_start')">
+                                       data-picker="color_email_grad_start">
                             </div>
                         </div>
                         <div class="col-sm-6 col-lg-4">
@@ -1083,11 +1082,11 @@
                                 <input type="color" class="form-control form-control-color"
                                        id="color_email_grad_end" name="color_email_grad_end"
                                        value="{{ cfg.color_email_grad_end }}"
-                                       onchange="setCustomTheme()">
-                                <input type="text" class="form-control font-monospace"
+                                       class="color-picker">
+                                <input type="text" class="form-control font-monospace hex-input"
                                        id="color_email_grad_end_hex" value="{{ cfg.color_email_grad_end }}"
                                        maxlength="7" style="max-width: 90px"
-                                       oninput="syncHexInput(this, 'color_email_grad_end')">
+                                       data-picker="color_email_grad_end">
                             </div>
                         </div>
                         <div class="col-sm-6 col-lg-4">
@@ -1096,11 +1095,11 @@
                                 <input type="color" class="form-control form-control-color"
                                        id="color_balance_positive" name="color_balance_positive"
                                        value="{{ cfg.color_balance_positive }}"
-                                       onchange="setCustomTheme()">
-                                <input type="text" class="form-control font-monospace"
+                                       class="color-picker">
+                                <input type="text" class="form-control font-monospace hex-input"
                                        id="color_balance_positive_hex" value="{{ cfg.color_balance_positive }}"
                                        maxlength="7" style="max-width: 90px"
-                                       oninput="syncHexInput(this, 'color_balance_positive')">
+                                       data-picker="color_balance_positive">
                             </div>
                         </div>
                         <div class="col-sm-6 col-lg-4">
@@ -1109,11 +1108,11 @@
                                 <input type="color" class="form-control form-control-color"
                                        id="color_balance_negative" name="color_balance_negative"
                                        value="{{ cfg.color_balance_negative }}"
-                                       onchange="setCustomTheme()">
-                                <input type="text" class="form-control font-monospace"
+                                       class="color-picker">
+                                <input type="text" class="form-control font-monospace hex-input"
                                        id="color_balance_negative_hex" value="{{ cfg.color_balance_negative }}"
                                        maxlength="7" style="max-width: 90px"
-                                       oninput="syncHexInput(this, 'color_balance_negative')">
+                                       data-picker="color_balance_negative">
                             </div>
                         </div>
                     </div>
@@ -1244,8 +1243,7 @@
                 <button type="submit" class="btn btn-primary">
                     <i class="bi bi-floppy"></i> Save Templates
                 </button>
-                <button type="button" class="btn btn-outline-secondary"
-                        onclick="if(confirm('Reset all templates and colors to defaults?')) { document.getElementById('reset-templates-form').submit(); }">
+                <button type="button" class="btn btn-outline-secondary" id="btn-reset-templates">
                     <i class="bi bi-arrow-counterclockwise"></i> Reset to Defaults
                 </button>
             </div>
@@ -1397,7 +1395,7 @@
                                 <td class="text-end">
                                     <form method="POST" action="{{ url_for('main.toggle_user_active', user_id=user.id) }}">
                                         <button type="submit" class="btn btn-sm btn-outline-secondary"
-                                                onclick="return confirm('Deactivate {{ user.name }}?')">
+                                                data-confirm="Deactivate {{ user.name }}?">
                                             <i class="bi bi-person-dash"></i> Deactivate
                                         </button>
                                     </form>
@@ -1467,7 +1465,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ csp_nonce }}">
 function toggleScheduleFields(checkbox) {
     document.getElementById('schedule_fields').style.display = checkbox.checked ? '' : 'none';
 }
@@ -1599,5 +1597,49 @@ function syncHexInput(hexInput, pickerName) {
         setCustomTheme();
     }
 }
+
+// ── Wire up all delegated event handlers ────────────────────────────────
+
+// Toggle fields for schedule/auto-collect/backup checkboxes
+document.querySelectorAll('[data-toggle-target]').forEach(function(cb) {
+    cb.addEventListener('change', function() {
+        var target = document.getElementById(cb.dataset.toggleTarget);
+        if (target) target.style.display = cb.checked ? '' : 'none';
+    });
+});
+
+// Restore button delegation
+document.querySelectorAll('[data-restore-file]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        confirmRestore(btn.dataset.restoreFile);
+    });
+});
+
+// Upload button
+document.getElementById('uploadBtn').addEventListener('click', startChunkedUpload);
+
+// Theme preset selector
+document.getElementById('theme_preset').addEventListener('change', function() {
+    applyThemePreset(this.value);
+});
+
+// Color pickers → set custom theme on change
+document.querySelectorAll('.color-picker').forEach(function(picker) {
+    picker.addEventListener('change', setCustomTheme);
+});
+
+// Hex text inputs → sync to color picker
+document.querySelectorAll('.hex-input').forEach(function(input) {
+    input.addEventListener('input', function() {
+        syncHexInput(input, input.dataset.picker);
+    });
+});
+
+// Reset templates button — confirm and submit the hidden form
+document.getElementById('btn-reset-templates').addEventListener('click', function() {
+    if (confirm('Reset all templates and colors to defaults?')) {
+        document.getElementById('reset-templates-form').submit();
+    }
+});
 </script>
 {% endblock %}

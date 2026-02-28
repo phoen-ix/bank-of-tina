@@ -15,3 +15,22 @@ def test_health_json_format(client, app):
     data = response.get_json()
     assert 'status' in data
     assert 'checks' in data
+
+
+def test_csp_header(client, app):
+    """CSP header is present on HTML responses with a valid nonce."""
+    response = client.get('/')
+    assert response.status_code == 200
+    csp = response.headers.get('Content-Security-Policy')
+    assert csp is not None
+    assert "script-src 'self' 'nonce-" in csp
+    assert "default-src 'self'" in csp
+    assert "style-src 'self' 'unsafe-inline'" in csp
+    assert "frame-ancestors 'none'" in csp
+
+
+def test_csp_not_on_json(client, app):
+    """CSP header should not appear on JSON responses."""
+    response = client.get('/health')
+    csp = response.headers.get('Content-Security-Policy')
+    assert csp is None

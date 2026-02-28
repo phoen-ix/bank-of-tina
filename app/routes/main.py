@@ -378,6 +378,16 @@ def view_receipt(filepath: str) -> Response:
     return send_from_directory(current_app.config['UPLOAD_FOLDER'], filepath)
 
 
+@main_bp.route('/favicon.ico')
+def favicon() -> Response:
+    return send_from_directory(
+        os.path.join(current_app.root_path, 'static', 'icons'),
+        'icon-32.png',
+        mimetype='image/png',
+        max_age=86400,
+    )
+
+
 @main_bp.route('/sw.js')
 def service_worker() -> Response:
     return send_from_directory(

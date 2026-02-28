@@ -3,12 +3,13 @@ from __future__ import annotations
 import atexit
 import logging
 import os
+import secrets
 import time
 from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
-from flask import Flask, Response
+from flask import Flask, Response, g
 from flask.json.provider import DefaultJSONProvider
 
 from flask import request, redirect, url_for, flash, jsonify
@@ -115,10 +116,12 @@ def localdt_filter(dt: datetime | None, fmt: str = '%Y-%m-%d %H:%M') -> str:
 
 @app.context_processor
 def inject_theme() -> dict[str, str]:
-    """Inject theme colors into every template for dynamic CSS."""
+    """Inject theme colors and CSP nonce into every template."""
     navbar = get_tpl('color_navbar')
     pos    = get_tpl('color_balance_positive')
     neg    = get_tpl('color_balance_negative')
+    nonce  = secrets.token_urlsafe(16)
+    g.csp_nonce = nonce
     return dict(
         theme_navbar=navbar,
         theme_navbar_rgb=hex_to_rgb(navbar),
@@ -127,7 +130,28 @@ def inject_theme() -> dict[str, str]:
         decimal_sep=get_setting('decimal_separator', '.'),
         currency_symbol=get_setting('currency_symbol', '\u20ac'),
         icon_version=get_setting('icon_version', '0'),
+        csp_nonce=nonce,
     )
+
+
+@app.after_request
+def set_csp_header(response: Response) -> Response:
+    """Set Content-Security-Policy header on HTML responses."""
+    if 'text/html' in response.content_type:
+        nonce = g.get('csp_nonce', '')
+        response.headers['Content-Security-Policy'] = (
+            "default-src 'self'; "
+            f"script-src 'self' 'nonce-{nonce}'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data:; "
+            "font-src 'self'; "
+            "connect-src 'self'; "
+            "frame-ancestors 'none'; "
+            "base-uri 'self'; "
+            "form-action 'self'; "
+            "object-src 'none'"
+        )
+    return response
 
 
 if os.environ.get('FLASK_TESTING') != '1':
@@ -156,7 +180,7 @@ if os.environ.get('FLASK_TESTING') != '1':
                     logger.info('Database migrations up to date')
 
                 icons_dir = os.path.join(app.root_path, 'static', 'icons')
-                if not os.path.exists(os.path.join(icons_dir, 'icon-192.png')):
+                if not os.path.exists(os.path.join(icons_dir, 'icon-192.png')) or not os.path.exists(os.path.join(icons_dir, 'icon-32.png')):
                     from config import DEFAULT_ICON_BG
                     from helpers import generate_and_save_icons
                     os.makedirs(icons_dir, exist_ok=True)

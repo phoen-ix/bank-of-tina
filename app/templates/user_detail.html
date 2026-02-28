@@ -108,7 +108,7 @@
                                     <i class="bi bi-pencil"></i> Edit
                                 </a>
                                 <form method="POST" action="{{ url_for('main.delete_transaction', transaction_id=trans.id) }}"
-                                      onsubmit="return confirm('Delete this transaction? Balances will be reversed.')">
+                                      data-confirm="Delete this transaction? Balances will be reversed.">
                                     <button type="submit" class="btn btn-sm btn-outline-danger">
                                         <i class="bi bi-trash"></i> Delete
                                     </button>

@@ -78,7 +78,7 @@
                         <div class="card">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <span><i class="bi bi-list-ul"></i> Expense Items</span>
-                                <button type="button" class="btn btn-sm btn-success" onclick="addItemRow()">
+                                <button type="button" class="btn btn-sm btn-success" id="btn-add-item-row">
                                     <i class="bi bi-plus"></i> Add Item
                                 </button>
                             </div>
@@ -135,7 +135,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ csp_nonce }}">
 const DECIMAL_SEP = {{ decimal_sep | tojson }};
 const CURRENCY_SYM = {{ currency_symbol | tojson }};
 let rowCounter = 0;
@@ -180,11 +180,11 @@ function addItemRow(name = '', price = '') {
             '<div class="input-group input-group-sm">' +
                 '<span class="input-group-text">' + CURRENCY_SYM + '</span>' +
                 '<input type="text" inputmode="decimal" class="form-control item-price" placeholder="0' + DECIMAL_SEP + '00"' +
-                ' value="' + escAttr(displayPrice) + '" oninput="syncTotal()">' +
+                ' value="' + escAttr(displayPrice) + '">' +
             '</div>' +
         '</div>' +
         '<div class="col-auto">' +
-            '<button type="button" class="btn btn-sm btn-outline-danger" onclick="removeItemRow(' + id + ')">' +
+            '<button type="button" class="btn btn-sm btn-outline-danger btn-remove-row" data-row-id="' + id + '">' +
                 '<i class="bi bi-trash"></i>' +
             '</button>' +
         '</div>';
@@ -243,5 +243,15 @@ fetch('/api/common-items')
 
 // Pre-populate with existing items
 initialItems.forEach(item => addItemRow(item.name, item.price));
+
+// Wire up Add Item button and delegate container events
+document.getElementById('btn-add-item-row').addEventListener('click', function() { addItemRow(); });
+document.getElementById('itemsContainer').addEventListener('input', function(e) {
+    if (e.target.classList.contains('item-price')) syncTotal();
+});
+document.getElementById('itemsContainer').addEventListener('click', function(e) {
+    var btn = e.target.closest('.btn-remove-row');
+    if (btn) removeItemRow(parseInt(btn.dataset.rowId, 10));
+});
 </script>
 {% endblock %}
