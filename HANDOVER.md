@@ -30,7 +30,7 @@ This document gives a new Claude instance full context to continue development w
 | Type hints | `from __future__ import annotations` on all modules |
 | Frontend | Bootstrap 5.3, Bootstrap Icons 1.11, Chart.js 4.4, vanilla JS (all self-hosted under `static/vendor/`, no CDN) |
 | Container | Docker + docker-compose, gunicorn (1 worker, 300 s timeout), non-root user via gosu entrypoint |
-| Testing | pytest with SQLite in-memory (`FLASK_TESTING=1`), 76 tests |
+| Testing | pytest with SQLite in-memory (`FLASK_TESTING=1`), 78 tests |
 | DB tools | `mariadb-client` installed in image for `mysqldump`/`mysql` CLI |
 
 ---
@@ -79,6 +79,7 @@ bank-of-tina/
 │       │   ├── js/               # bootstrap.bundle.min.js, chart.umd.min.js
 │       │   └── fonts/            # bootstrap-icons.woff2, bootstrap-icons.woff
 │       └── icons/
+│           ├── icon-32.png       # Favicon 32×32
 │           ├── icon-192.png      # PWA icon 192×192
 │           └── icon-512.png      # PWA icon 512×512
 ├── tests/
@@ -278,7 +279,7 @@ make_icon_png(size, bg_color, fg_color=(0xff, 0xff, 0xff))
 # Generates a square PNG with a bank silhouette. Ported from create_icons.py — stdlib only.
 
 generate_and_save_icons(bg_hex)
-# Parses a hex color, generates 192 and 512 PNGs, saves to static/icons/, updates
+# Parses a hex color, generates 32, 192 and 512 PNGs, saves to static/icons/, updates
 # icon_version and icon_mode settings.
 ```
 
@@ -470,6 +471,7 @@ The app is installable as a Progressive Web App on both Android and iOS with no 
 |------|---------|
 | `app/static/sw.js` | Service worker — network-first, caches only `offline.html` on install; handles both network errors and HTTP errors (e.g. 503) for offline fallback; served via `/sw.js` Flask route for root-scope control |
 | `app/static/offline.html` | Self-contained offline fallback (no CDN, inline styles) |
+| `app/static/icons/icon-32.png` | Favicon 32×32 (bind-mounted from `./icons/`; auto-generated on first run); served via `/favicon.ico` route |
 | `app/static/icons/icon-192.png` | PWA icon 192×192 (bind-mounted from `./icons/`; auto-generated on first run) |
 | `app/static/icons/icon-512.png` | PWA icon 512×512 (bind-mounted from `./icons/`; auto-generated on first run) |
 | `create_icons.py` | One-time stdlib-only (no Pillow) icon generator; run once then commit output |
@@ -498,7 +500,15 @@ The CACHE constant in `sw.js` is `'bot-v2'`. Bump to `'bot-v3'` etc. on future d
 
 All features are fully implemented and committed. The codebase has been through multiple rounds of improvements:
 
-### Round 5 improvements (most recent)
+### Round 6 improvements (most recent)
+48. **Content Security Policy** — every HTML response includes a nonce-based CSP header (`script-src 'self' 'nonce-…'`; `style-src 'self' 'unsafe-inline'`; `frame-ancestors 'none'`; `object-src 'none'`); all ~37 inline event handlers across all templates converted to `addEventListener` / event delegation; generic `data-confirm` delegation in `base.html` handles confirm dialogs site-wide; nonce generated per request via `secrets.token_urlsafe(16)` and stored on `flask.g`
+47. **Database indexes** — added `index=True` on `Transaction.date`, `Transaction.from_user_id`, `Transaction.to_user_id`, `Transaction.transaction_type`, and `ExpenseItem.transaction_id`; Alembic migration `a1b2c3d4e5f6`
+46. **Favicon bundle** — `helpers.py` generates 32×32 icon alongside 192 and 512; `/favicon.ico` route serves `icon-32.png`; `<link rel="icon" sizes="32x32">` added to `base.html`
+45. **Docker build caching** — Dockerfile layers reordered: system deps → user creation → pip install → entrypoint → mkdir → `COPY app/` → chown; code changes no longer invalidate dependency layers
+44. **Toast notifications** — flash messages rendered as Bootstrap 5 toasts (top-right, auto-hide 4 s, stackable); global `showToast(message, type)` JS helper for programmatic use; replaces the previous alert-based flash block
+43. **Skeleton loading** — analytics page shows pulsing skeleton placeholders (horizontal bars for Balances/Top Items, full-width rectangles for History/Volume) while data loads; replaces the previous spinner
+
+### Round 5 improvements
 42. **Self-hosted vendor assets** — Bootstrap 5.3.0 CSS/JS, Bootstrap Icons 1.11.0 CSS/fonts, and Chart.js 4.4.0 all served from `static/vendor/`; eliminates CDN dependencies and avoids browser tracking prevention blocks
 41. **SW scope fix** — added `/sw.js` Flask route that serves the service worker from the root path, allowing it to control all app URLs; previously failed with SecurityError because `/static/sw.js` could only control `/static/*`
 40. **Offline fallback for HTTP errors** — service worker `.then()` handler now checks `response.ok` on navigation requests; returns cached offline page for HTTP errors (e.g. 503 when Docker is down), not just network failures
@@ -586,7 +596,7 @@ FLASK_TESTING=1 python -m pytest tests/ -v
 - Session-scoped `app` fixture; autouse `clean_db` fixture rolls back after each test
 - `make_user` factory fixture for quickly creating users with auto-incrementing names/emails
 
-### Test files (76 tests total)
+### Test files (78 tests total)
 | File | Tests | Coverage |
 |------|-------|----------|
 | `test_helpers.py` | 14 | `parse_amount` (dot, comma, negative, empty, invalid), `fmt_amount` (default/comma separator), `hex_to_rgb`, `apply_template` |
@@ -594,7 +604,7 @@ FLASK_TESTING=1 python -m pytest tests/ -v
 | `test_routes.py` | 26 | Dashboard, add user, deposit/withdrawal, expense with items, edit transaction, delete reversal, search (text/type/date/amount/receipt), user detail/edit/toggle, duplicate validation, PWA manifest, API |
 | `test_settings.py` | 15 | Settings page, general/email update, common item/description/price/blacklist CRUD, template color/reset, schedule, send-now, common toggle, API endpoints, backup create |
 | `test_analytics.py` | 5 | Analytics page loads, data endpoint (no transactions, with transactions, user filter, date range) |
-| `test_health.py` | 2 | Health returns OK, correct JSON format |
+| `test_health.py` | 4 | Health returns OK, correct JSON format, CSP header on HTML, no CSP on JSON |
 | `test_email_service.py` | 4 | `build_email_html`, `build_admin_summary_email`, `send_single_email` without SMTP, `build_backup_status_email` |
 
 ---

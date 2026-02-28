@@ -61,7 +61,7 @@ A self-hosted web application for tracking shared expenses and balances within a
 ### PWA — Install to Home Screen
 - **Web App Manifest** — served dynamically at `/manifest.json`; `theme_color` tracks the configured navbar color
 - **Service worker** — network-first strategy; always fetches fresh data; shows a self-contained offline page when the network is down or the server returns an HTTP error (e.g. 503); served from `/sw.js` via a Flask route so it can control the entire app scope
-- **Icons** — 192×192 and 512×512 PNG icons; persisted on the host via bind mount (`./icons/`) so they survive container rebuilds; auto-generated with the default theme color on first run; manageable from Settings → Templates → App Icon:
+- **Icons** — 32×32, 192×192, and 512×512 PNG icons; persisted on the host via bind mount (`./icons/`) so they survive container rebuilds; auto-generated with the default theme color on first run; `/favicon.ico` route serves the 32px icon; manageable from Settings → Templates → App Icon:
   - **Regenerate from navbar color** — one-click regeneration using the current theme color as background (white bank silhouette)
   - **Upload custom icon** — upload any PNG or JPG; automatically resized to both 192×192 and 512×512
   - **Reset to default** — restores the original Bootstrap blue icon
@@ -71,7 +71,8 @@ A self-hosted web application for tracking shared expenses and balances within a
 - No App Store required; no native build tools required
 
 ### UI
-- Flash notifications (success/error banners) auto-dismiss after 4 seconds; can still be closed manually at any time
+- **Toast notifications** — success/error messages appear as Bootstrap 5 toasts in the top-right corner, auto-hide after 4 seconds, and stack when multiple messages fire simultaneously; includes a global `showToast(message, type)` JS helper for programmatic use
+- **Skeleton loading** — the Charts page shows pulsing skeleton placeholders (horizontal bars for Balances/Top Items, full-width rectangles for History/Volume) while data loads, replacing the previous spinner
 
 ### Templates & Theming
 - **Color palette** — navbar color, email header gradient (start + end), positive and negative balance colors; each has a color picker paired with a hex text field
@@ -264,6 +265,7 @@ bank-of-tina/
 │       │       ├── bootstrap-icons.woff2
 │       │       └── bootstrap-icons.woff
 │       └── icons/                # Bind-mounted from ./icons/ at runtime
+│           ├── icon-32.png       # Favicon 32×32 (auto-generated on first run)
 │           ├── icon-192.png      # PWA icon 192×192 (auto-generated on first run)
 │           └── icon-512.png      # PWA icon 512×512 (auto-generated on first run)
 ├── tests/
@@ -291,6 +293,7 @@ bank-of-tina/
 
 ## 🔒 Security Notes
 
+- **Content Security Policy** — every HTML response includes a nonce-based CSP header (`script-src 'self' 'nonce-…'`; `style-src 'self' 'unsafe-inline'`; `frame-ancestors 'none'`; `object-src 'none'`). All inline event handlers have been converted to `addEventListener` / event delegation so no `'unsafe-inline'` is needed for scripts.
 - Set a strong, random `SECRET_KEY` in your `.env` file
 - Never commit your `.env` file (it is in `.gitignore`)
 - The Docker container starts as root only to fix bind-mount directory ownership, then immediately drops to a non-root user (`appuser`, UID 1000) via `gosu`
@@ -379,7 +382,7 @@ Tests use an in-memory SQLite database and require no running services:
 FLASK_TESTING=1 python -m pytest tests/ -v
 ```
 
-The test suite includes 76 tests across 7 test modules covering helpers, models, routes, settings, analytics, health check, and email service. All tests pass with zero warnings.
+The test suite includes 78 tests across 7 test modules covering helpers, models, routes, settings, analytics, health check, and email service. All tests pass with zero warnings.
 
 ---
 
