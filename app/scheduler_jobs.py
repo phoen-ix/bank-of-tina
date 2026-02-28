@@ -42,7 +42,7 @@ def auto_collect_common() -> None:
 
     if get_setting('common_items_auto', '0') == '1':
         threshold = int(get_setting('common_items_threshold', '5'))
-        blacklisted = {b.value.lower() for b in CommonBlacklist.query.filter_by(type='item').all()}
+        blacklisted = {b.value.lower() for b in db.session.execute(db.select(CommonBlacklist).filter_by(type='item')).scalars().all()}
         rows = (db.session.query(ExpenseItem.item_name, func.count(ExpenseItem.id))
                           .group_by(ExpenseItem.item_name)
                           .having(func.count(ExpenseItem.id) >= threshold).all())
@@ -52,7 +52,7 @@ def auto_collect_common() -> None:
                     db.session.add(AutoCollectLog(level='SKIP', category='item',
                                                   message=f'"{name}" (blacklist)'))
                 skip_count += 1
-            elif not CommonItem.query.filter_by(name=name).first():
+            elif not db.session.execute(db.select(CommonItem).filter_by(name=name)).scalar():
                 db.session.add(CommonItem(name=name))
                 if debug:
                     db.session.add(AutoCollectLog(level='ADDED', category='item',
@@ -61,7 +61,7 @@ def auto_collect_common() -> None:
 
     if get_setting('common_descriptions_auto', '0') == '1':
         threshold = int(get_setting('common_descriptions_threshold', '5'))
-        blacklisted = {b.value.lower() for b in CommonBlacklist.query.filter_by(type='description').all()}
+        blacklisted = {b.value.lower() for b in db.session.execute(db.select(CommonBlacklist).filter_by(type='description')).scalars().all()}
         rows = (db.session.query(Transaction.description, func.count(Transaction.id))
                           .group_by(Transaction.description)
                           .having(func.count(Transaction.id) >= threshold).all())
@@ -71,7 +71,7 @@ def auto_collect_common() -> None:
                     db.session.add(AutoCollectLog(level='SKIP', category='description',
                                                   message=f'"{desc}" (blacklist)'))
                 skip_count += 1
-            elif not CommonDescription.query.filter_by(value=desc).first():
+            elif not db.session.execute(db.select(CommonDescription).filter_by(value=desc)).scalar():
                 db.session.add(CommonDescription(value=desc))
                 if debug:
                     db.session.add(AutoCollectLog(level='ADDED', category='description',
@@ -80,7 +80,7 @@ def auto_collect_common() -> None:
 
     if get_setting('common_prices_auto', '0') == '1':
         threshold = int(get_setting('common_prices_threshold', '5'))
-        blacklisted = {b.value for b in CommonBlacklist.query.filter_by(type='price').all()}
+        blacklisted = {b.value for b in db.session.execute(db.select(CommonBlacklist).filter_by(type='price')).scalars().all()}
         rows = (db.session.query(ExpenseItem.price, func.count(ExpenseItem.id))
                           .group_by(ExpenseItem.price)
                           .having(func.count(ExpenseItem.id) >= threshold).all())
@@ -91,7 +91,7 @@ def auto_collect_common() -> None:
                     db.session.add(AutoCollectLog(level='SKIP', category='price',
                                                   message=f'\u20ac{price_str} (blacklist)'))
                 skip_count += 1
-            elif not CommonPrice.query.filter_by(value=price).first():
+            elif not db.session.execute(db.select(CommonPrice).filter_by(value=price)).scalar():
                 db.session.add(CommonPrice(value=price))
                 if debug:
                     db.session.add(AutoCollectLog(level='ADDED', category='price',
@@ -104,11 +104,11 @@ def auto_collect_common() -> None:
     db.session.commit()
 
     if debug:
-        oldest_kept = (AutoCollectLog.query
-                       .order_by(AutoCollectLog.id.desc())
-                       .offset(500).first())
+        oldest_kept = db.session.execute(
+            db.select(AutoCollectLog).order_by(AutoCollectLog.id.desc()).offset(500)
+        ).scalar()
         if oldest_kept:
-            AutoCollectLog.query.filter(AutoCollectLog.id <= oldest_kept.id).delete()
+            db.session.execute(db.delete(AutoCollectLog).where(AutoCollectLog.id <= oldest_kept.id))
         db.session.commit()
 
 

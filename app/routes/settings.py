@@ -97,15 +97,15 @@ def settings() -> str:
         'currency_symbol':           get_setting('currency_symbol',           '\u20ac'),
         'show_email_on_dashboard':   get_setting('show_email_on_dashboard',   '0'),
     }
-    common_items        = CommonItem.query.order_by(CommonItem.name).all()
-    common_descriptions = CommonDescription.query.order_by(CommonDescription.value).all()
-    common_prices       = CommonPrice.query.order_by(CommonPrice.value).all()
-    common_blacklist    = CommonBlacklist.query.order_by(CommonBlacklist.type, CommonBlacklist.value).all()
-    auto_collect_logs   = AutoCollectLog.query.order_by(AutoCollectLog.id.desc()).limit(500).all()
-    email_logs          = EmailLog.query.order_by(EmailLog.id.desc()).limit(500).all()
-    backup_logs         = BackupLog.query.order_by(BackupLog.id.desc()).limit(500).all()
+    common_items        = db.session.execute(db.select(CommonItem).order_by(CommonItem.name)).scalars().all()
+    common_descriptions = db.session.execute(db.select(CommonDescription).order_by(CommonDescription.value)).scalars().all()
+    common_prices       = db.session.execute(db.select(CommonPrice).order_by(CommonPrice.value)).scalars().all()
+    common_blacklist    = db.session.execute(db.select(CommonBlacklist).order_by(CommonBlacklist.type, CommonBlacklist.value)).scalars().all()
+    auto_collect_logs   = db.session.execute(db.select(AutoCollectLog).order_by(AutoCollectLog.id.desc()).limit(500)).scalars().all()
+    email_logs          = db.session.execute(db.select(EmailLog).order_by(EmailLog.id.desc()).limit(500)).scalars().all()
+    backup_logs         = db.session.execute(db.select(BackupLog).order_by(BackupLog.id.desc()).limit(500)).scalars().all()
     backups             = _list_backups()
-    all_users = User.query.order_by(User.name).all()
+    all_users = db.session.execute(db.select(User).order_by(User.name)).scalars().all()
     timezone_groups = {}
     for tz in pytz.common_timezones:
         region = tz.split('/')[0]
@@ -151,7 +151,7 @@ def settings_send_now() -> Response:
 
 @settings_bp.route('/settings/email/clear-log', methods=['POST'])
 def settings_email_clear_log() -> Response:
-    EmailLog.query.delete()
+    db.session.execute(db.delete(EmailLog))
     db.session.commit()
     flash('Email debug log cleared.', 'success')
     return redirect(url_for('settings_bp.settings'))
@@ -219,7 +219,7 @@ def settings_general() -> Response:
 def api_common_items() -> Response:
     if get_setting('common_enabled', '1') != '1':
         return jsonify([])
-    items = CommonItem.query.order_by(CommonItem.name).all()
+    items = db.session.execute(db.select(CommonItem).order_by(CommonItem.name)).scalars().all()
     return jsonify([{'id': i.id, 'name': i.name} for i in items])
 
 
@@ -227,7 +227,7 @@ def api_common_items() -> Response:
 def api_common_descriptions() -> Response:
     if get_setting('common_enabled', '1') != '1':
         return jsonify([])
-    items = CommonDescription.query.order_by(CommonDescription.value).all()
+    items = db.session.execute(db.select(CommonDescription).order_by(CommonDescription.value)).scalars().all()
     return jsonify([{'id': i.id, 'value': i.value} for i in items])
 
 
@@ -235,7 +235,7 @@ def api_common_descriptions() -> Response:
 def api_common_prices() -> Response:
     if get_setting('common_enabled', '1') != '1':
         return jsonify([])
-    items = CommonPrice.query.order_by(CommonPrice.value).all()
+    items = db.session.execute(db.select(CommonPrice).order_by(CommonPrice.value)).scalars().all()
     return jsonify([{'id': i.id, 'value': i.value} for i in items])
 
 
@@ -245,7 +245,7 @@ def add_common_item() -> Response:
     if not name:
         flash('Item name is required.', 'error')
         return redirect(url_for('settings_bp.settings'))
-    if not CommonItem.query.filter_by(name=name).first():
+    if not db.session.execute(db.select(CommonItem).filter_by(name=name)).scalar():
         db.session.add(CommonItem(name=name))
         db.session.commit()
     flash(f'"{name}" added to common items.', 'success')
@@ -268,7 +268,7 @@ def add_common_description() -> Response:
     if not value:
         flash('Description is required.', 'error')
         return redirect(url_for('settings_bp.settings'))
-    if not CommonDescription.query.filter_by(value=value).first():
+    if not db.session.execute(db.select(CommonDescription).filter_by(value=value)).scalar():
         db.session.add(CommonDescription(value=value))
         db.session.commit()
     flash(f'"{value}" added to common descriptions.', 'success')
@@ -292,7 +292,7 @@ def add_common_price() -> Response:
     except (ValueError, TypeError):
         flash('Valid price is required.', 'error')
         return redirect(url_for('settings_bp.settings'))
-    if not CommonPrice.query.filter_by(value=value).first():
+    if not db.session.execute(db.select(CommonPrice).filter_by(value=value)).scalar():
         db.session.add(CommonPrice(value=value))
         db.session.commit()
     flash(f'\u20ac{fmt_amount(value)} added to common prices.', 'success')
@@ -316,7 +316,7 @@ def add_common_blacklist() -> Response:
     if bl_type not in ('item', 'description', 'price') or not value:
         flash('Invalid blacklist entry.', 'error')
         return redirect(url_for('settings_bp.settings'))
-    if not CommonBlacklist.query.filter_by(type=bl_type, value=value).first():
+    if not db.session.execute(db.select(CommonBlacklist).filter_by(type=bl_type, value=value)).scalar():
         db.session.add(CommonBlacklist(type=bl_type, value=value))
         db.session.commit()
     flash(f'"{value}" added to {bl_type} blacklist.', 'success')
@@ -399,7 +399,7 @@ def settings_common_auto_run() -> Response:
 
 @settings_bp.route('/settings/common-auto/clear-log', methods=['POST'])
 def settings_common_auto_clear_log() -> Response:
-    AutoCollectLog.query.delete()
+    db.session.execute(db.delete(AutoCollectLog))
     db.session.commit()
     flash('Debug log cleared.', 'success')
     return redirect(url_for('settings_bp.settings'))
@@ -486,7 +486,7 @@ def settings_icon() -> Response:
 
 @settings_bp.route('/settings/templates/preview/email')
 def preview_email() -> str:
-    user = User.query.filter_by(is_active=True).order_by(User.name).first()
+    user = db.session.execute(db.select(User).filter_by(is_active=True).order_by(User.name)).scalar()
     if not user:
         class _Dummy:
             name = 'Jane Doe'; email = 'jane@example.com'; balance = Decimal('12.50'); id = 0
@@ -500,7 +500,7 @@ def preview_email() -> str:
 
 @settings_bp.route('/settings/templates/preview/admin-summary')
 def preview_admin_summary() -> str:
-    users = User.query.filter_by(is_active=True).order_by(User.name).all()
+    users = db.session.execute(db.select(User).filter_by(is_active=True).order_by(User.name)).scalars().all()
     if not users:
         class _D:
             def __init__(self, n, e, b): self.name=n; self.email=e; self.balance=b
@@ -564,7 +564,7 @@ def settings_backup_create() -> Response:
 
 @settings_bp.route('/settings/backup/clear-log', methods=['POST'])
 def settings_backup_clear_log() -> Response:
-    BackupLog.query.delete()
+    db.session.execute(db.delete(BackupLog))
     db.session.commit()
     flash('Backup debug log cleared.', 'success')
     return redirect(url_for('settings_bp.settings'))

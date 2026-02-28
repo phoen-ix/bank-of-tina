@@ -3,6 +3,7 @@ from __future__ import annotations
 import atexit
 import logging
 import os
+import time
 from datetime import datetime
 from decimal import Decimal
 from typing import Any
@@ -130,33 +131,49 @@ def inject_theme() -> dict[str, str]:
 
 
 if os.environ.get('FLASK_TESTING') != '1':
-    with app.app_context():
-        from flask_migrate import upgrade, stamp
-        inspector = db.inspect(db.engine)
-        tables = inspector.get_table_names()
-        has_alembic = 'alembic_version' in tables
-        has_tables = 'user' in tables
+    from sqlalchemy.exc import OperationalError
 
-        if has_tables and not has_alembic:
-            stamp(revision='head')
-            logger.info('Existing database stamped at current migration head')
-        elif not has_tables:
-            upgrade()
-            logger.info('Database created via migrations')
-        else:
-            upgrade()
-            logger.info('Database migrations up to date')
+    max_retries = 5
+    for attempt in range(1, max_retries + 1):
+        try:
+            with app.app_context():
+                db.session.execute(db.text('SELECT 1'))
 
-        icons_dir = os.path.join(app.root_path, 'static', 'icons')
-        if not os.path.exists(os.path.join(icons_dir, 'icon-192.png')):
-            from config import DEFAULT_ICON_BG
-            from helpers import generate_and_save_icons
-            os.makedirs(icons_dir, exist_ok=True)
-            generate_and_save_icons(DEFAULT_ICON_BG)
-            logger.info('Generated default PWA icons')
+                from flask_migrate import upgrade, stamp
+                inspector = db.inspect(db.engine)
+                tables = inspector.get_table_names()
+                has_alembic = 'alembic_version' in tables
+                has_tables = 'user' in tables
 
-        from scheduler_jobs import _restore_schedule
-        _restore_schedule(app)
+                if has_tables and not has_alembic:
+                    stamp(revision='head')
+                    logger.info('Existing database stamped at current migration head')
+                elif not has_tables:
+                    upgrade()
+                    logger.info('Database created via migrations')
+                else:
+                    upgrade()
+                    logger.info('Database migrations up to date')
+
+                icons_dir = os.path.join(app.root_path, 'static', 'icons')
+                if not os.path.exists(os.path.join(icons_dir, 'icon-192.png')):
+                    from config import DEFAULT_ICON_BG
+                    from helpers import generate_and_save_icons
+                    os.makedirs(icons_dir, exist_ok=True)
+                    generate_and_save_icons(DEFAULT_ICON_BG)
+                    logger.info('Generated default PWA icons')
+
+                from scheduler_jobs import _restore_schedule
+                _restore_schedule(app)
+            break
+        except OperationalError:
+            if attempt == max_retries:
+                logger.error('Could not connect to database after %d attempts', max_retries)
+                raise
+            delay = 2 ** (attempt - 1)
+            logger.warning('DB not ready, retrying in %ds... (%d/%d)', delay, attempt, max_retries)
+            time.sleep(delay)
+
     scheduler.start()
     logger.info('APScheduler started')
     atexit.register(lambda: scheduler.shutdown(wait=False))

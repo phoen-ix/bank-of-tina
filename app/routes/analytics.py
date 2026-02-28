@@ -6,6 +6,7 @@ from decimal import Decimal
 
 from flask import Blueprint, Response, render_template, request, jsonify
 
+from extensions import db
 from models import User, Transaction, ExpenseItem
 from helpers import now_local
 
@@ -14,7 +15,7 @@ analytics_bp = Blueprint('analytics_bp', __name__)
 
 @analytics_bp.route('/analytics')
 def analytics() -> str:
-    users = User.query.filter_by(is_active=True).order_by(User.name).all()
+    users = db.session.execute(db.select(User).filter_by(is_active=True).order_by(User.name)).scalars().all()
     today     = now_local().date()
     def_from  = (today - timedelta(days=90)).strftime('%Y-%m-%d')
     def_to    = today.strftime('%Y-%m-%d')
@@ -42,21 +43,21 @@ def analytics_data() -> Response:
 
     if users_param:
         uid_list = [int(x) for x in users_param.split(',') if x.strip().isdigit()]
-        users = User.query.filter(User.id.in_(uid_list)).order_by(User.name).all()
+        users = db.session.execute(db.select(User).where(User.id.in_(uid_list)).order_by(User.name)).scalars().all()
     else:
-        users = User.query.filter_by(is_active=True).order_by(User.name).all()
+        users = db.session.execute(db.select(User).filter_by(is_active=True).order_by(User.name)).scalars().all()
 
     all_uid = [u.id for u in users]
 
-    tx_q = Transaction.query.filter(
+    tx_stmt = db.select(Transaction).where(
         Transaction.date >= date_from,
         Transaction.date <= date_to,
     )
     if all_uid:
-        tx_q = tx_q.filter(
+        tx_stmt = tx_stmt.where(
             (Transaction.from_user_id.in_(all_uid)) | (Transaction.to_user_id.in_(all_uid))
         )
-    transactions = tx_q.order_by(Transaction.date).all()
+    transactions = db.session.execute(tx_stmt.order_by(Transaction.date)).scalars().all()
 
     delta_days = (date_to.date() - date_from.date()).days
 
@@ -84,9 +85,9 @@ def analytics_data() -> Response:
     history_datasets: dict[str, list[float]] = {}
 
     for user in users:
-        all_user_tx = Transaction.query.filter(
+        all_user_tx = db.session.execute(db.select(Transaction).where(
             (Transaction.from_user_id == user.id) | (Transaction.to_user_id == user.id)
-        ).all()
+        )).scalars().all()
 
         series: list[float] = []
         for d in sample_dates:
@@ -127,7 +128,7 @@ def analytics_data() -> Response:
     item_stats: dict[str, dict[str, int | Decimal]] = defaultdict(lambda: {'count': 0, 'total': Decimal('0')})
 
     if expense_ids:
-        for item in ExpenseItem.query.filter(ExpenseItem.transaction_id.in_(expense_ids)).all():
+        for item in db.session.execute(db.select(ExpenseItem).where(ExpenseItem.transaction_id.in_(expense_ids))).scalars().all():
             name = item.item_name.strip()
             item_stats[name]['count'] += 1
             item_stats[name]['total'] += item.price

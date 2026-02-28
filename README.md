@@ -11,7 +11,7 @@ A self-hosted web application for tracking shared expenses and balances within a
 - Real-time balance tracking for every user
 - Deactivate users (hidden from dashboard, manageable from Settings)
 - Dashboard shows Name and Balance; email column optional (Settings → General, default off)
-- User detail page shows the 5 most recent transactions; click a user's name on the dashboard to open it
+- User detail page shows paginated transaction history (20 per page); click a user's name on the dashboard to open it
 - **Per-user email preferences** — opt in/out of the weekly balance email individually; choose how much transaction history to include (`Last 3`, `This week`, `This month`, or `None`)
 
 ### Transactions
@@ -22,7 +22,7 @@ A self-hosted web application for tracking shared expenses and balances within a
 - **Notes field** — optional free-text notes on any transaction for longer context or justification; shown inline on all transaction lists and included in search
 - **Delete** any transaction (balances are automatically reversed)
 - **Month-by-month view** — transactions grouped by day with ◀ ▶ navigation and a month/year jump picker; defaults to the current month
-- **Search** — free-text search across descriptions and expense items; advanced filters for type, user, date range, amount range, and a "Has attachment / receipt" toggle; only active users appear in the user filter
+- **Search** — free-text search across descriptions and expense items; advanced filters for type, user, date range, amount range, and a "Has attachment / receipt" toggle; paginated results (25 per page); only active users appear in the user filter
 
 ### Expense Items
 - Add line items per expense (name + price)
@@ -245,8 +245,9 @@ bank-of-tina/
 │   │   ├── add_transaction.html
 │   │   ├── edit_transaction.html # Edit transactions, items, and receipts
 │   │   ├── transactions.html     # Month-by-month transactions list
-│   │   ├── search.html           # Cross-month search with advanced filters
-│   │   ├── user_detail.html
+│   │   ├── search.html           # Cross-month search with advanced filters and pagination
+│   │   ├── user_detail.html      # User profile with paginated transaction history
+│   │   ├── _pagination.html      # Reusable Bootstrap 5 pagination partial
 │   │   ├── analytics.html        # Charts & Statistics page
 │   │   └── settings.html         # Settings (General / Email / Common / Backup / Templates / Users)
 │   └── static/
@@ -295,7 +296,9 @@ bank-of-tina/
 ### Health check
 ```bash
 curl http://localhost:5000/health
-# Returns {"status": "ok"} when the database is reachable
+# Returns structured JSON with individual check results:
+# {"status": "ok", "checks": {"database": "ok", "scheduler": "ok", "icons_writable": "ok"}}
+# Returns 503 with "status": "error" when the database is unreachable
 ```
 
 The Dockerfile includes a `HEALTHCHECK` instruction and the docker-compose web service uses `/health` for its healthcheck.
@@ -337,7 +340,7 @@ docker compose up -d
 | Emails not sending | Check Settings → Email; verify SMTP credentials; check logs |
 | Receipt upload fails | Check `chmod 755 uploads/`; verify file is JPG/PNG/PDF |
 | Port 5000 in use | Change the host port in `docker-compose.yml` (`"8080:5000"`) |
-| Web container won't start | `docker compose logs db` — db may still be initialising; it will retry automatically |
+| Web container won't start | `docker compose logs web` — the app retries DB connections up to 5 times with exponential backoff on startup; check db logs if all retries fail |
 | DB connection refused | Ensure `mariadb-data/` is writable; `docker compose restart db` |
 
 ---

@@ -45,10 +45,12 @@ def delete_receipt_file(receipt_path: str | None, exclude_transaction_id: int) -
     """Delete a receipt file from disk only if no other transaction still references it."""
     if not receipt_path:
         return
-    others = Transaction.query.filter(
-        Transaction.receipt_path == receipt_path,
-        Transaction.id != exclude_transaction_id
-    ).first()
+    others = db.session.execute(
+        db.select(Transaction).where(
+            Transaction.receipt_path == receipt_path,
+            Transaction.id != exclude_transaction_id
+        )
+    ).scalar()
     if others:
         return
     abs_path = os.path.join(current_app.config['UPLOAD_FOLDER'], receipt_path)

@@ -23,27 +23,27 @@ def build_email_html(user: User) -> str:
         show_tx_section = False
     else:
         show_tx_section = True
-        base_q = Transaction.query.filter(
+        base_stmt = db.select(Transaction).where(
             (Transaction.from_user_id == user.id) | (Transaction.to_user_id == user.id)
         ).order_by(Transaction.date.desc())
 
         if tx_pref == 'last3':
-            recent_transactions = base_q.limit(3).all()
+            recent_transactions = db.session.execute(base_stmt.limit(3)).scalars().all()
         elif tx_pref == 'this_week':
             local_tz = pytz.timezone(get_setting('timezone', 'UTC'))
             now_lt = datetime.now(local_tz)
             week_start = (now_lt - timedelta(days=now_lt.weekday())).replace(
                             hour=0, minute=0, second=0, microsecond=0)
             week_start_utc = week_start.astimezone(pytz.UTC).replace(tzinfo=None)
-            recent_transactions = base_q.filter(Transaction.date >= week_start_utc).all()
+            recent_transactions = db.session.execute(base_stmt.where(Transaction.date >= week_start_utc)).scalars().all()
         elif tx_pref == 'this_month':
             local_tz = pytz.timezone(get_setting('timezone', 'UTC'))
             now_lt = datetime.now(local_tz)
             month_start = now_lt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
             month_start_utc = month_start.astimezone(pytz.UTC).replace(tzinfo=None)
-            recent_transactions = base_q.filter(Transaction.date >= month_start_utc).all()
+            recent_transactions = db.session.execute(base_stmt.where(Transaction.date >= month_start_utc)).scalars().all()
         else:
-            recent_transactions = base_q.limit(3).all()
+            recent_transactions = db.session.execute(base_stmt.limit(3)).scalars().all()
 
     sym = get_setting('currency_symbol', '\u20ac')
     if user.balance < 0:
@@ -255,7 +255,7 @@ def send_all_emails() -> tuple[int, int, list[str]]:
     if get_setting('email_enabled', '1') != '1':
         return 0, 0, ['Email sending is disabled in General settings.']
 
-    all_active_users = User.query.filter_by(is_active=True).all()
+    all_active_users = db.session.execute(db.select(User).filter_by(is_active=True)).scalars().all()
     opted_in_users   = [u for u in all_active_users if u.email_opt_in]
     success, fail = 0, 0
     errors: list[str] = []
@@ -299,9 +299,11 @@ def send_all_emails() -> tuple[int, int, list[str]]:
         db.session.add(EmailLog(level='INFO', recipient=None,
                                 message=f'Run complete: {success} sent, {fail} failed'))
         db.session.commit()
-        oldest_kept = (EmailLog.query.order_by(EmailLog.id.desc()).offset(500).first())
+        oldest_kept = db.session.execute(
+            db.select(EmailLog).order_by(EmailLog.id.desc()).offset(500)
+        ).scalar()
         if oldest_kept:
-            EmailLog.query.filter(EmailLog.id <= oldest_kept.id).delete()
+            db.session.execute(db.delete(EmailLog).where(EmailLog.id <= oldest_kept.id))
         db.session.commit()
 
     logger.info('Email batch complete: %d sent, %d failed', success, fail)

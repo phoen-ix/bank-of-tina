@@ -90,7 +90,7 @@
 {% if not searched %}
     <p class="text-muted">Enter a search term or use advanced filters to find transactions across all months.</p>
 
-{% elif results %}
+{% elif pagination and pagination.items %}
     <div class="card">
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -108,7 +108,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for trans in results %}
+                        {% for trans in pagination.items %}
                         <tr>
                             <td class="text-nowrap">{{ trans.date | localdt('%Y-%m-%d %H:%M') }}</td>
                             <td>
@@ -187,10 +187,13 @@
             </div>
         </div>
         <div class="card-footer text-muted small">
-            {{ results|length }} transaction{{ 's' if results|length != 1 else '' }}
-            &middot; Total: {{ currency_symbol }}{{ (results|sum(attribute='amount'))|money }}
+            {{ pagination.total }} transaction{{ 's' if pagination.total != 1 else '' }} found
+            (showing page {{ pagination.page }} of {{ pagination.pages }})
         </div>
     </div>
+    {% with kwargs=page_kwargs %}
+        {% include '_pagination.html' %}
+    {% endwith %}
 
 {% else %}
     <p class="text-muted">No transactions found for your search.</p>

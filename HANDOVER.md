@@ -66,8 +66,9 @@ bank-of-tina/
 │   │   ├── add_transaction.html
 │   │   ├── edit_transaction.html # Edit transaction + receipt upload/remove
 │   │   ├── transactions.html     # Month-by-month view
-│   │   ├── search.html           # Cross-month search with advanced filters
-│   │   ├── user_detail.html
+│   │   ├── search.html           # Cross-month search with advanced filters and pagination
+│   │   ├── user_detail.html      # User profile with paginated transaction history
+│   │   ├── _pagination.html      # Reusable Bootstrap 5 pagination partial
 │   │   ├── analytics.html        # Charts & Statistics page (4-tab Chart.js dashboard)
 │   │   └── settings.html         # All settings tabs (General/Email/Common/Backup/Templates/Users)
 │   └── static/
@@ -376,7 +377,11 @@ Chunked upload: JS sends 5 MB chunks to `/backups/upload-chunk` with a shared `u
 
 ## Search
 
-Route: `GET /search` (in `routes/main.py`) — parameters: `q`, `type`, `user`, `date_from`, `date_to`, `amount_min`, `amount_max`, `has_receipt`. User dropdown only shows active users. Advanced filters panel auto-opens if any filter param is present in the URL (JS checks on load).
+Route: `GET /search` (in `routes/main.py`) — parameters: `q`, `type`, `user`, `date_from`, `date_to`, `amount_min`, `amount_max`, `has_receipt`, `page`. Results are paginated (25 per page) using `db.paginate()`. Pagination links preserve all active query params. User dropdown only shows active users. Advanced filters panel auto-opens if any filter param is present in the URL (JS checks on load).
+
+## User Detail
+
+Route: `GET /user/<int:user_id>` — shows user profile card and paginated transaction history (20 per page). Pagination uses `db.paginate()` with the `_pagination.html` partial template.
 
 ---
 
@@ -388,7 +393,7 @@ Route: `GET /search` (in `routes/main.py`) — parameters: `q`, `type`, `user`, 
 - **Balance is stored, not derived** — never recalculate from transactions; mutate `user.balance` carefully.
 - **`/uploads` and `/app/static/icons` are bind-mounts** — cannot `rmtree` the directories themselves; clear their contents only. Icons are auto-generated on first startup if missing.
 - **Scheduler jobs receive `app` parameter** — use `with app.app_context():` since background threads have no Flask request context. Never import `app` directly in service modules; use `current_app` in request handlers or pass `app` explicitly to scheduler jobs.
-- **Use `db.session.get()` not `Model.query.get()`** — `Query.get()` and `get_or_404()` are deprecated in SQLAlchemy 2.0. Use `db.session.get(Model, id)` for primary-key lookups, or `db.session.get(Model, id) or abort(404)` for routes. `Model.query.filter_by()` and `Model.query.filter()` are fine.
+- **SQLAlchemy 2.0 style only** — all `Model.query.*` calls have been fully migrated. Use `db.session.get(Model, id)` for primary-key lookups, `db.session.execute(db.select(Model).filter_by(...)).scalar()` for `.first()`, `db.session.execute(db.select(Model).where(...)).scalars().all()` for `.all()`, and `db.session.execute(db.delete(Model).where(...))` for `.delete()`. For paginated routes, use `db.paginate(stmt, page=page, per_page=N, error_out=False)`. Never use `Model.query` — it is deprecated.
 - **Circular imports** — never import from `app.py` in other modules. Import `db`, `csrf`, `scheduler` from `extensions.py`. Import models from `models.py`.
 - **Blueprint url_for** — all `url_for()` calls in templates must be blueprint-prefixed: `url_for('main.index')`, `url_for('settings_bp.settings')`, `url_for('analytics_bp.analytics')`, etc.
 - **Single gunicorn worker** — the in-process APScheduler only works correctly with 1 worker. Scaling requires moving to a proper task queue.
@@ -489,9 +494,15 @@ The CACHE constant in `sw.js` is `'bot-v1'`. Bump to `'bot-v2'` etc. on future d
 
 All features are fully implemented and committed. The codebase has been through two rounds of major refactoring:
 
-### Round 3 improvements (most recent)
+### Round 4 improvements (most recent)
+38. **Full SQLAlchemy 2.0 migration** — all remaining ~68 `Model.query.*` calls across 9 files replaced with `db.session.execute(db.select(Model))` patterns; zero `Model.query` calls remain in app or test code; `Model.query.delete()` replaced with `db.session.execute(db.delete(Model))`
+37. **Pagination** — search results paginated at 25/page using `db.paginate()`; user detail transaction history paginated at 20/page; reusable `_pagination.html` Bootstrap 5 partial with prev/next and page numbers; pagination links preserve all query params
+36. **Enhanced health check** — `/health` returns structured JSON: `{"status": "ok", "checks": {"database": "ok", "scheduler": "ok", "icons_writable": "ok"}}`; returns 503 only when database is unreachable
+35. **DB connection retry** — startup wraps DB init in a retry loop (5 attempts, exponential backoff 1s→16s); only retries `OperationalError`; prevents crash when MariaDB starts slower than the web container
+
+### Round 3 improvements
 34. **Zero test warnings** — replaced `datetime.utcnow` with `datetime.now(UTC).replace(tzinfo=None)` in model defaults and helpers; replaced all `get_or_404()` calls with `db.session.get() or abort(404)`; test suite now runs with 0 warnings
-33. **SQLAlchemy 2.0 migration** — all `Model.query.get(id)` calls replaced with `db.session.get(Model, id)` across app code and tests; eliminates ~1750 `LegacyAPIWarning` deprecation warnings per test run
+33. **SQLAlchemy 2.0 `.get()` migration** — all `Model.query.get(id)` calls replaced with `db.session.get(Model, id)` across app code and tests; eliminates ~1750 `LegacyAPIWarning` deprecation warnings per test run
 32. **Persistent PWA icons** — `./icons:/app/static/icons` bind mount added to `docker-compose.yml` so icons survive container rebuilds; `app.py` auto-generates default icons on first startup when the directory is empty; `icons/` added to `.gitignore` and `.dockerignore`; `entrypoint.sh` added with `gosu` to fix bind-mount directory ownership before dropping to `appuser`
 31. **Hardcoded credential removal** — `DB_USER` and `DB_PASSWORD` no longer fall back to `'tina'`; `app.py` raises `RuntimeError` at startup if they are missing (unless `SQLALCHEMY_DATABASE_URI` is set directly); `backup_service.py` and `routes/settings.py` default to empty string so `mysqldump`/`mysql` commands fail clearly; README backup example uses `$DB_USER`/`$DB_PASSWORD` variables instead of literal credentials
 

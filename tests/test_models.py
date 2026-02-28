@@ -12,7 +12,7 @@ def test_create_user(app):
         db.session.add(user)
         db.session.commit()
 
-        fetched = User.query.filter_by(name='Test User').first()
+        fetched = db.session.execute(db.select(User).filter_by(name='Test User')).scalar()
         assert fetched is not None
         assert fetched.email == 'test@example.com'
         assert fetched.balance == Decimal('100.00')
@@ -26,7 +26,7 @@ def test_user_default_balance(app):
         db.session.add(user)
         db.session.commit()
 
-        fetched = User.query.filter_by(name='Zero User').first()
+        fetched = db.session.execute(db.select(User).filter_by(name='Zero User')).scalar()
         assert fetched.balance == 0
 
 
@@ -43,7 +43,7 @@ def test_balance_precision_no_float_drift(app):
             user.balance += Decimal('0.10')
         db.session.commit()
 
-        fetched = User.query.filter_by(name='Precision Test').first()
+        fetched = db.session.execute(db.select(User).filter_by(name='Precision Test')).scalar()
         assert fetched.balance == Decimal('1.00')
 
 
@@ -55,7 +55,7 @@ def test_user_is_active_default(app):
         db.session.add(user)
         db.session.commit()
 
-        fetched = User.query.filter_by(name='Active User').first()
+        fetched = db.session.execute(db.select(User).filter_by(name='Active User')).scalar()
         assert fetched.is_active is True
 
 
@@ -80,7 +80,7 @@ def test_transaction_creation_all_fields(app):
         db.session.add(tx)
         db.session.commit()
 
-        fetched = Transaction.query.first()
+        fetched = db.session.execute(db.select(Transaction)).scalar()
         assert fetched.description == 'Test expense'
         assert fetched.amount == Decimal('25.50')
         assert fetched.from_user_id == sender.id
@@ -148,7 +148,7 @@ def test_user_is_active_toggle(app):
 
         user.is_active = False
         db.session.commit()
-        fetched = User.query.filter_by(name='Toggle User').first()
+        fetched = db.session.execute(db.select(User).filter_by(name='Toggle User')).scalar()
         assert fetched.is_active is False
 
 
@@ -160,7 +160,7 @@ def test_user_negative_balance(app):
         db.session.add(user)
         db.session.commit()
 
-        fetched = User.query.filter_by(name='Debt User').first()
+        fetched = db.session.execute(db.select(User).filter_by(name='Debt User')).scalar()
         assert fetched.balance == Decimal('-42.50')
 
 
@@ -178,7 +178,7 @@ def test_transaction_types(app):
             db.session.add(tx)
         db.session.commit()
 
-        txs = Transaction.query.all()
+        txs = db.session.execute(db.select(Transaction)).scalars().all()
         assert len(txs) == 3
         types = {t.transaction_type for t in txs}
         assert types == {'deposit', 'withdrawal', 'expense'}

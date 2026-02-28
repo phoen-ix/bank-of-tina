@@ -50,14 +50,14 @@
                 <i class="bi bi-clock-history"></i> Transaction History
             </div>
             <div class="card-body">
-                {% if transactions %}
+                {% if pagination.items %}
                     <div class="list-group">
-                        {% for trans in transactions %}
+                        {% for trans in pagination.items %}
                         <div class="list-group-item">
                             <div class="d-flex w-100 justify-content-between">
                                 <h6 class="mb-1">
                                     {{ trans.description }}
-                                    <span class="badge 
+                                    <span class="badge
                                         {% if trans.transaction_type == 'deposit' %}bg-success
                                         {% elif trans.transaction_type == 'withdrawal' %}bg-danger
                                         {% elif trans.transaction_type == 'expense' %}bg-primary
@@ -117,6 +117,9 @@
                         </div>
                         {% endfor %}
                     </div>
+                    {% with kwargs={'user_id': user.id} %}
+                        {% include '_pagination.html' %}
+                    {% endwith %}
                 {% else %}
                     <p class="text-muted">No transactions yet for this user.</p>
                 {% endif %}

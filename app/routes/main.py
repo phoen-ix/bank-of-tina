@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from collections import defaultdict
 from datetime import datetime, timedelta
 from decimal import Decimal
@@ -23,18 +24,34 @@ VALID_EMAIL_TX: set[str] = {'none', 'last3', 'this_week', 'this_month'}
 
 @main_bp.route('/health')
 def health() -> tuple[Response, int]:
+    checks: dict[str, str] = {}
+
+    # DB check
     try:
         db.session.execute(db.text('SELECT 1'))
-        return jsonify({'status': 'ok'}), 200
+        checks['database'] = 'ok'
     except Exception as e:
-        return jsonify({'status': 'error', 'detail': str(e)}), 503
+        checks['database'] = f'error: {e}'
+
+    # Scheduler check
+    from extensions import scheduler
+    checks['scheduler'] = 'ok' if scheduler.running else 'not running'
+
+    # Icons directory writable
+    icons_dir = os.path.join(current_app.root_path, 'static', 'icons')
+    checks['icons_writable'] = 'ok' if os.access(icons_dir, os.W_OK) else 'not writable'
+
+    db_ok = checks['database'] == 'ok'
+    overall = 'ok' if db_ok else 'error'
+    status_code = 200 if db_ok else 503
+    return jsonify({'status': overall, 'checks': checks}), status_code
 
 
 @main_bp.route('/')
 def index() -> str:
-    users = User.query.filter_by(is_active=True).order_by(User.name).all()
+    users = db.session.execute(db.select(User).filter_by(is_active=True).order_by(User.name)).scalars().all()
     count = int(get_setting('recent_transactions_count', '5'))
-    recent = Transaction.query.order_by(Transaction.date.desc()).limit(count).all() if count else []
+    recent = db.session.execute(db.select(Transaction).order_by(Transaction.date.desc()).limit(count)).scalars().all() if count else []
     show_email = get_setting('show_email_on_dashboard', '0') == '1'
     return render_template('index.html', users=users, transactions=recent, show_recent=count > 0,
                            show_email=show_email)
@@ -50,7 +67,7 @@ def add_user() -> Response:
         flash('Name and email are required!', 'error')
         return redirect(url_for('settings_bp.settings'))
 
-    if User.query.filter_by(name=name).first():
+    if db.session.execute(db.select(User).filter_by(name=name)).scalar():
         flash('User already exists!', 'error')
         return redirect(url_for('settings_bp.settings'))
 
@@ -80,12 +97,12 @@ def edit_user(user_id: int) -> Response:
         flash('All fields are required!', 'error')
         return redirect(url_for('main.user_detail', user_id=user_id))
 
-    existing = User.query.filter(User.name == name, User.id != user_id).first()
+    existing = db.session.execute(db.select(User).where(User.name == name, User.id != user_id)).scalar()
     if existing:
         flash('Another user with that name already exists!', 'error')
         return redirect(url_for('main.user_detail', user_id=user_id))
 
-    existing_email = User.query.filter(User.email == email, User.id != user_id).first()
+    existing_email = db.session.execute(db.select(User).where(User.email == email, User.id != user_id)).scalar()
     if existing_email:
         flash('Another user with that email already exists!', 'error')
         return redirect(url_for('main.user_detail', user_id=user_id))
@@ -124,7 +141,7 @@ def toggle_user_active(user_id: int) -> Response:
 @limiter.limit("30/minute", methods=["POST"])
 def add_transaction() -> str | Response:
     if request.method == 'GET':
-        users = User.query.filter_by(is_active=True).order_by(User.name).all()
+        users = db.session.execute(db.select(User).filter_by(is_active=True).order_by(User.name)).scalars().all()
         default_item_rows = int(get_setting('default_item_rows', '3'))
         default_date = datetime.now(get_app_tz()).strftime('%Y-%m-%dT%H:%M')
         return render_template('add_transaction.html', users=users,
@@ -229,10 +246,10 @@ def view_transactions() -> str:
     month = max(1,    min(12,   int(request.args.get('month', today.month))))
 
     _, last = cal_mod.monthrange(year, month)
-    transactions = Transaction.query.filter(
+    transactions = db.session.execute(db.select(Transaction).where(
         Transaction.date >= datetime(year, month, 1),
         Transaction.date <= datetime(year, month, last, 23, 59, 59),
-    ).order_by(Transaction.date.desc()).all()
+    ).order_by(Transaction.date.desc())).scalars().all()
 
     by_day = defaultdict(list)
     for t in transactions:
@@ -244,7 +261,7 @@ def view_transactions() -> str:
     next_month = (month % 12) + 1
     next_year  = year + (1 if month == 12 else 0)
 
-    first = Transaction.query.order_by(Transaction.date.asc()).first()
+    first = db.session.execute(db.select(Transaction).order_by(Transaction.date.asc())).scalar()
     start_year = first.date.year if first else today.year
     year_range = list(range(start_year, today.year + 1))
 
@@ -271,15 +288,16 @@ def search() -> str:
     amount_min  = request.args.get('amount_min', '')
     amount_max  = request.args.get('amount_max', '')
     has_receipt = request.args.get('has_receipt', '')
+    page        = request.args.get('page', 1, type=int)
 
     searched = any([q, tx_type, user_id, date_from, date_to, amount_min, amount_max, has_receipt])
-    results  = []
+    pagination = None
 
     if searched:
-        qry = Transaction.query
+        stmt = db.select(Transaction)
 
         if q:
-            qry = qry.filter(
+            stmt = stmt.where(
                 db.or_(
                     Transaction.description.ilike(f'%{q}%'),
                     Transaction.notes.ilike(f'%{q}%'),
@@ -287,55 +305,72 @@ def search() -> str:
                 )
             )
         if tx_type:
-            qry = qry.filter(Transaction.transaction_type == tx_type)
+            stmt = stmt.where(Transaction.transaction_type == tx_type)
         if user_id:
-            qry = qry.filter(
+            stmt = stmt.where(
                 db.or_(Transaction.from_user_id == user_id,
                        Transaction.to_user_id   == user_id)
             )
         if date_from:
             try:
-                qry = qry.filter(Transaction.date >= datetime.strptime(date_from, '%Y-%m-%d'))
+                stmt = stmt.where(Transaction.date >= datetime.strptime(date_from, '%Y-%m-%d'))
             except ValueError:
                 pass
         if date_to:
             try:
                 dt = datetime.strptime(date_to, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
-                qry = qry.filter(Transaction.date <= dt)
+                stmt = stmt.where(Transaction.date <= dt)
             except ValueError:
                 pass
         if amount_min:
             try:
-                qry = qry.filter(Transaction.amount >= parse_amount(amount_min))
+                stmt = stmt.where(Transaction.amount >= parse_amount(amount_min))
             except (ValueError, TypeError):
                 pass
         if amount_max:
             try:
-                qry = qry.filter(Transaction.amount <= parse_amount(amount_max))
+                stmt = stmt.where(Transaction.amount <= parse_amount(amount_max))
             except (ValueError, TypeError):
                 pass
         if has_receipt:
-            qry = qry.filter(Transaction.receipt_path.isnot(None),
-                             Transaction.receipt_path != '')
+            stmt = stmt.where(Transaction.receipt_path.isnot(None),
+                              Transaction.receipt_path != '')
 
-        results = qry.order_by(Transaction.date.desc()).all()
+        pagination = db.paginate(stmt.order_by(Transaction.date.desc()),
+                                 page=page, per_page=25, error_out=False)
 
-    all_users = User.query.filter_by(is_active=True).order_by(User.name).all()
+    all_users = db.session.execute(
+        db.select(User).filter_by(is_active=True).order_by(User.name)
+    ).scalars().all()
+
+    # Build kwargs for pagination links (preserve all query params except page)
+    page_kwargs = {}
+    if q: page_kwargs['q'] = q
+    if tx_type: page_kwargs['type'] = tx_type
+    if user_id: page_kwargs['user'] = user_id
+    if date_from: page_kwargs['date_from'] = date_from
+    if date_to: page_kwargs['date_to'] = date_to
+    if amount_min: page_kwargs['amount_min'] = amount_min
+    if amount_max: page_kwargs['amount_max'] = amount_max
+    if has_receipt: page_kwargs['has_receipt'] = has_receipt
+
     return render_template('search.html',
-        results=results, searched=searched, all_users=all_users,
+        pagination=pagination, searched=searched, all_users=all_users,
         q=q, tx_type=tx_type, user_id=user_id,
         date_from=date_from, date_to=date_to,
         amount_min=amount_min, amount_max=amount_max,
-        has_receipt=has_receipt)
+        has_receipt=has_receipt, page_kwargs=page_kwargs)
 
 
 @main_bp.route('/user/<int:user_id>')
 def user_detail(user_id: int) -> str:
     user = db.session.get(User, user_id) or abort(404)
-    transactions = Transaction.query.filter(
+    page = request.args.get('page', 1, type=int)
+    stmt = db.select(Transaction).where(
         (Transaction.from_user_id == user_id) | (Transaction.to_user_id == user_id)
-    ).order_by(Transaction.date.desc()).limit(5).all()
-    return render_template('user_detail.html', user=user, transactions=transactions)
+    ).order_by(Transaction.date.desc())
+    pagination = db.paginate(stmt, page=page, per_page=20, error_out=False)
+    return render_template('user_detail.html', user=user, pagination=pagination)
 
 
 @main_bp.route('/receipt/<path:filepath>')
@@ -369,7 +404,7 @@ def pwa_manifest() -> Response:
 @main_bp.route('/transaction/<int:transaction_id>/edit', methods=['GET', 'POST'])
 def edit_transaction(transaction_id: int) -> str | Response:
     trans = db.session.get(Transaction, transaction_id) or abort(404)
-    users = User.query.order_by(User.name).all()
+    users = db.session.execute(db.select(User).order_by(User.name)).scalars().all()
 
     if request.method == 'GET':
         return render_template('edit_transaction.html', trans=trans, users=users)
@@ -402,7 +437,7 @@ def edit_transaction(transaction_id: int) -> str | Response:
     trans.from_user_id = int(from_id) if from_id else None
     trans.to_user_id   = int(to_id)   if to_id   else None
 
-    ExpenseItem.query.filter_by(transaction_id=trans.id).delete()
+    db.session.execute(db.delete(ExpenseItem).filter_by(transaction_id=trans.id))
     items_json_str = request.form.get('items_json', '').strip()
     new_items_total = None
     if items_json_str:
@@ -474,7 +509,7 @@ def delete_transaction(transaction_id: int) -> Response:
             to_user.balance -= trans.amount
 
     delete_receipt_file(trans.receipt_path, trans.id)
-    ExpenseItem.query.filter_by(transaction_id=trans.id).delete()
+    db.session.execute(db.delete(ExpenseItem).filter_by(transaction_id=trans.id))
     db.session.delete(trans)
     db.session.commit()
     logger.info('Transaction deleted: id=%s type=%s amount=%s', transaction_id, trans.transaction_type, trans.amount)
@@ -485,5 +520,5 @@ def delete_transaction(transaction_id: int) -> Response:
 
 @main_bp.route('/api/users')
 def api_users() -> Response:
-    users = User.query.all()
+    users = db.session.execute(db.select(User)).scalars().all()
     return jsonify([{'id': u.id, 'name': u.name, 'balance': u.balance} for u in users])

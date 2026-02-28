@@ -18,8 +18,9 @@ def test_add_user(client, app):
         }, follow_redirects=True)
         assert response.status_code == 200
 
+        from extensions import db
         from models import User
-        user = User.query.filter_by(name='Alice').first()
+        user = db.session.execute(db.select(User).filter_by(name='Alice')).scalar()
         assert user is not None
         assert user.email == 'alice@example.com'
 
@@ -88,7 +89,7 @@ def test_delete_transaction_reverses_balance(client, app):
         user = db.session.get(User, user.id)
         assert user.balance == Decimal('25.00')
 
-        tx = Transaction.query.filter_by(description='To delete').first()
+        tx = db.session.execute(db.select(Transaction).filter_by(description='To delete')).scalar()
         assert tx is not None
 
         response = client.post(f'/transaction/{tx.id}/delete', follow_redirects=True)
@@ -154,7 +155,7 @@ def test_edit_transaction_balance_reversal(client, app, make_user):
             'date': '',
         })
 
-        tx = Transaction.query.filter_by(description='Original').first()
+        tx = db.session.execute(db.select(Transaction).filter_by(description='Original')).scalar()
         response = client.post(f'/transaction/{tx.id}/edit', data={
             'description': 'Updated',
             'amount': '50.00',
@@ -306,8 +307,9 @@ def test_deposit_with_notes(client, app, make_user):
             'notes': 'Some important notes',
             'date': '',
         })
+        from extensions import db
         from models import Transaction
-        tx = Transaction.query.filter_by(description='Noted Deposit').first()
+        tx = db.session.execute(db.select(Transaction).filter_by(description='Noted Deposit')).scalar()
         assert tx is not None
         assert tx.notes == 'Some important notes'
 
@@ -368,7 +370,7 @@ def test_edit_transaction_receipt_removal(client, app, make_user):
             'description': 'WithReceipt',
             'date': '',
         })
-        tx = Transaction.query.filter_by(description='WithReceipt').first()
+        tx = db.session.execute(db.select(Transaction).filter_by(description='WithReceipt')).scalar()
         tx.receipt_path = 'some/fake/path.pdf'
         db.session.commit()
 
@@ -404,7 +406,7 @@ def test_search_has_receipt(client, app, make_user):
             'description': 'HasReceipt',
             'date': '',
         })
-        tx = Transaction.query.filter_by(description='HasReceipt').first()
+        tx = db.session.execute(db.select(Transaction).filter_by(description='HasReceipt')).scalar()
         tx.receipt_path = 'some/path.pdf'
         db.session.commit()
 

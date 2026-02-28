@@ -49,14 +49,15 @@ def test_common_item_add_delete(client, app):
         }, follow_redirects=True)
         assert response.status_code == 200
 
+        from extensions import db
         from models import CommonItem
-        item = CommonItem.query.filter_by(name='TestItem').first()
+        item = db.session.execute(db.select(CommonItem).filter_by(name='TestItem')).scalar()
         assert item is not None
 
         response = client.post(f'/settings/common-items/{item.id}/delete',
                                follow_redirects=True)
         assert response.status_code == 200
-        assert CommonItem.query.filter_by(name='TestItem').first() is None
+        assert db.session.execute(db.select(CommonItem).filter_by(name='TestItem')).scalar() is None
 
 
 def test_common_description_add_delete(client, app):
@@ -66,14 +67,15 @@ def test_common_description_add_delete(client, app):
         }, follow_redirects=True)
         assert response.status_code == 200
 
+        from extensions import db
         from models import CommonDescription
-        item = CommonDescription.query.filter_by(value='Weekly Lunch').first()
+        item = db.session.execute(db.select(CommonDescription).filter_by(value='Weekly Lunch')).scalar()
         assert item is not None
 
         response = client.post(f'/settings/common-descriptions/{item.id}/delete',
                                follow_redirects=True)
         assert response.status_code == 200
-        assert CommonDescription.query.filter_by(value='Weekly Lunch').first() is None
+        assert db.session.execute(db.select(CommonDescription).filter_by(value='Weekly Lunch')).scalar() is None
 
 
 def test_common_price_add_delete(client, app):
@@ -83,8 +85,9 @@ def test_common_price_add_delete(client, app):
         }, follow_redirects=True)
         assert response.status_code == 200
 
+        from extensions import db
         from models import CommonPrice
-        item = CommonPrice.query.filter_by(value=Decimal('12.50')).first()
+        item = db.session.execute(db.select(CommonPrice).filter_by(value=Decimal('12.50'))).scalar()
         assert item is not None
 
         response = client.post(f'/settings/common-prices/{item.id}/delete',
@@ -100,8 +103,9 @@ def test_common_blacklist_add_delete(client, app):
         }, follow_redirects=True)
         assert response.status_code == 200
 
+        from extensions import db
         from models import CommonBlacklist
-        item = CommonBlacklist.query.filter_by(type='item', value='BadItem').first()
+        item = db.session.execute(db.select(CommonBlacklist).filter_by(type='item', value='BadItem')).scalar()
         assert item is not None
 
         response = client.post(f'/settings/common-blacklist/{item.id}/delete',
