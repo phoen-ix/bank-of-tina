@@ -121,7 +121,7 @@ def test_setting_get_set(app):
         db.session.add(s)
         db.session.commit()
 
-        fetched = Setting.query.get('test_key')
+        fetched = db.session.get(Setting, 'test_key')
         assert fetched.value == 'test_value'
 
 

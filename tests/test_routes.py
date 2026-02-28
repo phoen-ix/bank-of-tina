@@ -42,7 +42,7 @@ def test_deposit(client, app):
         }, follow_redirects=True)
         assert response.status_code == 200
 
-        user = User.query.get(user_id)
+        user = db.session.get(User, user_id)
         assert user.balance == Decimal('50.00')
 
 
@@ -64,7 +64,7 @@ def test_withdrawal(client, app):
         }, follow_redirects=True)
         assert response.status_code == 200
 
-        user = User.query.get(user_id)
+        user = db.session.get(User, user_id)
         assert user.balance == Decimal('70.00')
 
 
@@ -85,7 +85,7 @@ def test_delete_transaction_reverses_balance(client, app):
             'date': '',
         })
 
-        user = User.query.get(user.id)
+        user = db.session.get(User, user.id)
         assert user.balance == Decimal('25.00')
 
         tx = Transaction.query.filter_by(description='To delete').first()
@@ -94,7 +94,7 @@ def test_delete_transaction_reverses_balance(client, app):
         response = client.post(f'/transaction/{tx.id}/delete', follow_redirects=True)
         assert response.status_code == 200
 
-        user = User.query.get(user.id)
+        user = db.session.get(User, user.id)
         assert user.balance == Decimal('0')
 
 
@@ -132,9 +132,10 @@ def test_expense_with_items_json(client, app, make_user):
         }, follow_redirects=True)
         assert response.status_code == 200
 
+        from extensions import db
         from models import User
-        buyer = User.query.get(buyer.id)
-        debtor = User.query.get(debtor.id)
+        buyer = db.session.get(User, buyer.id)
+        debtor = db.session.get(User, debtor.id)
         assert buyer.balance == Decimal('15.00')
         assert debtor.balance == Decimal('-15.00')
 
@@ -163,7 +164,7 @@ def test_edit_transaction_balance_reversal(client, app, make_user):
         assert response.status_code == 200
 
         from models import User
-        user = User.query.get(user.id)
+        user = db.session.get(User, user.id)
         assert user.balance == Decimal('50.00')
 
 
@@ -251,8 +252,9 @@ def test_user_edit(client, app, make_user):
         }, follow_redirects=True)
         assert response.status_code == 200
 
+        from extensions import db
         from models import User
-        u = User.query.get(user.id)
+        u = db.session.get(User, user.id)
         assert u.name == 'Edited'
         assert u.email == 'edited@test.com'
 
@@ -263,8 +265,9 @@ def test_toggle_user_active(client, app, make_user):
         assert user.is_active is True
 
         client.post(f'/user/{user.id}/toggle-active', follow_redirects=True)
+        from extensions import db
         from models import User
-        u = User.query.get(user.id)
+        u = db.session.get(User, user.id)
         assert u.is_active is False
 
 
@@ -320,8 +323,9 @@ def test_withdrawal_overdraw(client, app, make_user):
             'date': '',
         }, follow_redirects=True)
         assert response.status_code == 200
+        from extensions import db
         from models import User
-        u = User.query.get(user.id)
+        u = db.session.get(User, user.id)
         assert u.balance == Decimal('-10.00')
 
 
@@ -377,7 +381,7 @@ def test_edit_transaction_receipt_removal(client, app, make_user):
         }, follow_redirects=True)
         assert response.status_code == 200
 
-        tx = Transaction.query.get(tx.id)
+        tx = db.session.get(Transaction, tx.id)
         assert tx.receipt_path is None
 
 

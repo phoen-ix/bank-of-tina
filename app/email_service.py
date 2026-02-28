@@ -280,7 +280,7 @@ def send_all_emails() -> tuple[int, int, list[str]]:
 
     admin_id = get_setting('site_admin_id', '')
     if get_setting('admin_summary_email', '0') == '1' and admin_id:
-        admin = User.query.get(int(admin_id)) if admin_id.isdigit() else None
+        admin = db.session.get(User, int(admin_id)) if admin_id.isdigit() else None
         if admin:
             summary_subject = apply_template(get_tpl('tpl_admin_subject'),
                                              Date=now_local().strftime('%Y-%m-%d'),

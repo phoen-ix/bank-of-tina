@@ -203,7 +203,7 @@ def settings_general() -> Response:
         if get_setting('common_auto_enabled', '0') == '1':
             _add_common_job(current_app._get_current_object())
     admin_id = request.form.get('site_admin_id', '').strip()
-    if admin_id == '' or (admin_id.isdigit() and User.query.get(int(admin_id))):
+    if admin_id == '' or (admin_id.isdigit() and db.session.get(User, int(admin_id))):
         set_setting('site_admin_id', admin_id)
     sep = request.form.get('decimal_separator', '.')
     if sep not in ('.', ','):

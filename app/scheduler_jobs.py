@@ -151,7 +151,7 @@ def _add_backup_job(app: Flask) -> None:
 
             if get_setting('backup_admin_email', '0') == '1':
                 admin_id = get_setting('site_admin_id', '')
-                admin = User.query.get(int(admin_id)) if admin_id.isdigit() else None
+                admin = db.session.get(User, int(admin_id)) if admin_id.isdigit() else None
                 if admin:
                     kept = len(_list_backups())
                     html = build_backup_status_email(ok, result, kept, pruned)

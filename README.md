@@ -377,7 +377,6 @@ The test suite includes 76 tests across 7 test modules covering helpers, models,
 - [ ] Exchange-rate-aware multi-currency support (currency symbol is already configurable)
 - [ ] OCR for automatic receipt parsing
 - [ ] Saved/pinned searches
-- [ ] Migrate from `Query.get()` to `Session.get()` (SQLAlchemy 2.0 legacy warnings)
 
 ---
 

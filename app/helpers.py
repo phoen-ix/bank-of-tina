@@ -60,19 +60,19 @@ def delete_receipt_file(receipt_path: str | None, exclude_transaction_id: int) -
 
 def update_balance(user_id: int, amount: Decimal) -> None:
     from models import User
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
     if user:
         user.balance += amount
         db.session.commit()
 
 
 def get_setting(key: str, default: str | None = None) -> str | None:
-    s = Setting.query.get(key)
+    s = db.session.get(Setting, key)
     return s.value if s else default
 
 
 def set_setting(key: str, value: str) -> None:
-    s = Setting.query.get(key) or Setting(key=key)
+    s = db.session.get(Setting, key) or Setting(key=key)
     s.value = value
     db.session.add(s)
     db.session.commit()

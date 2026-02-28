@@ -174,7 +174,7 @@ def add_transaction() -> str | Response:
         buyer_id = int(request.form.get('buyer_id'))
         description = request.form.get('description', 'Expense')
 
-        buyer = User.query.get(buyer_id)
+        buyer = db.session.get(User, buyer_id)
         buyer_name = buyer.name if buyer else 'unknown'
         receipt_path = save_receipt(request.files.get('receipt'), buyer_name)
 
@@ -377,11 +377,11 @@ def edit_transaction(transaction_id: int) -> str | Response:
     old_amount = trans.amount
 
     if trans.from_user_id:
-        old_from = User.query.get(trans.from_user_id)
+        old_from = db.session.get(User, trans.from_user_id)
         if old_from:
             old_from.balance += old_amount
     if trans.to_user_id:
-        old_to = User.query.get(trans.to_user_id)
+        old_to = db.session.get(User, trans.to_user_id)
         if old_to:
             old_to.balance -= old_amount
 
@@ -432,11 +432,11 @@ def edit_transaction(transaction_id: int) -> str | Response:
             trans.amount = old_amount
 
     if trans.from_user_id:
-        new_from = User.query.get(trans.from_user_id)
+        new_from = db.session.get(User, trans.from_user_id)
         if new_from:
             new_from.balance -= trans.amount
     if trans.to_user_id:
-        new_to = User.query.get(trans.to_user_id)
+        new_to = db.session.get(User, trans.to_user_id)
         if new_to:
             new_to.balance += trans.amount
 
@@ -448,7 +448,7 @@ def edit_transaction(transaction_id: int) -> str | Response:
     if new_file and new_file.filename:
         if trans.receipt_path:
             delete_receipt_file(trans.receipt_path, trans.id)
-        buyer = User.query.get(trans.from_user_id) if trans.from_user_id else None
+        buyer = db.session.get(User, trans.from_user_id) if trans.from_user_id else None
         buyer_name = buyer.name if buyer else 'unknown'
         saved = save_receipt(new_file, buyer_name)
         if saved:
@@ -465,11 +465,11 @@ def delete_transaction(transaction_id: int) -> Response:
     trans = Transaction.query.get_or_404(transaction_id)
 
     if trans.from_user_id:
-        from_user = User.query.get(trans.from_user_id)
+        from_user = db.session.get(User, trans.from_user_id)
         if from_user:
             from_user.balance += trans.amount
     if trans.to_user_id:
-        to_user = User.query.get(trans.to_user_id)
+        to_user = db.session.get(User, trans.to_user_id)
         if to_user:
             to_user.balance -= trans.amount
 
