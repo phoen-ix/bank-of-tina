@@ -31,8 +31,8 @@ settings_bp = Blueprint('settings_bp', __name__)
 
 BACKUP_FILENAME_RE: re.Pattern[str] = re.compile(r'^bot_backup_[\d_-]+\.tar\.gz$')
 
-_db_user = os.environ.get('DB_USER', 'tina')
-_db_pass = os.environ.get('DB_PASSWORD', 'tina')
+_db_user = os.environ.get('DB_USER', '')
+_db_pass = os.environ.get('DB_PASSWORD', '')
 _db_host = os.environ.get('DB_HOST', 'localhost')
 _db_port = os.environ.get('DB_PORT', '3306')
 _db_name = os.environ.get('DB_NAME', 'bank_of_tina')

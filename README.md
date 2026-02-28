@@ -311,7 +311,7 @@ Use the built-in **Settings → Backup** tab for creating, downloading, uploadin
 
 For a manual database-only dump:
 ```bash
-docker compose exec db mysqldump -u tina -ptina bank_of_tina > backup_$(date +%Y%m%d).sql
+docker compose exec db mysqldump -u "$DB_USER" -p"$DB_PASSWORD" bank_of_tina > backup_$(date +%Y%m%d).sql
 ```
 
 ### Update after code changes

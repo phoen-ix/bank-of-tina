@@ -53,15 +53,20 @@ if not _secret or _secret == 'change-this-to-a-random-secret-key':
     )
 app.config['SECRET_KEY'] = _secret
 
-_db_user = os.environ.get('DB_USER', 'tina')
-_db_pass = os.environ.get('DB_PASSWORD', 'tina')
-_db_host = os.environ.get('DB_HOST', 'localhost')
-_db_port = os.environ.get('DB_PORT', '3306')
-_db_name = os.environ.get('DB_NAME', 'bank_of_tina')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
-    'SQLALCHEMY_DATABASE_URI',
-    f'mysql+pymysql://{_db_user}:{_db_pass}@{_db_host}:{_db_port}/{_db_name}'
-)
+_db_uri = os.environ.get('SQLALCHEMY_DATABASE_URI', '')
+if not _db_uri:
+    _db_user = os.environ.get('DB_USER', '')
+    _db_pass = os.environ.get('DB_PASSWORD', '')
+    if not _db_user or not _db_pass:
+        raise RuntimeError(
+            'DB_USER and DB_PASSWORD must be set in your .env file '
+            '(or set SQLALCHEMY_DATABASE_URI directly).'
+        )
+    _db_host = os.environ.get('DB_HOST', 'localhost')
+    _db_port = os.environ.get('DB_PORT', '3306')
+    _db_name = os.environ.get('DB_NAME', 'bank_of_tina')
+    _db_uri = f'mysql+pymysql://{_db_user}:{_db_pass}@{_db_host}:{_db_port}/{_db_name}'
+app.config['SQLALCHEMY_DATABASE_URI'] = _db_uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = '/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024

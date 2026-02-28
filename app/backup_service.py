@@ -18,8 +18,8 @@ from config import BACKUP_DIR
 
 logger = logging.getLogger(__name__)
 
-_db_user = os.environ.get('DB_USER', 'tina')
-_db_pass = os.environ.get('DB_PASSWORD', 'tina')
+_db_user = os.environ.get('DB_USER', '')
+_db_pass = os.environ.get('DB_PASSWORD', '')
 _db_host = os.environ.get('DB_HOST', 'localhost')
 _db_port = os.environ.get('DB_PORT', '3306')
 _db_name = os.environ.get('DB_NAME', 'bank_of_tina')
