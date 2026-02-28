@@ -12,6 +12,9 @@ uploads/*
 # Backups
 backups/
 
+# PWA icons
+icons/
+
 # Python
 __pycache__/
 *.py[cod]

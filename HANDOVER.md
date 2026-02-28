@@ -87,6 +87,7 @@ bank-of-tina/
 │   └── test_email_service.py     # Email building and sending (4 tests)
 ├── uploads/                      # Receipts — bind-mounted; YYYY/MM/DD/Buyer_file.ext
 ├── backups/                      # Backup archives — bind-mounted; bot_backup_*.tar.gz
+├── icons/                        # PWA icons — bind-mounted; persists across rebuilds
 ├── mariadb-data/                 # MariaDB data — bind-mounted
 ├── create_icons.py               # One-time stdlib icon generator (already run; output committed)
 ├── Dockerfile
@@ -384,7 +385,7 @@ Route: `GET /search` (in `routes/main.py`) — parameters: `q`, `type`, `user`, 
 - **Monetary values use `Decimal`** — all model columns use `db.Numeric(12, 2)`, all Python code uses `Decimal`. Always use `parse_amount()` (not `float()`) to read form values and `fmt_amount()` / `|money` filter to display them, so the configured decimal separator is respected and there is no float drift.
 - **`datetime.now()` is UTC in Docker** — always use `now_local()` for display or filenames, never `datetime.now()` directly.
 - **Balance is stored, not derived** — never recalculate from transactions; mutate `user.balance` carefully.
-- **`/uploads` is a bind-mount** — cannot `rmtree` the directory itself; clear its contents only.
+- **`/uploads` and `/app/static/icons` are bind-mounts** — cannot `rmtree` the directories themselves; clear their contents only. Icons are auto-generated on first startup if missing.
 - **Scheduler jobs receive `app` parameter** — use `with app.app_context():` since background threads have no Flask request context. Never import `app` directly in service modules; use `current_app` in request handlers or pass `app` explicitly to scheduler jobs.
 - **Circular imports** — never import from `app.py` in other modules. Import `db`, `csrf`, `scheduler` from `extensions.py`. Import models from `models.py`.
 - **Blueprint url_for** — all `url_for()` calls in templates must be blueprint-prefixed: `url_for('main.index')`, `url_for('settings_bp.settings')`, `url_for('analytics_bp.analytics')`, etc.
@@ -458,8 +459,8 @@ The app is installable as a Progressive Web App on both Android and iOS with no 
 |------|---------|
 | `app/static/sw.js` | Service worker — network-first, caches only `offline.html` on install |
 | `app/static/offline.html` | Self-contained offline fallback (no CDN, inline styles) |
-| `app/static/icons/icon-192.png` | PWA icon 192×192 (committed output of `create_icons.py`) |
-| `app/static/icons/icon-512.png` | PWA icon 512×512 (committed output of `create_icons.py`) |
+| `app/static/icons/icon-192.png` | PWA icon 192×192 (bind-mounted from `./icons/`; auto-generated on first run) |
+| `app/static/icons/icon-512.png` | PWA icon 512×512 (bind-mounted from `./icons/`; auto-generated on first run) |
 | `create_icons.py` | One-time stdlib-only (no Pillow) icon generator; run once then commit output |
 
 ### `/manifest.json` route (`app/routes/main.py`)
@@ -487,6 +488,7 @@ The CACHE constant in `sw.js` is `'bot-v1'`. Bump to `'bot-v2'` etc. on future d
 All features are fully implemented and committed. The codebase has been through two rounds of major refactoring:
 
 ### Round 3 improvements (most recent)
+32. **Persistent PWA icons** — `./icons:/app/static/icons` bind mount added to `docker-compose.yml` so icons survive container rebuilds; `app.py` auto-generates default icons on first startup when the directory is empty; `icons/` added to `.gitignore` and `.dockerignore`
 31. **Hardcoded credential removal** — `DB_USER` and `DB_PASSWORD` no longer fall back to `'tina'`; `app.py` raises `RuntimeError` at startup if they are missing (unless `SQLALCHEMY_DATABASE_URI` is set directly); `backup_service.py` and `routes/settings.py` default to empty string so `mysqldump`/`mysql` commands fail clearly; README backup example uses `$DB_USER`/`$DB_PASSWORD` variables instead of literal credentials
 
 ### Round 2 improvements

@@ -1,6 +1,7 @@
 # Runtime data — never needed in the image (all are bind-mounted at runtime)
 uploads/
 backups/
+icons/
 mariadb-data/
 
 # Environment & secrets

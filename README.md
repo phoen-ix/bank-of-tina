@@ -61,7 +61,7 @@ A self-hosted web application for tracking shared expenses and balances within a
 ### PWA — Install to Home Screen
 - **Web App Manifest** — served dynamically at `/manifest.json`; `theme_color` tracks the configured navbar color
 - **Service worker** — network-first strategy; always fetches fresh data; shows a self-contained offline page if the network is unavailable
-- **Icons** — 192×192 and 512×512 PNG icons; manageable from Settings → Templates → App Icon:
+- **Icons** — 192×192 and 512×512 PNG icons; persisted on the host via bind mount (`./icons/`) so they survive container rebuilds; auto-generated with the default theme color on first run; manageable from Settings → Templates → App Icon:
   - **Regenerate from navbar color** — one-click regeneration using the current theme color as background (white bank silhouette)
   - **Upload custom icon** — upload any PNG or JPG; automatically resized to both 192×192 and 512×512
   - **Reset to default** — restores the original Bootstrap blue icon
@@ -252,9 +252,9 @@ bank-of-tina/
 │   └── static/
 │       ├── sw.js                 # Service worker (network-first, offline fallback)
 │       ├── offline.html          # Self-contained offline fallback page
-│       └── icons/
-│           ├── icon-192.png      # PWA icon 192×192
-│           └── icon-512.png      # PWA icon 512×512
+│       └── icons/                # Bind-mounted from ./icons/ at runtime
+│           ├── icon-192.png      # PWA icon 192×192 (auto-generated on first run)
+│           └── icon-512.png      # PWA icon 512×512 (auto-generated on first run)
 ├── tests/
 │   ├── conftest.py               # pytest fixtures (SQLite in-memory, no CSRF, make_user factory)
 │   ├── test_helpers.py           # Tests for parse_amount, fmt_amount, hex_to_rgb, apply_template
@@ -264,9 +264,10 @@ bank-of-tina/
 │   ├── test_analytics.py         # Tests for analytics page and data endpoint
 │   ├── test_health.py            # Tests for /health endpoint
 │   └── test_email_service.py     # Tests for email building and sending
-├── uploads/                      # Receipts — organised as YYYY/MM/DD/
-├── backups/                      # Backup archives (bot_backup_*.tar.gz)
-├── mariadb-data/                 # MariaDB data directory (created on first run)
+├── uploads/                      # Receipts — organised as YYYY/MM/DD/ (bind-mounted)
+├── backups/                      # Backup archives (bind-mounted)
+├── icons/                        # PWA icons (bind-mounted; auto-generated on first run)
+├── mariadb-data/                 # MariaDB data directory (bind-mounted)
 ├── create_icons.py               # One-time stdlib icon generator (run once, commit output)
 ├── Dockerfile
 ├── docker-compose.yml
@@ -322,7 +323,7 @@ docker compose build && docker compose up -d
 ### Reset everything ⚠️ (deletes all data)
 ```bash
 docker compose down
-rm -rf mariadb-data/ uploads/*/
+rm -rf mariadb-data/ uploads/*/ icons/
 docker compose up -d
 ```
 

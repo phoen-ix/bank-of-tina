@@ -25,6 +25,7 @@ services:
     volumes:
       - ./uploads:/uploads
       - ./backups:/backups
+      - ./icons:/app/static/icons
     environment:
       - FLASK_APP=app.py
       - SECRET_KEY=${SECRET_KEY}

@@ -147,6 +147,14 @@ if os.environ.get('FLASK_TESTING') != '1':
             upgrade()
             logger.info('Database migrations up to date')
 
+        icons_dir = os.path.join(app.root_path, 'static', 'icons')
+        if not os.path.exists(os.path.join(icons_dir, 'icon-192.png')):
+            from config import DEFAULT_ICON_BG
+            from helpers import generate_and_save_icons
+            os.makedirs(icons_dir, exist_ok=True)
+            generate_and_save_icons(DEFAULT_ICON_BG)
+            logger.info('Generated default PWA icons')
+
         from scheduler_jobs import _restore_schedule
         _restore_schedule(app)
     scheduler.start()
