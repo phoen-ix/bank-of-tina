@@ -391,6 +391,7 @@ Route: `GET /search` (in `routes/main.py`) — parameters: `q`, `type`, `user`, 
 - **Single gunicorn worker** — the in-process APScheduler only works correctly with 1 worker. Scaling requires moving to a proper task queue.
 - **Alembic migrations** — `db.create_all()` is no longer used in production; Flask-Migrate handles schema creation and evolution. Always generate migration scripts for schema changes.
 - **`FLASK_TESTING=1`** — set this env var to skip DB init, scheduler start, and migration at import time. The test suite sets it in `conftest.py` before importing `app`.
+- **DB credentials are required** — `DB_USER` and `DB_PASSWORD` have no hardcoded defaults; the app raises `RuntimeError` at startup if they are missing (unless `SQLALCHEMY_DATABASE_URI` is set directly, as in tests).
 
 ---
 
@@ -485,7 +486,10 @@ The CACHE constant in `sw.js` is `'bot-v1'`. Bump to `'bot-v2'` etc. on future d
 
 All features are fully implemented and committed. The codebase has been through two rounds of major refactoring:
 
-### Round 2 improvements (most recent)
+### Round 3 improvements (most recent)
+31. **Hardcoded credential removal** — `DB_USER` and `DB_PASSWORD` no longer fall back to `'tina'`; `app.py` raises `RuntimeError` at startup if they are missing (unless `SQLALCHEMY_DATABASE_URI` is set directly); `backup_service.py` and `routes/settings.py` default to empty string so `mysqldump`/`mysql` commands fail clearly; README backup example uses `$DB_USER`/`$DB_PASSWORD` variables instead of literal credentials
+
+### Round 2 improvements
 25. **Health check endpoint** — `GET /health` verifies database connectivity; Dockerfile `HEALTHCHECK` and docker-compose healthcheck point to `/health`
 26. **Non-root Docker user** — container runs as `appuser` (UID/GID 1000) for reduced attack surface; bind-mounted volumes remain writable
 27. **Flask-Migrate (Alembic)** — replaces the hand-rolled `_migrate_db()` ALTER TABLE approach; existing databases are auto-stamped on first run; new databases are created via migration scripts
