@@ -254,7 +254,7 @@ def add_common_item() -> Response:
 
 @settings_bp.route('/settings/common-items/<int:item_id>/delete', methods=['POST'])
 def delete_common_item(item_id: int) -> Response:
-    item = CommonItem.query.get_or_404(item_id)
+    item = db.session.get(CommonItem, item_id) or abort(404)
     name = item.name
     db.session.delete(item)
     db.session.commit()
@@ -277,7 +277,7 @@ def add_common_description() -> Response:
 
 @settings_bp.route('/settings/common-descriptions/<int:item_id>/delete', methods=['POST'])
 def delete_common_description(item_id: int) -> Response:
-    item = CommonDescription.query.get_or_404(item_id)
+    item = db.session.get(CommonDescription, item_id) or abort(404)
     value = item.value
     db.session.delete(item)
     db.session.commit()
@@ -301,7 +301,7 @@ def add_common_price() -> Response:
 
 @settings_bp.route('/settings/common-prices/<int:item_id>/delete', methods=['POST'])
 def delete_common_price(item_id: int) -> Response:
-    item = CommonPrice.query.get_or_404(item_id)
+    item = db.session.get(CommonPrice, item_id) or abort(404)
     value = item.value
     db.session.delete(item)
     db.session.commit()
@@ -325,7 +325,7 @@ def add_common_blacklist() -> Response:
 
 @settings_bp.route('/settings/common-blacklist/<int:item_id>/delete', methods=['POST'])
 def delete_common_blacklist(item_id: int) -> Response:
-    item = CommonBlacklist.query.get_or_404(item_id)
+    item = db.session.get(CommonBlacklist, item_id) or abort(404)
     value, bl_type = item.value, item.type
     db.session.delete(item)
     db.session.commit()

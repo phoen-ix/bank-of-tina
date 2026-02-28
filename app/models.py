@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from extensions import db
@@ -20,7 +20,7 @@ class User(db.Model):
     name = db.Column(db.String(100), unique=True, nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
     balance = db.Column(db.Numeric(12, 2), default=0)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC).replace(tzinfo=None))
     is_active = db.Column(db.Boolean, default=True)
     email_opt_in = db.Column(db.Boolean, default=True)
     email_transactions = db.Column(db.String(20), default='last3')
@@ -41,7 +41,7 @@ class Transaction(db.Model):
     notes: str | None
 
     id = db.Column(db.Integer, primary_key=True)
-    date = db.Column(db.DateTime, default=datetime.utcnow)
+    date = db.Column(db.DateTime, default=lambda: datetime.now(UTC).replace(tzinfo=None))
     description = db.Column(db.String(500), nullable=False)
     amount = db.Column(db.Numeric(12, 2), nullable=False)
     from_user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
@@ -128,7 +128,7 @@ class AutoCollectLog(db.Model):
     message: str
 
     id = db.Column(db.Integer, primary_key=True)
-    ran_at = db.Column(db.DateTime, default=datetime.utcnow)
+    ran_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC).replace(tzinfo=None))
     level = db.Column(db.String(10), nullable=False)
     category = db.Column(db.String(20), nullable=False)
     message = db.Column(db.String(500), nullable=False)
@@ -142,7 +142,7 @@ class EmailLog(db.Model):
     message: str
 
     id = db.Column(db.Integer, primary_key=True)
-    sent_at = db.Column(db.DateTime, default=datetime.utcnow)
+    sent_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC).replace(tzinfo=None))
     level = db.Column(db.String(10), nullable=False)
     recipient = db.Column(db.String(200))
     message = db.Column(db.String(500), nullable=False)
@@ -155,6 +155,6 @@ class BackupLog(db.Model):
     message: str
 
     id = db.Column(db.Integer, primary_key=True)
-    ran_at = db.Column(db.DateTime, default=datetime.utcnow)
+    ran_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC).replace(tzinfo=None))
     level = db.Column(db.String(10), nullable=False)
     message = db.Column(db.String(500), nullable=False)

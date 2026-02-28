@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 
 import calendar as cal_mod
-from flask import Blueprint, Response, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, current_app
+from flask import Blueprint, Response, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, current_app, abort
 
 from extensions import db, limiter
 from models import User, Transaction, ExpenseItem
@@ -71,7 +71,7 @@ def add_user() -> Response:
 
 @main_bp.route('/user/<int:user_id>/edit', methods=['POST'])
 def edit_user(user_id: int) -> Response:
-    user = User.query.get_or_404(user_id)
+    user = db.session.get(User, user_id) or abort(404)
     name = request.form.get('name', '').strip()
     email = request.form.get('email', '').strip()
     created_at_str = request.form.get('created_at', '').strip()
@@ -111,7 +111,7 @@ def edit_user(user_id: int) -> Response:
 
 @main_bp.route('/user/<int:user_id>/toggle-active', methods=['POST'])
 def toggle_user_active(user_id: int) -> Response:
-    user = User.query.get_or_404(user_id)
+    user = db.session.get(User, user_id) or abort(404)
     user.is_active = not user.is_active
     db.session.commit()
     status = 'activated' if user.is_active else 'deactivated'
@@ -331,7 +331,7 @@ def search() -> str:
 
 @main_bp.route('/user/<int:user_id>')
 def user_detail(user_id: int) -> str:
-    user = User.query.get_or_404(user_id)
+    user = db.session.get(User, user_id) or abort(404)
     transactions = Transaction.query.filter(
         (Transaction.from_user_id == user_id) | (Transaction.to_user_id == user_id)
     ).order_by(Transaction.date.desc()).limit(5).all()
@@ -368,7 +368,7 @@ def pwa_manifest() -> Response:
 
 @main_bp.route('/transaction/<int:transaction_id>/edit', methods=['GET', 'POST'])
 def edit_transaction(transaction_id: int) -> str | Response:
-    trans = Transaction.query.get_or_404(transaction_id)
+    trans = db.session.get(Transaction, transaction_id) or abort(404)
     users = User.query.order_by(User.name).all()
 
     if request.method == 'GET':
@@ -462,7 +462,7 @@ def edit_transaction(transaction_id: int) -> str | Response:
 
 @main_bp.route('/transaction/<int:transaction_id>/delete', methods=['POST'])
 def delete_transaction(transaction_id: int) -> Response:
-    trans = Transaction.query.get_or_404(transaction_id)
+    trans = db.session.get(Transaction, transaction_id) or abort(404)
 
     if trans.from_user_id:
         from_user = db.session.get(User, trans.from_user_id)

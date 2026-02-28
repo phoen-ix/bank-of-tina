@@ -5,7 +5,7 @@ import re
 import struct
 import time
 import zlib
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 
 import pytz
@@ -198,7 +198,7 @@ def detect_theme() -> str:
 def parse_submitted_date(date_str: str) -> datetime:
     """Parse a datetime-local string entered in the app timezone and return a naive UTC datetime."""
     if not date_str:
-        return datetime.utcnow()
+        return datetime.now(UTC).replace(tzinfo=None)
     for fmt in ('%Y-%m-%dT%H:%M', '%Y-%m-%d'):
         try:
             naive = datetime.strptime(date_str, fmt)
@@ -207,7 +207,7 @@ def parse_submitted_date(date_str: str) -> datetime:
             return tz.localize(naive).astimezone(pytz.UTC).replace(tzinfo=None)
         except (ValueError, pytz.exceptions.UnknownTimeZoneError):
             continue
-    return datetime.utcnow()
+    return datetime.now(UTC).replace(tzinfo=None)
 
 
 def get_app_tz() -> pytz.BaseTzInfo:

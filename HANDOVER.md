@@ -384,11 +384,11 @@ Route: `GET /search` (in `routes/main.py`) — parameters: `q`, `type`, `user`, 
 
 - **Adding a new column** — add it to the model in `models.py`, then run `flask db migrate -m "description"` to generate an Alembic migration script. The migration runs automatically on next app start.
 - **Monetary values use `Decimal`** — all model columns use `db.Numeric(12, 2)`, all Python code uses `Decimal`. Always use `parse_amount()` (not `float()`) to read form values and `fmt_amount()` / `|money` filter to display them, so the configured decimal separator is respected and there is no float drift.
-- **`datetime.now()` is UTC in Docker** — always use `now_local()` for display or filenames, never `datetime.now()` directly.
+- **`datetime.now()` is UTC in Docker** — always use `now_local()` for display or filenames, never `datetime.now()` directly. For UTC timestamps, use `datetime.now(UTC).replace(tzinfo=None)` (not the deprecated `datetime.utcnow()`).
 - **Balance is stored, not derived** — never recalculate from transactions; mutate `user.balance` carefully.
 - **`/uploads` and `/app/static/icons` are bind-mounts** — cannot `rmtree` the directories themselves; clear their contents only. Icons are auto-generated on first startup if missing.
 - **Scheduler jobs receive `app` parameter** — use `with app.app_context():` since background threads have no Flask request context. Never import `app` directly in service modules; use `current_app` in request handlers or pass `app` explicitly to scheduler jobs.
-- **Use `db.session.get()` not `Model.query.get()`** — `Query.get()` is deprecated in SQLAlchemy 2.0. Always use `db.session.get(Model, id)` for primary-key lookups. `Model.query.filter_by()` and `Model.query.filter()` are fine.
+- **Use `db.session.get()` not `Model.query.get()`** — `Query.get()` and `get_or_404()` are deprecated in SQLAlchemy 2.0. Use `db.session.get(Model, id)` for primary-key lookups, or `db.session.get(Model, id) or abort(404)` for routes. `Model.query.filter_by()` and `Model.query.filter()` are fine.
 - **Circular imports** — never import from `app.py` in other modules. Import `db`, `csrf`, `scheduler` from `extensions.py`. Import models from `models.py`.
 - **Blueprint url_for** — all `url_for()` calls in templates must be blueprint-prefixed: `url_for('main.index')`, `url_for('settings_bp.settings')`, `url_for('analytics_bp.analytics')`, etc.
 - **Single gunicorn worker** — the in-process APScheduler only works correctly with 1 worker. Scaling requires moving to a proper task queue.
@@ -490,6 +490,7 @@ The CACHE constant in `sw.js` is `'bot-v1'`. Bump to `'bot-v2'` etc. on future d
 All features are fully implemented and committed. The codebase has been through two rounds of major refactoring:
 
 ### Round 3 improvements (most recent)
+34. **Zero test warnings** — replaced `datetime.utcnow` with `datetime.now(UTC).replace(tzinfo=None)` in model defaults and helpers; replaced all `get_or_404()` calls with `db.session.get() or abort(404)`; test suite now runs with 0 warnings
 33. **SQLAlchemy 2.0 migration** — all `Model.query.get(id)` calls replaced with `db.session.get(Model, id)` across app code and tests; eliminates ~1750 `LegacyAPIWarning` deprecation warnings per test run
 32. **Persistent PWA icons** — `./icons:/app/static/icons` bind mount added to `docker-compose.yml` so icons survive container rebuilds; `app.py` auto-generates default icons on first startup when the directory is empty; `icons/` added to `.gitignore` and `.dockerignore`; `entrypoint.sh` added with `gosu` to fix bind-mount directory ownership before dropping to `appuser`
 31. **Hardcoded credential removal** — `DB_USER` and `DB_PASSWORD` no longer fall back to `'tina'`; `app.py` raises `RuntimeError` at startup if they are missing (unless `SQLALCHEMY_DATABASE_URI` is set directly); `backup_service.py` and `routes/settings.py` default to empty string so `mysqldump`/`mysql` commands fail clearly; README backup example uses `$DB_USER`/`$DB_PASSWORD` variables instead of literal credentials

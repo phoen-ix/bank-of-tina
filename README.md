@@ -366,7 +366,7 @@ Tests use an in-memory SQLite database and require no running services:
 FLASK_TESTING=1 python -m pytest tests/ -v
 ```
 
-The test suite includes 76 tests across 7 test modules covering helpers, models, routes, settings, analytics, health check, and email service.
+The test suite includes 76 tests across 7 test modules covering helpers, models, routes, settings, analytics, health check, and email service. All tests pass with zero warnings.
 
 ---
 
