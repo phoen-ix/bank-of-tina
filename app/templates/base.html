@@ -6,6 +6,7 @@
     <link rel="manifest" href="/manifest.json">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="{{ theme_navbar }}">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Bank of Tina">
@@ -127,7 +128,7 @@
     </script>
     <script>
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/static/sw.js', { scope: '/' })
+        navigator.serviceWorker.register('/sw.js')
             .catch(e => console.warn('SW registration failed:', e));
     }
     </script>

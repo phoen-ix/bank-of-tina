@@ -378,6 +378,16 @@ def view_receipt(filepath: str) -> Response:
     return send_from_directory(current_app.config['UPLOAD_FOLDER'], filepath)
 
 
+@main_bp.route('/sw.js')
+def service_worker() -> Response:
+    return send_from_directory(
+        os.path.join(current_app.root_path, 'static'),
+        'sw.js',
+        mimetype='application/javascript',
+        max_age=0,
+    )
+
+
 @main_bp.route('/manifest.json')
 def pwa_manifest() -> Response:
     color = get_tpl('color_navbar')
