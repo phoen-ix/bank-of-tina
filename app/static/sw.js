@@ -1,4 +1,4 @@
-const CACHE = 'bot-v1';
+const CACHE = 'bot-v2';
 const OFFLINE = '/static/offline.html';
 
 self.addEventListener('install', e => {
@@ -22,10 +22,17 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
     if (e.request.method !== 'GET') return;
     e.respondWith(
-        fetch(e.request).catch(() => {
-            if (e.request.mode === 'navigate') {
-                return caches.match(OFFLINE);
-            }
-        })
+        fetch(e.request)
+            .then(response => {
+                if (!response.ok && e.request.mode === 'navigate') {
+                    return caches.match(OFFLINE) || response;
+                }
+                return response;
+            })
+            .catch(() => {
+                if (e.request.mode === 'navigate') {
+                    return caches.match(OFFLINE);
+                }
+            })
     );
 });
