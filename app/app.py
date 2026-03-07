@@ -248,7 +248,7 @@ if os.environ.get('FLASK_TESTING') != '1':
                 _OLD_COLORS = {
                     'color_navbar': ('#0d6efd',),
                     'color_email_grad_start': ('#667eea', '#7f8dbb'),
-                    'color_email_grad_end': ('#764ba2',),
+                    'color_email_grad_end': ('#764ba2', '#e7b44e'),
                     'color_balance_positive': ('#28a745',),
                     'color_balance_negative': ('#dc3545',),
                 }
