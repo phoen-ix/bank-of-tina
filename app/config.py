@@ -7,6 +7,14 @@ BACKUP_DIR: str = '/backups'
 THEMES: dict[str, dict[str, str]] = {
     'default': {
         'label': 'Default',
+        'color_navbar': '#7f8dbb',
+        'color_email_grad_start': '#7f8dbb',
+        'color_email_grad_end': '#e7b44e',
+        'color_balance_positive': '#5a9a7a',
+        'color_balance_negative': '#c9534a',
+    },
+    'classic': {
+        'label': 'Classic',
         'color_navbar': '#0d6efd',
         'color_email_grad_start': '#667eea',
         'color_email_grad_end': '#764ba2',
@@ -48,11 +56,11 @@ THEMES: dict[str, dict[str, str]] = {
 }
 
 TEMPLATE_DEFAULTS: dict[str, str] = {
-    'color_navbar':             '#0d6efd',
-    'color_email_grad_start':   '#667eea',
-    'color_email_grad_end':     '#764ba2',
-    'color_balance_positive':   '#28a745',
-    'color_balance_negative':   '#dc3545',
+    'color_navbar':             '#7f8dbb',
+    'color_email_grad_start':   '#7f8dbb',
+    'color_email_grad_end':     '#e7b44e',
+    'color_balance_positive':   '#5a9a7a',
+    'color_balance_negative':   '#c9534a',
     'tpl_email_subject':   'Bank of Tina - Weekly Balance Update ([Date])',
     'tpl_email_greeting':  'Hi [Name],',
     'tpl_email_intro':     "Here's your weekly update from the Bank of Tina:",
@@ -66,11 +74,11 @@ TEMPLATE_DEFAULTS: dict[str, str] = {
 }
 
 TEMPLATE_DEFAULTS_DE: dict[str, str] = {
-    'color_navbar':             '#0d6efd',
-    'color_email_grad_start':   '#667eea',
-    'color_email_grad_end':     '#764ba2',
-    'color_balance_positive':   '#28a745',
-    'color_balance_negative':   '#dc3545',
+    'color_navbar':             '#7f8dbb',
+    'color_email_grad_start':   '#7f8dbb',
+    'color_email_grad_end':     '#e7b44e',
+    'color_balance_positive':   '#5a9a7a',
+    'color_balance_negative':   '#c9534a',
     'tpl_email_subject':   'Bank of Tina - Wöchentliches Saldo-Update ([Date])',
     'tpl_email_greeting':  'Hallo [Name],',
     'tpl_email_intro':     'Hier ist dein wöchentliches Update von der Bank of Tina:',
@@ -83,4 +91,4 @@ TEMPLATE_DEFAULTS_DE: dict[str, str] = {
     'tpl_backup_footer':   'Dies ist ein automatischer Backup-Bericht vom Bank of Tina System.',
 }
 
-DEFAULT_ICON_BG: str = '#0d6efd'
+DEFAULT_ICON_BG: str = '#7f8dbb'
