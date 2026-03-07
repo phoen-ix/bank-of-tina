@@ -269,15 +269,17 @@ bank-of-tina/
 │   ├── test_health.py            # Tests für /health-Endpunkt
 │   ├── test_email_service.py     # Tests für E-Mail-Erstellung und -Versand
 │   └── test_i18n.py              # Tests für Internationalisierung (Sprachumschaltung, Übersetzungen)
-├── babel.cfg                     # Babel-Extraktionskonfiguration
-├── messages.pot                  # Extrahierte Übersetzungsvorlagen
+├── docker/
+│   ├── requirements.txt          # Python-Abhängigkeiten
+│   └── entrypoint.sh             # Docker-Entrypoint: Bind-Mount-Rechte und Benutzer-Switch
+├── scripts/
+│   └── create_icons.py           # Einmaliges Stdlib-Icon-Generator-Skript
 ├── uploads/                      # Belege — als JJJJ/MM/TT/ organisiert (Bind-Mount)
 ├── backups/                      # Backup-Archive (Bind-Mount)
 ├── icons/                        # PWA-Icons (Bind-Mount; beim ersten Start automatisch generiert)
 ├── mariadb-data/                 # MariaDB-Datenverzeichnis (Bind-Mount)
 ├── Dockerfile
 ├── docker-compose.yml
-├── requirements.txt
 └── .env.example
 ```
 

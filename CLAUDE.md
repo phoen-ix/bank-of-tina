@@ -44,7 +44,9 @@ bank-of-tina/
 │   ├── email_service.py          # build_email_html, build_admin_summary_email, send_single_email, send_all_emails
 │   ├── backup_service.py         # run_backup, _backup_log, _prune_old_backups, _list_backups, build_backup_status_email
 │   ├── scheduler_jobs.py         # _add_email_job, _add_common_job, _add_backup_job, auto_collect_common, _restore_schedule
+│   ├── babel.cfg                 # Babel extraction config
 │   ├── translations/             # Gettext i18n files (Flask-Babel)
+│   │   ├── messages.pot          # Extracted translation template
 │   │   ├── de/LC_MESSAGES/       # German translations (.po + .mo)
 │   │   └── en/LC_MESSAGES/       # English translations (.po + .mo, msgstr empty — falls back to msgid)
 │   ├── migrations/               # Alembic migrations (Flask-Migrate)
@@ -90,11 +92,13 @@ bank-of-tina/
 ├── backups/                      # Backup archives — bind-mounted; bot_backup_*.tar.gz
 ├── icons/                        # PWA icons — bind-mounted; persists across rebuilds
 ├── mariadb-data/                 # MariaDB data — bind-mounted
-├── create_icons.py               # One-time stdlib icon generator (already run; output committed)
-├── entrypoint.sh                 # Docker entrypoint: fixes bind-mount ownership, drops to appuser via gosu
+├── docker/
+│   ├── requirements.txt          # Python dependencies
+│   └── entrypoint.sh             # Docker entrypoint: fixes bind-mount ownership, drops to appuser via gosu
+├── scripts/
+│   └── create_icons.py           # One-time stdlib icon generator (already run; output committed)
 ├── Dockerfile
 ├── docker-compose.yml
-├── requirements.txt
 ├── .env                          # Not committed (gitignored)
 ├── .env.example                  # Committed template
 ├── .gitignore
@@ -343,10 +347,10 @@ Fully bilingual (German + English) using Flask-Babel with standard gettext.
 ### Translation workflow
 
 ```bash
-pybabel extract -F babel.cfg -k _ -k gettext -k lazy_gettext -o messages.pot .
-pybabel update -i messages.pot -d app/translations
+cd app && pybabel extract -F babel.cfg -k _ -k gettext -k lazy_gettext -o translations/messages.pot .
+pybabel update -i translations/messages.pot -d translations
 # Edit app/translations/de/LC_MESSAGES/messages.po
-pybabel compile -d app/translations
+pybabel compile -d translations
 ```
 
 Both `.po` and `.mo` files are committed.
