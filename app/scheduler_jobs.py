@@ -43,9 +43,9 @@ def auto_collect_common() -> None:
     if get_setting('common_items_auto', '0') == '1':
         threshold = int(get_setting('common_items_threshold', '5'))
         blacklisted = {b.value.lower() for b in db.session.execute(db.select(CommonBlacklist).filter_by(type='item')).scalars().all()}
-        rows = (db.session.query(ExpenseItem.item_name, func.count(ExpenseItem.id))
+        rows = db.session.execute(db.select(ExpenseItem.item_name, func.count(ExpenseItem.id))
                           .group_by(ExpenseItem.item_name)
-                          .having(func.count(ExpenseItem.id) >= threshold).all())
+                          .having(func.count(ExpenseItem.id) >= threshold)).all()
         for name, _ in rows:
             if name.lower() in blacklisted:
                 if debug:
@@ -62,9 +62,9 @@ def auto_collect_common() -> None:
     if get_setting('common_descriptions_auto', '0') == '1':
         threshold = int(get_setting('common_descriptions_threshold', '5'))
         blacklisted = {b.value.lower() for b in db.session.execute(db.select(CommonBlacklist).filter_by(type='description')).scalars().all()}
-        rows = (db.session.query(Transaction.description, func.count(Transaction.id))
+        rows = db.session.execute(db.select(Transaction.description, func.count(Transaction.id))
                           .group_by(Transaction.description)
-                          .having(func.count(Transaction.id) >= threshold).all())
+                          .having(func.count(Transaction.id) >= threshold)).all()
         for desc, _ in rows:
             if desc.lower() in blacklisted:
                 if debug:
@@ -81,9 +81,9 @@ def auto_collect_common() -> None:
     if get_setting('common_prices_auto', '0') == '1':
         threshold = int(get_setting('common_prices_threshold', '5'))
         blacklisted = {b.value for b in db.session.execute(db.select(CommonBlacklist).filter_by(type='price')).scalars().all()}
-        rows = (db.session.query(ExpenseItem.price, func.count(ExpenseItem.id))
+        rows = db.session.execute(db.select(ExpenseItem.price, func.count(ExpenseItem.id))
                           .group_by(ExpenseItem.price)
-                          .having(func.count(ExpenseItem.id) >= threshold).all())
+                          .having(func.count(ExpenseItem.id) >= threshold)).all()
         for price, _ in rows:
             price_str = f"{price:.2f}"
             if price_str in blacklisted:

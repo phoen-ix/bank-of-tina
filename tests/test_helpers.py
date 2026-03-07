@@ -50,8 +50,7 @@ def test_parse_amount_negative(app):
 def test_parse_amount_empty_string(app):
     with app.app_context():
         from helpers import parse_amount
-        with pytest.raises(InvalidOperation):
-            parse_amount('')
+        assert parse_amount('') == Decimal('0')
 
 
 def test_parse_amount_invalid_letters(app):

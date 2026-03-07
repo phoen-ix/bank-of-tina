@@ -84,16 +84,25 @@ def analytics_data() -> Response:
     history_labels   = [d.strftime('%Y-%m-%d') for d in sample_dates]
     history_datasets: dict[str, list[float]] = {}
 
+    all_user_tx_stmt = db.select(Transaction).where(
+        (Transaction.from_user_id.in_(all_uid)) | (Transaction.to_user_id.in_(all_uid))
+    )
+    all_user_tx_list = db.session.execute(all_user_tx_stmt).scalars().all()
+    tx_by_user: dict[int, list] = {uid: [] for uid in all_uid}
+    for tx in all_user_tx_list:
+        if tx.from_user_id in tx_by_user:
+            tx_by_user[tx.from_user_id].append(tx)
+        if tx.to_user_id in tx_by_user and tx.to_user_id != tx.from_user_id:
+            tx_by_user[tx.to_user_id].append(tx)
+
     for user in users:
-        all_user_tx = db.session.execute(db.select(Transaction).where(
-            (Transaction.from_user_id == user.id) | (Transaction.to_user_id == user.id)
-        )).scalars().all()
+        user_txs = tx_by_user.get(user.id, [])
 
         series: list[float] = []
         for d in sample_dates:
             cutoff = datetime.combine(d, datetime.max.time())
             bal = user.balance
-            for tx in all_user_tx:
+            for tx in user_txs:
                 if tx.date > cutoff:
                     if tx.to_user_id == user.id:
                         bal -= tx.amount

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import html
 import logging
 import smtplib
 from datetime import datetime, timedelta
@@ -7,6 +8,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 import pytz
+from sqlalchemy.orm import joinedload
 
 from extensions import db
 from models import User, Transaction, EmailLog
@@ -23,7 +25,9 @@ def build_email_html(user: User) -> str:
         show_tx_section = False
     else:
         show_tx_section = True
-        base_stmt = db.select(Transaction).where(
+        base_stmt = db.select(Transaction).options(
+            joinedload(Transaction.from_user), joinedload(Transaction.to_user)
+        ).where(
             (Transaction.from_user_id == user.id) | (Transaction.to_user_id == user.id)
         ).order_by(Transaction.date.desc())
 
@@ -63,12 +67,12 @@ def build_email_html(user: User) -> str:
             for trans in recent_transactions:
                 if trans.from_user_id == user.id:
                     direction = "\u2192"
-                    other_user = trans.to_user.name if trans.to_user else "System"
+                    other_user = html.escape(trans.to_user.name) if trans.to_user else "System"
                     amount_class = "color: #dc3545;"
                     amount_sign = "-"
                 else:
                     direction = "\u2190"
-                    other_user = trans.from_user.name if trans.from_user else "System"
+                    other_user = html.escape(trans.from_user.name) if trans.from_user else "System"
                     amount_class = "color: #28a745;"
                     amount_sign = "+"
 
@@ -78,7 +82,7 @@ def build_email_html(user: User) -> str:
                         {trans.date.strftime('%Y-%m-%d')}
                     </td>
                     <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">
-                        {trans.description}
+                        {html.escape(trans.description)}
                     </td>
                     <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">
                         {direction} {other_user}
@@ -181,10 +185,10 @@ def build_admin_summary_email(users: list[User], include_emails: bool = False) -
     rows_html = ''
     for user in users:
         color = neg_color if user.balance < 0 else (pos_color if user.balance > 0 else '#6c757d')
-        email_cell = f'<td style="padding: 10px 8px; border-bottom: 1px solid #dee2e6; color: #6c757d; font-size: 0.9em;">{user.email}</td>' if include_emails else ''
+        email_cell = f'<td style="padding: 10px 8px; border-bottom: 1px solid #dee2e6; color: #6c757d; font-size: 0.9em;">{html.escape(user.email)}</td>' if include_emails else ''
         rows_html += f"""
             <tr>
-                <td style="padding: 10px 8px; border-bottom: 1px solid #dee2e6;">{user.name}</td>
+                <td style="padding: 10px 8px; border-bottom: 1px solid #dee2e6;">{html.escape(user.name)}</td>
                 {email_cell}
                 <td style="padding: 10px 8px; border-bottom: 1px solid #dee2e6; text-align: right; font-weight: bold; color: {color};">{sym}{fmt_amount(user.balance)}</td>
             </tr>"""
@@ -239,7 +243,7 @@ def send_single_email(to_email: str, to_name: str, subject: str, html: str) -> t
     msg.attach(MIMEText(html, 'html'))
 
     try:
-        server = smtplib.SMTP(smtp_server, smtp_port)
+        server = smtplib.SMTP(smtp_server, smtp_port, timeout=30)
         server.starttls()
         server.login(smtp_username, smtp_password)
         server.send_message(msg)

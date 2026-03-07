@@ -1288,7 +1288,7 @@
                     <div class="card-body py-2">
                         <div class="fw-semibold mb-1">Upload custom icon</div>
                         <p class="text-muted small mb-2">
-                            PNG or JPG, will be resized to 192&times;192 and 512&times;512.
+                            PNG or JPG, will be resized to 32&times;32, 192&times;192, and 512&times;512.
                         </p>
                         <form method="POST" action="{{ url_for('settings_bp.settings_icon') }}" enctype="multipart/form-data">
                             <input type="hidden" name="action" value="upload">

@@ -294,6 +294,11 @@ bank-of-tina/
 ## 🔒 Security Notes
 
 - **Content Security Policy** — every HTML response includes a nonce-based CSP header (`script-src 'self' 'nonce-…'`; `style-src 'self' 'unsafe-inline'`; `frame-ancestors 'none'`; `object-src 'none'`). All inline event handlers have been converted to `addEventListener` / event delegation so no `'unsafe-inline'` is needed for scripts.
+- **HTML injection prevention** — all user-controlled values (names, emails, descriptions, error messages) are escaped with `html.escape()` before insertion into HTML email templates
+- **XSS-safe toast notifications** — the `showToast()` JS helper builds DOM nodes programmatically with `textContent`, never `innerHTML`
+- **Safe tar extraction** — backup restore rejects symlinks, hardlinks, absolute paths, `..` traversal, and any member whose resolved path escapes the extraction directory
+- **Safe search queries** — SQL wildcards (`%`, `_`) in user search input are escaped before building ILIKE patterns
+- **SMTP timeout** — outbound email connections use a 30-second timeout to prevent indefinite hangs
 - Set a strong, random `SECRET_KEY` in your `.env` file
 - Never commit your `.env` file (it is in `.gitignore`)
 - The Docker container starts as root only to fix bind-mount directory ownership, then immediately drops to a non-root user (`appuser`, UID 1000) via `gosu`

@@ -163,7 +163,7 @@ def settings_schedule() -> Response:
     day    = request.form.get('schedule_day', 'mon')
     try:
         hour   = str(max(0, min(23, int(request.form.get('schedule_hour',   '9')))))
-        minute = str(max(0, min(55, int(request.form.get('schedule_minute', '0')))))
+        minute = str(max(0, min(59, int(request.form.get('schedule_minute', '0')))))
     except ValueError:
         hour, minute = '9', '0'
 
@@ -295,7 +295,7 @@ def add_common_price() -> Response:
     if not db.session.execute(db.select(CommonPrice).filter_by(value=value)).scalar():
         db.session.add(CommonPrice(value=value))
         db.session.commit()
-    flash(f'\u20ac{fmt_amount(value)} added to common prices.', 'success')
+    flash(f'{get_setting("currency_symbol", "€")}{fmt_amount(value)} added to common prices.', 'success')
     return redirect(url_for('settings_bp.settings'))
 
 
@@ -305,7 +305,7 @@ def delete_common_price(item_id: int) -> Response:
     value = item.value
     db.session.delete(item)
     db.session.commit()
-    flash(f'\u20ac{fmt_amount(value)} removed from common prices.', 'success')
+    flash(f'{get_setting("currency_symbol", "€")}{fmt_amount(value)} removed from common prices.', 'success')
     return redirect(url_for('settings_bp.settings'))
 
 
@@ -348,7 +348,7 @@ def settings_common_auto() -> Response:
     day     = request.form.get('common_auto_day', '*')
     try:
         hour   = str(max(0, min(23, int(request.form.get('common_auto_hour',   '2')))))
-        minute = str(max(0, min(55, int(request.form.get('common_auto_minute', '0')))))
+        minute = str(max(0, min(59, int(request.form.get('common_auto_minute', '0')))))
     except ValueError:
         hour, minute = '2', '0'
     items_auto = '1' if request.form.get('common_items_auto') else '0'
@@ -412,16 +412,17 @@ def settings_templates() -> Response:
     for key in color_keys:
         val = request.form.get(key, '').strip()
         if re.match(r'^#[0-9a-fA-F]{6}$', val):
-            set_setting(key, val)
+            set_setting(key, val, commit=False)
 
     text_keys = ['tpl_email_subject', 'tpl_email_greeting', 'tpl_email_intro',
                  'tpl_email_footer1', 'tpl_email_footer2',
                  'tpl_admin_subject', 'tpl_admin_intro', 'tpl_admin_footer',
                  'tpl_backup_subject', 'tpl_backup_footer']
     for key in text_keys:
-        set_setting(key, request.form.get(key, '')[:500])
+        set_setting(key, request.form.get(key, '')[:500], commit=False)
 
-    set_setting('admin_summary_include_emails', '1' if request.form.get('admin_summary_include_emails') else '0')
+    set_setting('admin_summary_include_emails', '1' if request.form.get('admin_summary_include_emails') else '0', commit=False)
+    db.session.commit()
 
     flash('Templates saved.', 'success')
     return redirect(url_for('settings_bp.settings'))
@@ -430,7 +431,8 @@ def settings_templates() -> Response:
 @settings_bp.route('/settings/templates/reset', methods=['POST'])
 def settings_templates_reset() -> Response:
     for key, val in TEMPLATE_DEFAULTS.items():
-        set_setting(key, val)
+        set_setting(key, val, commit=False)
+    db.session.commit()
     flash('Templates reset to defaults.', 'success')
     return redirect(url_for('settings_bp.settings'))
 
@@ -466,7 +468,7 @@ def settings_icon() -> Response:
             img = Image.open(file.stream)
             if img.mode != 'RGB':
                 img = img.convert('RGB')
-            for size in (192, 512):
+            for size in (32, 192, 512):
                 resized = img.resize((size, size), Image.LANCZOS)
                 path = os.path.join(icons_dir, f'icon-{size}.png')
                 resized.save(path, 'PNG')
@@ -523,7 +525,7 @@ def settings_backup() -> Response:
     day     = request.form.get('backup_day', '*')
     try:
         hour   = str(max(0, min(23, int(request.form.get('backup_hour',   '3')))))
-        minute = str(max(0, min(55, int(request.form.get('backup_minute', '0')))))
+        minute = str(max(0, min(59, int(request.form.get('backup_minute', '0')))))
     except ValueError:
         hour, minute = '3', '0'
     try:
@@ -613,7 +615,7 @@ def backup_upload_chunk() -> tuple[Response, int] | Response:
     os.makedirs(tmp_dir, exist_ok=True)
     chunk_file.save(os.path.join(tmp_dir, f'{chunk_index:05d}'))
 
-    received = len([f for f in os.listdir(tmp_dir) if f.isdigit() or f[:-1].isdigit()])
+    received = len([f for f in os.listdir(tmp_dir) if f.isdigit()])
     if received >= total_chunks:
         ts = now_local().strftime('%Y_%m_%d_%H-%M-%S')
         filename = f'bot_backup_{ts}.tar.gz'
@@ -644,9 +646,18 @@ def backup_restore(filename: str) -> Response:
     try:
         with tempfile.TemporaryDirectory() as tmp:
             with tarfile.open(path, 'r:gz') as tar:
-                safe = [m for m in tar.getmembers()
-                        if not m.name.startswith('/') and '..' not in m.name]
-                tar.extractall(tmp, members=safe)
+                def _safe_members(tar, dest):
+                    dest = os.path.realpath(dest)
+                    for m in tar.getmembers():
+                        if m.issym() or m.islnk():
+                            continue
+                        if m.name.startswith('/') or '..' in m.name:
+                            continue
+                        resolved = os.path.realpath(os.path.join(dest, m.name))
+                        if not resolved.startswith(dest + os.sep) and resolved != dest:
+                            continue
+                        yield m
+                tar.extractall(tmp, members=list(_safe_members(tar, tmp)))
 
             receipts_src = os.path.join(tmp, 'receipts')
             upload_folder = current_app.config['UPLOAD_FOLDER']

@@ -122,8 +122,18 @@
         div.className = 'toast align-items-center text-bg-' + (type || 'success') + ' border-0';
         div.setAttribute('role', 'alert');
         div.setAttribute('data-bs-delay', '4000');
-        div.innerHTML = '<div class="d-flex"><div class="toast-body">' + message + '</div>' +
-            '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>';
+        var flex = document.createElement('div');
+        flex.className = 'd-flex';
+        var body = document.createElement('div');
+        body.className = 'toast-body';
+        body.textContent = message;
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn-close btn-close-white me-2 m-auto';
+        btn.setAttribute('data-bs-dismiss', 'toast');
+        flex.appendChild(body);
+        flex.appendChild(btn);
+        div.appendChild(flex);
         container.appendChild(div);
         bootstrap.Toast.getOrCreateInstance(div).show();
     }

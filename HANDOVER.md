@@ -158,8 +158,8 @@ The `env.py` uses `render_as_batch=True` for SQLite compatibility (important for
 All runtime config is stored in the `Setting` table as key/value strings. Two helpers manage it:
 
 ```python
-get_setting(key, default=None)   # Returns value or default; uses db.session.get()
-set_setting(key, value)          # Upserts; uses db.session.get()
+get_setting(key, default=None)           # Returns value or default; uses db.session.get()
+set_setting(key, value, commit=True)     # Upserts; pass commit=False when batching multiple settings
 ```
 
 The `settings()` view (in `routes/settings.py`) builds a `cfg` dict from all keys and passes it to `settings.html`. Each settings sub-route (e.g. `settings_general`, `settings_email`) POSTs and redirects back. Tab state is preserved in `sessionStorage` client-side. A `?tab=<name>` URL parameter (e.g. `?tab=users`) overrides `sessionStorage` on load, allowing external links to open a specific tab directly.
@@ -356,7 +356,7 @@ The constant `VALID_EMAIL_TX = {'none', 'last3', 'this_week', 'this_month'}` is 
 
 `backup_restore(filename)`:
 1. Validates filename against `BACKUP_FILENAME_RE = r'^bot_backup_[\d_-]+\.tar\.gz$'`
-2. Extracts to a temp dir (safe members only — no absolute paths, no `..`)
+2. Extracts to a temp dir (safe members only — rejects symlinks, hardlinks, absolute paths, `..` traversal, and resolved paths outside the destination)
 3. **Restores files first** (clears `/uploads` contents, copies receipts in)
 4. **Then restores DB** — this ordering means a file failure doesn't touch the DB
 
@@ -437,7 +437,7 @@ Two new routes, no new DB tables — all data is derived from existing `Transact
 - `tx.to_user_id == user.id` and `tx.date > T` → subtract `tx.amount`
 - `tx.from_user_id == user.id` and `tx.date > T` → add `tx.amount`
 
-This requires fetching **all** of a user's transactions (not filtered by date range) for each user. One DB query per user — acceptable for the app's scale.
+This requires fetching **all** transactions for all selected users (not filtered by date range). A single query fetches all relevant transactions, grouped into a `dict[int, list]` by user ID in Python.
 
 Sample-point granularity: weekly if date range ≤ 90 days, monthly otherwise.
 
@@ -500,7 +500,37 @@ The CACHE constant in `sw.js` is `'bot-v2'`. Bump to `'bot-v3'` etc. on future d
 
 All features are fully implemented and committed. The codebase has been through multiple rounds of improvements:
 
-### Round 6 improvements (most recent)
+### Round 7 — Deep audit remediation (most recent)
+19 issues across security, performance, bugs, and cleanup resolved in a single pass:
+
+**Security:**
+- **S1** HTML injection in email templates — all user-controlled values (`user.name`, `user.email`, `trans.description`, error messages) escaped with `html.escape()` in `email_service.py` and `backup_service.py`
+- **S2** `showToast()` XSS — replaced `innerHTML` with programmatic DOM construction using `textContent`
+- **S3** Tar extraction path traversal — backup restore now rejects symlinks, hardlinks, and members whose resolved path escapes the extraction directory
+- **S4** SMTP timeout — added `timeout=30` to `smtplib.SMTP()` to prevent indefinite hangs
+- **S5** Search ILIKE wildcard injection — `%`, `_`, and `\` in user queries are escaped before building LIKE patterns; `escape='\\'` added to all `.ilike()` calls
+
+**Performance:**
+- **P1** N+1 query in analytics balance history — single query fetches all transactions, grouped into a `dict[int, list]` by user ID
+- **P2** N+1 query in email HTML — added `joinedload(Transaction.from_user)` and `joinedload(Transaction.to_user)` to the base query
+- **P3** `set_setting()` batch commits — added `commit=False` parameter; template save/reset routes now batch ~16 settings into a single commit
+
+**Bugs:**
+- **B1** Minute constraint capped at 55 → changed to `min(59, ...)` in all 3 schedule routes
+- **B2** Debt accumulator used `int(0)` → `Decimal('0')`
+- **B3** Chunk count check matched non-digit files → simplified to `f.isdigit()`
+- **B4** `save_receipt` used `datetime.now()` → `now_local()`
+- **B5** Expense with no items gave no feedback → flashes error message
+- **B6** `edit_transaction` date parsing silently kept old date → flashes warning on parse failure
+- **M2** `parse_amount('')` crashed with `InvalidOperation` → returns `Decimal('0')`; test updated
+
+**Cleanup:**
+- **D2** Legacy `db.session.query()` in `scheduler_jobs.py` → migrated all 3 queries to SQLAlchemy 2.0 style
+- **D3** Hardcoded `€` in flash messages → uses `get_setting('currency_symbol', '€')`
+- **M1** `hex_to_rgb` caught bare `Exception` → `(ValueError, IndexError)`
+- **M3** `_list_backups` used naive `datetime.fromtimestamp` → `datetime.fromtimestamp(st_mtime, tz=UTC)`
+
+### Round 6 improvements
 48. **Content Security Policy** — every HTML response includes a nonce-based CSP header (`script-src 'self' 'nonce-…'`; `style-src 'self' 'unsafe-inline'`; `frame-ancestors 'none'`; `object-src 'none'`); all ~37 inline event handlers across all templates converted to `addEventListener` / event delegation; generic `data-confirm` delegation in `base.html` handles confirm dialogs site-wide; nonce generated per request via `secrets.token_urlsafe(16)` and stored on `flask.g`
 47. **Database indexes** — added `index=True` on `Transaction.date`, `Transaction.from_user_id`, `Transaction.to_user_id`, `Transaction.transaction_type`, and `ExpenseItem.transaction_id`; Alembic migration `a1b2c3d4e5f6`
 46. **Favicon bundle** — `helpers.py` generates 32×32 icon alongside 192 and 512; `/favicon.ico` route serves `icon-32.png`; `<link rel="icon" sizes="32x32">` added to `base.html`

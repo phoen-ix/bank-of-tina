@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import html as html_mod
 import logging
 import os
 import re
@@ -7,7 +8,7 @@ import shutil
 import subprocess
 import tarfile
 import tempfile
-from datetime import datetime
+from datetime import UTC, datetime
 
 from flask import current_app
 
@@ -116,7 +117,7 @@ def _list_backups() -> list[dict[str, str | int | datetime]]:
                 backups.append({
                     'filename': f,
                     'size': stat.st_size,
-                    'modified': datetime.fromtimestamp(stat.st_mtime),
+                    'modified': datetime.fromtimestamp(stat.st_mtime, tz=UTC),
                 })
     return backups
 
@@ -134,7 +135,7 @@ def build_backup_status_email(ok: bool, result: str, kept: int, pruned: int) -> 
         status_text  = 'Backup completed successfully'
         detail_rows  = f"""
             <tr><td style="padding:8px;color:#6c757d;width:140px;">File</td>
-                <td style="padding:8px;font-family:monospace;">{result}</td></tr>
+                <td style="padding:8px;font-family:monospace;">{html_mod.escape(result)}</td></tr>
             <tr><td style="padding:8px;color:#6c757d;">Backups kept</td>
                 <td style="padding:8px;">{kept}</td></tr>"""
         if pruned:
@@ -147,7 +148,7 @@ def build_backup_status_email(ok: bool, result: str, kept: int, pruned: int) -> 
         status_text  = 'Backup failed'
         detail_rows  = f"""
             <tr><td style="padding:8px;color:#6c757d;width:140px;">Error</td>
-                <td style="padding:8px;color:#dc3545;">{result}</td></tr>"""
+                <td style="padding:8px;color:#dc3545;">{html_mod.escape(result)}</td></tr>"""
 
     return f"""<!DOCTYPE html>
 <html>

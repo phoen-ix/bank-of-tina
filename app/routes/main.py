@@ -167,7 +167,7 @@ def add_transaction() -> str | Response:
         db.session.add(transaction)
         update_balance(user_id, amount)
         logger.info('Transaction created: deposit id=%s amount=%s', transaction.id, amount)
-        flash(f'Deposit of \u20ac{fmt_amount(amount)} added successfully!', 'success')
+        flash(f'Deposit of {get_setting("currency_symbol", "€")}{fmt_amount(amount)} added successfully!', 'success')
 
     elif transaction_type == 'withdrawal':
         user_id = int(request.form.get('user_id'))
@@ -185,7 +185,7 @@ def add_transaction() -> str | Response:
         db.session.add(transaction)
         update_balance(user_id, -amount)
         logger.info('Transaction created: withdrawal id=%s amount=%s', transaction.id, amount)
-        flash(f'Withdrawal of \u20ac{fmt_amount(amount)} processed successfully!', 'success')
+        flash(f'Withdrawal of {get_setting("currency_symbol", "€")}{fmt_amount(amount)} processed successfully!', 'success')
 
     elif transaction_type == 'expense':
         buyer_id = int(request.form.get('buyer_id'))
@@ -204,7 +204,7 @@ def add_transaction() -> str | Response:
                 debtor_id = int(item['debtor_id'])
                 price = parse_amount(item['price'])
                 if debtor_id != buyer_id:
-                    debts[debtor_id] = debts.get(debtor_id, 0) + price
+                    debts[debtor_id] = debts.get(debtor_id, Decimal('0')) + price
 
             for debtor_id, total_amount in debts.items():
                 transaction = Transaction(
@@ -235,6 +235,8 @@ def add_transaction() -> str | Response:
             db.session.commit()
             logger.info('Transaction created: expense buyer_id=%s', buyer_id)
             flash('Expense recorded successfully!', 'success')
+        else:
+            flash('At least one item is required for an expense.', 'error')
 
     return redirect(url_for('main.index'))
 
@@ -297,11 +299,12 @@ def search() -> str:
         stmt = db.select(Transaction)
 
         if q:
+            q_escaped = q.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
             stmt = stmt.where(
                 db.or_(
-                    Transaction.description.ilike(f'%{q}%'),
-                    Transaction.notes.ilike(f'%{q}%'),
-                    Transaction.items.any(ExpenseItem.item_name.ilike(f'%{q}%'))
+                    Transaction.description.ilike(f'%{q_escaped}%', escape='\\'),
+                    Transaction.notes.ilike(f'%{q_escaped}%', escape='\\'),
+                    Transaction.items.any(ExpenseItem.item_name.ilike(f'%{q_escaped}%', escape='\\'))
                 )
             )
         if tx_type:
@@ -445,12 +448,16 @@ def edit_transaction(transaction_id: int) -> str | Response:
 
     date_str = request.form.get('date', '').strip()
     if date_str:
+        date_parsed = False
         for fmt in ('%Y-%m-%dT%H:%M', '%Y-%m-%d'):
             try:
                 trans.date = datetime.strptime(date_str, fmt)
+                date_parsed = True
                 break
             except ValueError:
                 continue
+        if not date_parsed:
+            flash('Could not parse date — keeping the original value.', 'error')
 
     from_id = request.form.get('from_user_id') or None
     to_id   = request.form.get('to_user_id')   or None

@@ -31,7 +31,7 @@ def save_receipt(file: FileStorage | None, buyer_name: str) -> str | None:
     safe_buyer = re.sub(r'_+', '_', safe_buyer).strip('_') or 'unknown'
     original = secure_filename(file.filename) or 'file'
 
-    now = datetime.now()
+    now = now_local()
     rel_dir = now.strftime('%Y/%m/%d')
     abs_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], rel_dir)
     os.makedirs(abs_dir, exist_ok=True)
@@ -73,11 +73,12 @@ def get_setting(key: str, default: str | None = None) -> str | None:
     return s.value if s else default
 
 
-def set_setting(key: str, value: str) -> None:
+def set_setting(key: str, value: str, commit: bool = True) -> None:
     s = db.session.get(Setting, key) or Setting(key=key)
     s.value = value
     db.session.add(s)
-    db.session.commit()
+    if commit:
+        db.session.commit()
 
 
 def now_local() -> datetime:
@@ -106,7 +107,10 @@ def parse_amount(s: str | None) -> Decimal:
     """Parse a user-supplied decimal string, accepting both '.' and ',' as separator."""
     if s is None:
         return Decimal('0')
-    return Decimal(str(s).strip().replace(',', '.'))
+    cleaned = str(s).strip().replace(',', '.')
+    if not cleaned:
+        return Decimal('0')
+    return Decimal(cleaned)
 
 
 def fmt_amount(value: Decimal | int | float) -> str:
@@ -120,7 +124,7 @@ def hex_to_rgb(hex_color: str) -> str:
     try:
         h = hex_color.lstrip('#')
         return f'{int(h[0:2],16)}, {int(h[2:4],16)}, {int(h[4:6],16)}'
-    except Exception:
+    except (ValueError, IndexError):
         return '0, 0, 0'
 
 
