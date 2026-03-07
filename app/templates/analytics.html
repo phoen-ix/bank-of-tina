@@ -1,14 +1,14 @@
 {% extends "base.html" %}
-{% block title %}Charts & Statistics - Bank of Tina{% endblock %}
+{% block title %}{{ _('Charts & Statistics') }} - Bank of Tina{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2><i class="bi bi-bar-chart-line"></i> Charts &amp; Statistics</h2>
+    <h2><i class="bi bi-bar-chart-line"></i> {{ _('Charts & Statistics') }}</h2>
 </div>
 
 <!-- Print-only header (hidden on screen) -->
 <div id="print-header">
-    <h4>Bank of Tina &mdash; Charts &amp; Statistics</h4>
+    <h4>Bank of Tina &mdash; {{ _('Charts & Statistics') }}</h4>
     <p id="print-meta" class="text-muted"></p>
     <hr>
 </div>
@@ -19,25 +19,25 @@
         <div class="row g-2 align-items-end flex-wrap">
 
             <div class="col-auto">
-                <label class="form-label mb-1 small fw-semibold">From</label>
+                <label class="form-label mb-1 small fw-semibold">{{ _('From') }}</label>
                 <input type="date" id="filter-from" class="form-control form-control-sm"
                        value="{{ default_from }}">
             </div>
 
             <div class="col-auto">
-                <label class="form-label mb-1 small fw-semibold">To</label>
+                <label class="form-label mb-1 small fw-semibold">{{ _('To') }}</label>
                 <input type="date" id="filter-to" class="form-control form-control-sm"
                        value="{{ default_to }}">
             </div>
 
             <div class="col-auto">
-                <label class="form-label mb-1 small fw-semibold">Users</label>
+                <label class="form-label mb-1 small fw-semibold">{{ _('Users') }}</label>
                 <div class="dropdown">
                     <button class="btn btn-outline-secondary btn-sm dropdown-toggle"
                             id="user-dropdown-btn"
                             data-bs-toggle="dropdown" data-bs-auto-close="outside"
                             type="button">
-                        All users
+                        {{ _('All users') }}
                     </button>
                     <ul class="dropdown-menu p-2" style="min-width:190px;">
                         {% for user in users %}
@@ -54,32 +54,32 @@
                         <li><hr class="dropdown-divider my-1"></li>
                         <li>
                             <a class="dropdown-item small py-1" href="#"
-                               data-action="select-all">Select all</a>
+                               data-action="select-all">{{ _('Select all') }}</a>
                         </li>
                         <li>
                             <a class="dropdown-item small py-1" href="#"
-                               data-action="clear-all">Clear all</a>
+                               data-action="clear-all">{{ _('Clear all') }}</a>
                         </li>
                     </ul>
                 </div>
             </div>
 
             <div class="col-auto">
-                <label class="form-label mb-1 small fw-semibold">Quick range</label>
+                <label class="form-label mb-1 small fw-semibold">{{ _('Quick range') }}</label>
                 <div class="btn-group btn-group-sm">
                     <button class="btn btn-outline-secondary" data-preset="30">30 d</button>
                     <button class="btn btn-outline-secondary" data-preset="90">90 d</button>
                     <button class="btn btn-outline-secondary" data-preset="365">1 yr</button>
-                    <button class="btn btn-outline-secondary" data-preset="0">All</button>
+                    <button class="btn btn-outline-secondary" data-preset="0">{{ _('All') }}</button>
                 </div>
             </div>
 
             <div class="col-auto ms-auto d-flex gap-2">
                 <button class="btn btn-primary btn-sm" id="btn-apply">
-                    <i class="bi bi-funnel"></i> Apply
+                    <i class="bi bi-funnel"></i> {{ _('Apply') }}
                 </button>
                 <button class="btn btn-outline-secondary btn-sm" id="btn-print">
-                    <i class="bi bi-printer"></i> Print / PDF
+                    <i class="bi bi-printer"></i> {{ _('Print / PDF') }}
                 </button>
             </div>
 
@@ -99,25 +99,25 @@
     <li class="nav-item">
         <button class="nav-link active" data-bs-toggle="tab"
                 data-bs-target="#tab-balances" type="button">
-            <i class="bi bi-bar-chart-horizontal"></i> Balances
+            <i class="bi bi-bar-chart-horizontal"></i> {{ _('Balances') }}
         </button>
     </li>
     <li class="nav-item">
         <button class="nav-link" data-bs-toggle="tab"
                 data-bs-target="#tab-history" type="button">
-            <i class="bi bi-graph-up"></i> History
+            <i class="bi bi-graph-up"></i> {{ _('History') }}
         </button>
     </li>
     <li class="nav-item">
         <button class="nav-link" data-bs-toggle="tab"
                 data-bs-target="#tab-volume" type="button">
-            <i class="bi bi-calendar3"></i> Volume
+            <i class="bi bi-calendar3"></i> {{ _('Volume') }}
         </button>
     </li>
     <li class="nav-item">
         <button class="nav-link" data-bs-toggle="tab"
                 data-bs-target="#tab-items" type="button">
-            <i class="bi bi-list-ol"></i> Top Items
+            <i class="bi bi-list-ol"></i> {{ _('Top Items') }}
         </button>
     </li>
 </ul>
@@ -125,11 +125,10 @@
 <div class="tab-content border border-top-0 rounded-bottom p-3 bg-white mb-4"
      id="chartTabContent">
 
-    <!-- ── Tab 1: Current Balances ────────────────────────────────────── -->
+    <!-- Tab 1: Current Balances -->
     <div class="tab-pane fade show active" id="tab-balances">
         <p class="text-muted small mb-3">
-            Current balance for each user. Reflects all-time transactions &mdash;
-            not limited to the selected date range.
+            {{ _('Current balance for each user. Reflects all-time transactions — not limited to the selected date range.') }}
         </p>
         <div class="skeleton-placeholder" id="skel-balances">
             <div class="skeleton mb-2" style="height:24px;width:85%"></div>
@@ -142,15 +141,14 @@
             <canvas id="chart-balances"></canvas>
         </div>
         <p id="empty-balances" class="text-center text-muted py-4" style="display:none;">
-            No users to display.
+            {{ _('No users to display.') }}
         </p>
     </div>
 
-    <!-- ── Tab 2: Balance History ─────────────────────────────────────── -->
+    <!-- Tab 2: Balance History -->
     <div class="tab-pane fade" id="tab-history">
         <p class="text-muted small mb-3">
-            Each user's running balance sampled at regular intervals across the
-            selected date range.
+            {{ _("Each user's running balance sampled at regular intervals across the selected date range.") }}
         </p>
         <div class="skeleton-placeholder" id="skel-history">
             <div class="skeleton" style="height:300px;width:100%"></div>
@@ -159,15 +157,14 @@
             <canvas id="chart-history"></canvas>
         </div>
         <p id="empty-history" class="text-center text-muted py-4" style="display:none;">
-            No data in this period.
+            {{ _('No data in this period.') }}
         </p>
     </div>
 
-    <!-- ── Tab 3: Transaction Volume ─────────────────────────────────── -->
+    <!-- Tab 3: Transaction Volume -->
     <div class="tab-pane fade" id="tab-volume">
         <p class="text-muted small mb-3">
-            Number of transactions (bars, left axis) and total amount (line, right axis)
-            grouped by week (ranges &le; 90 days) or month (longer ranges).
+            {{ _('Number of transactions (bars, left axis) and total amount (line, right axis) grouped by week or month.') }}
         </p>
         <div class="skeleton-placeholder" id="skel-volume">
             <div class="skeleton" style="height:300px;width:100%"></div>
@@ -176,11 +173,11 @@
             <canvas id="chart-volume"></canvas>
         </div>
         <p id="empty-volume" class="text-center text-muted py-4" style="display:none;">
-            No transactions in this period.
+            {{ _('No transactions in this period.') }}
         </p>
     </div>
 
-    <!-- ── Tab 4: Top Expense Items ──────────────────────────────────── -->
+    <!-- Tab 4: Top Expense Items -->
     <div class="tab-pane fade" id="tab-items">
         <div class="skeleton-placeholder" id="skel-items">
             <div class="skeleton mb-2" style="height:24px;width:90%"></div>
@@ -190,19 +187,19 @@
             <div class="skeleton mb-2" style="height:24px;width:35%"></div>
         </div>
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <p class="text-muted small mb-0">Top 15 expense line items in the selected period.</p>
+            <p class="text-muted small mb-0">{{ _('Top 15 expense line items in the selected period.') }}</p>
             <div class="btn-group btn-group-sm" role="group">
                 <button class="btn btn-outline-secondary active" id="btn-items-amount"
-                        data-item-mode="amount">By Amount</button>
+                        data-item-mode="amount">{{ _('By Amount') }}</button>
                 <button class="btn btn-outline-secondary" id="btn-items-count"
-                        data-item-mode="count">By Count</button>
+                        data-item-mode="count">{{ _('By Count') }}</button>
             </div>
         </div>
         <div id="wrap-items" style="position:relative;">
             <canvas id="chart-items"></canvas>
         </div>
         <p id="empty-items" class="text-center text-muted py-4" style="display:none;">
-            No expense items in this period.
+            {{ _('No expense items in this period.') }}
         </p>
     </div>
 
@@ -215,13 +212,10 @@
 <script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='vendor/js/chart.umd.min.js') }}"></script>
 
 <style>
-/* ── Print styles ──────────────────────────────────────────────────────── */
+/* Print styles */
 #print-header { display: none; }
 
 @media print {
-    /* A4 landscape: 297 × 210 mm. 10 mm top/bottom, 12 mm left/right margins
-       → usable area ≈ 273 × 190 mm.
-       Print header takes ≈ 22 mm → chart area ≈ 165 mm tall. */
     @page { size: A4 landscape; margin: 10mm 12mm; }
 
     nav.navbar, footer, #filter-card, #chartTabs,
@@ -232,15 +226,11 @@
     #print-header    { display: block !important; }
     #chartTabContent { border: none !important; padding: 0 !important; }
 
-    /* Only the active tab pane is printed — Bootstrap keeps inactive ones
-       at display:none already; we just reinforce the active one. */
     .tab-pane.show.active {
         opacity: 1 !important;
         visibility: visible !important;
     }
 
-    /* Single-chart tabs: fill the landscape page below the header.
-       155 mm leaves comfortable breathing room on all sides. */
     #wrap-balances,
     #wrap-history,
     #wrap-volume,
@@ -252,25 +242,37 @@
 </style>
 
 <script nonce="{{ csp_nonce }}">
-// ── Theme colours injected from Flask ─────────────────────────────────────
+// Theme colours injected from Flask
 const CLR_POS  = '{{ theme_balance_positive }}';
 const CLR_NEG  = '{{ theme_balance_negative }}';
 const CLR_PRI  = '{{ theme_navbar }}';
 const DECIMAL_SEP = {{ decimal_sep | tojson }};
 const CURRENCY_SYM = {{ currency_symbol | tojson }};
 
+// Localized labels
+const LBL_BALANCE = {{ _('Balance')|tojson }};
+const LBL_TRANSACTIONS = {{ _('Transactions')|tojson }};
+const LBL_TOTAL = {{ _('Total')|tojson }};
+const LBL_AMOUNT = {{ _('Amount')|tojson }};
+const LBL_TOTAL_AMOUNT = {{ _('Total Amount')|tojson }};
+const LBL_TIMES_ORDERED = {{ _('Times ordered')|tojson }};
+const LBL_ALL_USERS = {{ _('All users')|tojson }};
+const LBL_NO_USERS = {{ _('No users')|tojson }};
+const LBL_OF = {{ _('of')|tojson }};
+const LBL_USERS = {{ _('users')|tojson }};
+
 function fmtMoney(v) {
     return parseFloat(v).toFixed(2).replace('.', DECIMAL_SEP);
 }
 
-// ── Colour palette for multi-series charts ────────────────────────────────
+// Colour palette for multi-series charts
 const PALETTE = [
     '#4e79a7','#f28e2b','#e15759','#76b7b2',
     '#59a14f','#edc948','#b07aa1','#ff9da7',
     '#9c755f','#bab0ac'
 ];
 
-// ── Chart instance registry ───────────────────────────────────────────────
+// Chart instance registry
 const _charts = {};
 function mkChart(id, cfg) {
     if (_charts[id]) { _charts[id].destroy(); }
@@ -279,11 +281,11 @@ function mkChart(id, cfg) {
     _charts[id] = new Chart(el, cfg);
 }
 
-// ── State ─────────────────────────────────────────────────────────────────
+// State
 let _data      = null;
 let _itemsMode = 'amount'; // 'amount' | 'count'
 
-// ── Filter helpers ────────────────────────────────────────────────────────
+// Filter helpers
 function toggleAllUsers(state) {
     document.querySelectorAll('.user-checkbox').forEach(cb => cb.checked = state);
     _syncDropdownLabel();
@@ -293,9 +295,9 @@ function _syncDropdownLabel() {
     const all     = document.querySelectorAll('.user-checkbox').length;
     const checked = document.querySelectorAll('.user-checkbox:checked').length;
     const btn     = document.getElementById('user-dropdown-btn');
-    btn.textContent = checked === 0     ? 'No users'
-                    : checked === all   ? 'All users'
-                    :                    `${checked} of ${all} users`;
+    btn.textContent = checked === 0     ? LBL_NO_USERS
+                    : checked === all   ? LBL_ALL_USERS
+                    :                    `${checked} ${LBL_OF} ${all} ${LBL_USERS}`;
 }
 
 function setPreset(days) {
@@ -320,7 +322,7 @@ function switchItemMode(mode) {
     if (_data) _renderItems(_data.top_items);
 }
 
-// ── Load & render ─────────────────────────────────────────────────────────
+// Load & render
 async function loadData() {
     const from  = document.getElementById('filter-from').value;
     const to    = document.getElementById('filter-to').value;
@@ -361,10 +363,10 @@ function _renderAll(d) {
     // Update print header
     const m = d.meta;
     document.getElementById('print-meta').textContent =
-        `${m.date_from} → ${m.date_to}  ·  ${m.transaction_count} transactions  ·  ${m.user_count} users`;
+        `${m.date_from} → ${m.date_to}  ·  ${m.transaction_count} ${LBL_TRANSACTIONS.toLowerCase()}  ·  ${m.user_count} ${LBL_USERS}`;
 }
 
-// ── Chart 1: Current Balances ─────────────────────────────────────────────
+// Chart 1: Current Balances
 function _renderBalances(balances) {
     const wrap  = document.getElementById('wrap-balances');
     const empty = document.getElementById('empty-balances');
@@ -391,7 +393,7 @@ function _renderBalances(balances) {
         data: {
             labels,
             datasets: [{
-                label: `Balance (${CURRENCY_SYM})`,
+                label: `${LBL_BALANCE} (${CURRENCY_SYM})`,
                 data: values,
                 backgroundColor: colors.map(c => c + 'cc'),
                 borderColor: colors,
@@ -422,7 +424,7 @@ function _renderBalances(balances) {
     });
 }
 
-// ── Chart 2: Balance History ──────────────────────────────────────────────
+// Chart 2: Balance History
 function _renderHistory(hist) {
     const wrap  = document.getElementById('wrap-history');
     const empty = document.getElementById('empty-history');
@@ -479,7 +481,7 @@ function _renderHistory(hist) {
     });
 }
 
-// ── Chart 3: Transaction Volume ───────────────────────────────────────────
+// Chart 3: Transaction Volume
 function _renderVolume(vol) {
     const wrap  = document.getElementById('wrap-volume');
     const empty = document.getElementById('empty-volume');
@@ -499,7 +501,7 @@ function _renderVolume(vol) {
             datasets: [
                 {
                     type: 'bar',
-                    label: 'Transactions',
+                    label: LBL_TRANSACTIONS,
                     data: vol.counts,
                     backgroundColor: CLR_PRI + 'aa',
                     borderColor:     CLR_PRI,
@@ -509,7 +511,7 @@ function _renderVolume(vol) {
                 },
                 {
                     type: 'line',
-                    label: `Total (${CURRENCY_SYM})`,
+                    label: `${LBL_TOTAL} (${CURRENCY_SYM})`,
                     data: vol.amounts,
                     borderColor:     '#e15759',
                     backgroundColor: '#e1575920',
@@ -530,7 +532,7 @@ function _renderVolume(vol) {
                 tooltip: {
                     callbacks: {
                         label: ctx => ctx.datasetIndex === 0
-                            ? ` ${ctx.raw} transactions`
+                            ? ` ${ctx.raw} ${LBL_TRANSACTIONS.toLowerCase()}`
                             : ` ${CURRENCY_SYM}${fmtMoney(ctx.raw)}`
                     }
                 }
@@ -542,21 +544,21 @@ function _renderVolume(vol) {
                     position: 'left',
                     grid: { color: '#e9ecef' },
                     ticks: { precision: 0 },
-                    title: { display: true, text: 'Transactions' }
+                    title: { display: true, text: LBL_TRANSACTIONS }
                 },
                 'y-amount': {
                     type: 'linear',
                     position: 'right',
                     grid: { drawOnChartArea: false },
                     ticks: { callback: v => CURRENCY_SYM + fmtMoney(v) },
-                    title: { display: true, text: `Amount (${CURRENCY_SYM})` }
+                    title: { display: true, text: `${LBL_AMOUNT} (${CURRENCY_SYM})` }
                 }
             }
         }
     });
 }
 
-// ── Chart 4: Top Items ────────────────────────────────────────────────────
+// Chart 4: Top Items
 function _renderItems(items) {
     const wrap  = document.getElementById('wrap-items');
     const empty = document.getElementById('empty-items');
@@ -572,7 +574,7 @@ function _renderItems(items) {
 
     const byAmt  = _itemsMode === 'amount';
     const values = byAmt ? items.totals : items.counts;
-    const label  = byAmt ? `Total Amount (${CURRENCY_SYM})` : 'Times ordered';
+    const label  = byAmt ? `${LBL_TOTAL_AMOUNT} (${CURRENCY_SYM})` : LBL_TIMES_ORDERED;
     const labels = items.names.map(n => n.length > 32 ? n.slice(0, 30) + '…' : n);
     const colors = PALETTE.slice(0, values.length);
 
@@ -602,7 +604,7 @@ function _renderItems(items) {
                     callbacks: {
                         label: ctx => byAmt
                             ? ` ${CURRENCY_SYM}${fmtMoney(ctx.parsed.x)}  (${items.counts[ctx.dataIndex]}×)`
-                            : ` ${ctx.parsed.x}×  (${CURRENCY_SYM}${fmtMoney(items.totals[ctx.dataIndex])} total)`
+                            : ` ${ctx.parsed.x}×  (${CURRENCY_SYM}${fmtMoney(items.totals[ctx.dataIndex])} ${LBL_TOTAL.toLowerCase()})`
                     }
                 }
             },
@@ -617,7 +619,7 @@ function _renderItems(items) {
     });
 }
 
-// ── Init ──────────────────────────────────────────────────────────────────
+// Init
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.user-checkbox').forEach(cb => {
         cb.addEventListener('change', _syncDropdownLabel);
@@ -646,8 +648,6 @@ document.addEventListener('DOMContentLoaded', () => {
     Chart.defaults.color     = '#495057';
 
     // Resize charts when their tab becomes visible.
-    // Chart.js measures canvas size at render time; if the tab was hidden the
-    // dimensions are 0, so a resize() call after the tab opens fixes the layout.
     document.querySelectorAll('[data-bs-toggle="tab"]').forEach(btn => {
         btn.addEventListener('shown.bs.tab', e => {
             const sel = e.target.getAttribute('data-bs-target');
@@ -657,13 +657,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Before printing: resize the charts in the active tab so the canvas
-    // has the correct pixel dimensions at the moment the browser captures it.
-    // Also append the active tab's name to the print header meta line.
+    // Before printing: resize the charts in the active tab
     window.addEventListener('beforeprint', () => {
         const activeBtn = document.querySelector('[data-bs-toggle="tab"].active');
-        // Bootstrap Icons render via CSS ::before — no text in the DOM — so
-        // textContent.trim() already gives just the label ("Balances" etc.).
         const tabTitle  = activeBtn ? activeBtn.textContent.trim() : '';
         const metaEl = document.getElementById('print-meta');
         metaEl.dataset.orig = metaEl.textContent;
@@ -674,7 +670,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // After printing: restore the meta text to its pre-print state.
+    // After printing: restore the meta text
     window.addEventListener('afterprint', () => {
         const metaEl = document.getElementById('print-meta');
         if (metaEl.dataset.orig !== undefined) {

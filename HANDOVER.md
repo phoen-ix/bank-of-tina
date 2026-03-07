@@ -19,7 +19,7 @@ This document gives a new Claude instance full context to continue development w
 
 | Layer | Technology |
 |-------|-----------|
-| Backend | Python 3.11, Flask 3.0, Flask-SQLAlchemy 3.1 |
+| Backend | Python 3.11, Flask 3.0, Flask-SQLAlchemy 3.1, Flask-Babel 4.0 |
 | Database | MariaDB 11 (via PyMySQL) |
 | ORM | SQLAlchemy with Flask-Migrate (Alembic) for schema migrations |
 | Monetary types | `Decimal` / `db.Numeric(12, 2)` everywhere (no floats) |
@@ -30,7 +30,8 @@ This document gives a new Claude instance full context to continue development w
 | Type hints | `from __future__ import annotations` on all modules |
 | Frontend | Bootstrap 5.3, Bootstrap Icons 1.11, Chart.js 4.4, vanilla JS (all self-hosted under `static/vendor/`, no CDN) |
 | Container | Docker + docker-compose, gunicorn (1 worker, 300 s timeout), non-root user via gosu entrypoint |
-| Testing | pytest with SQLite in-memory (`FLASK_TESTING=1`), 78 tests |
+| i18n | Flask-Babel, gettext `.po`/`.mo` files, ~427 translated strings (German + English) |
+| Testing | pytest with SQLite in-memory (`FLASK_TESTING=1`), 85 tests |
 | DB tools | `mariadb-client` installed in image for `mysqldump`/`mysql` CLI |
 
 ---
@@ -43,13 +44,16 @@ The backend was split from a single 2300-line `app.py` into a modular Flask Blue
 bank-of-tina/
 ├── app/
 │   ├── app.py                    # Thin entry point: create app, init extensions, register blueprints, start scheduler
-│   ├── extensions.py             # Shared instances: db, csrf, migrate, limiter, scheduler
-│   ├── config.py                 # Constants: THEMES, TEMPLATE_DEFAULTS, ALLOWED_EXTENSIONS, BACKUP_DIR, DEFAULT_ICON_BG
+│   ├── extensions.py             # Shared instances: db, csrf, migrate, limiter, scheduler, babel
+│   ├── config.py                 # Constants: THEMES, TEMPLATE_DEFAULTS, TEMPLATE_DEFAULTS_DE, ALLOWED_EXTENSIONS, BACKUP_DIR, DEFAULT_ICON_BG
 │   ├── models.py                 # All 11 SQLAlchemy model classes (fully type-annotated)
 │   ├── helpers.py                # Utility functions (parse_amount, fmt_amount, save_receipt, update_balance, etc.)
 │   ├── email_service.py          # build_email_html, build_admin_summary_email, send_single_email, send_all_emails
 │   ├── backup_service.py         # run_backup, _backup_log, _prune_old_backups, _list_backups, build_backup_status_email
 │   ├── scheduler_jobs.py         # _add_email_job, _add_common_job, _add_backup_job, auto_collect_common, _restore_schedule
+│   ├── translations/             # Gettext i18n files (Flask-Babel)
+│   │   ├── de/LC_MESSAGES/       # German translations (.po + .mo)
+│   │   └── en/LC_MESSAGES/       # English translations (.po + .mo, msgstr empty — falls back to msgid)
 │   ├── migrations/               # Alembic migrations (Flask-Migrate)
 │   │   ├── env.py
 │   │   ├── alembic.ini
@@ -90,7 +94,8 @@ bank-of-tina/
 │   ├── test_settings.py          # Settings CRUD, common items, templates, schedule (15 tests)
 │   ├── test_analytics.py         # Analytics page and data endpoint (5 tests)
 │   ├── test_health.py            # Health endpoint (2 tests)
-│   └── test_email_service.py     # Email building and sending (4 tests)
+│   ├── test_email_service.py     # Email building and sending (4 tests)
+│   └── test_i18n.py              # i18n: locale switching, translations, tx_type filter (7 tests)
 ├── uploads/                      # Receipts — bind-mounted; YYYY/MM/DD/Buyer_file.ext
 ├── backups/                      # Backup archives — bind-mounted; bot_backup_*.tar.gz
 ├── icons/                        # PWA icons — bind-mounted; persists across rebuilds
@@ -194,6 +199,7 @@ The `settings()` view (in `routes/settings.py`) builds a `cfg` dict from all key
 | `decimal_separator` | `.` | `'.'` or `','`; applied to all monetary display and input |
 | `currency_symbol` | `€` | Symbol prepended to all monetary amounts in UI, charts, and emails; configurable via Settings → General dropdown (12 common currencies) |
 | `show_email_on_dashboard` | `0` | `'1'` shows the Email column in the dashboard user table |
+| `language` | `de` | `'de'` or `'en'`; app-wide display language; read by Flask-Babel's locale selector |
 | `icon_version` | `0` | Unix timestamp; cache-busting param appended to icon URLs |
 | `icon_mode` | `generated` | `'generated'` or `'custom'`; tracks whether the icon was regenerated or uploaded |
 | `color_navbar` | `#0d6efd` | Theme: navbar background |
@@ -403,6 +409,9 @@ Route: `GET /user/<int:user_id>` — shows user profile card and paginated trans
 - **Blueprint url_for** — all `url_for()` calls in templates must be blueprint-prefixed: `url_for('main.index')`, `url_for('settings_bp.settings')`, `url_for('analytics_bp.analytics')`, etc.
 - **Single gunicorn worker** — the in-process APScheduler only works correctly with 1 worker. Scaling requires moving to a proper task queue.
 - **Alembic migrations** — `db.create_all()` is no longer used in production; Flask-Migrate handles schema creation and evolution. Always generate migration scripts for schema changes.
+- **i18n strings** — all user-facing strings must be wrapped with `_()` (Python) or `{{ _('...') }}` (Jinja2). After adding new strings, run `pybabel extract`, `pybabel update`, translate in the `.po` file, then `pybabel compile`. Both `.po` and `.mo` files are committed.
+- **Transaction types are English in DB** — stored as `'deposit'`, `'withdrawal'`, `'expense'`. Use the `|tx_type` template filter to translate at display time. Never store translated values in the database.
+- **Scheduler jobs need `force_locale()`** — background jobs run without a request context, so `_()` calls need `with force_locale(get_setting('language', 'de')): ...` wrapping.
 - **`FLASK_TESTING=1`** — set this env var to skip DB init, scheduler start, and migration at import time. The test suite sets it in `conftest.py` before importing `app`.
 - **DB credentials are required** — `DB_USER` and `DB_PASSWORD` have no hardcoded defaults; the app raises `RuntimeError` at startup if they are missing (unless `SQLALCHEMY_DATABASE_URI` is set directly, as in tests).
 
@@ -496,11 +505,89 @@ The CACHE constant in `sw.js` is `'bot-v2'`. Bump to `'bot-v3'` etc. on future d
 
 ---
 
+## Internationalization (i18n)
+
+The app is fully bilingual (German + English) using Flask-Babel with standard gettext `.po`/`.mo` files.
+
+### Architecture
+
+- **`extensions.py`** — `babel = Babel()` instance alongside other extensions
+- **`app.py`** — `babel.init_app(app, locale_selector=get_locale)` where `get_locale()` reads `get_setting('language', 'de')` from the DB
+- **`config.py`** — `TEMPLATE_DEFAULTS_DE` dict with German translations of email template defaults; used by `settings_templates_reset()` when language is `de`
+- **Language setting** — stored in `Setting` table as `language` key; `'de'` (default) or `'en'`; changed via Settings → General → Language dropdown
+- **Default locale** — `BABEL_DEFAULT_LOCALE = 'de'`; `BABEL_TRANSLATION_DIRECTORIES = 'translations'`
+
+### Translation files
+
+```
+app/translations/
+├── de/LC_MESSAGES/messages.po    # ~427 German translations (all msgstr filled)
+├── de/LC_MESSAGES/messages.mo    # Compiled binary
+├── en/LC_MESSAGES/messages.po    # Empty msgstr — falls back to English msgid
+└── en/LC_MESSAGES/messages.mo    # Compiled binary
+```
+
+### String wrapping patterns
+
+| Context | Pattern | Example |
+|---------|---------|---------|
+| Python code | `from flask_babel import gettext as _` | `flash(_('Settings saved.'), 'success')` |
+| Python with params | Named `%(var)s` placeholders | `_('User %(name)s added!', name=name)` |
+| Jinja2 templates | `{{ _('...') }}` | `{{ _('Dashboard') }}` |
+| JS strings in templates | `{{ _('...')\|tojson }}` | `const MSG = {{ _('Please add at least one item!')\|tojson }};` |
+| Transaction types | `\|tx_type` filter | `{{ trans.transaction_type\|tx_type }}` |
+| Localized dates | `\|format_date_babel` filter | `{{ day\|format_date_babel }}` |
+| Scheduler jobs | `force_locale()` context manager | `with force_locale(get_setting('language', 'de')): ...` |
+
+### Template filters (defined in `app.py`)
+
+- **`tx_type`** — translates DB-stored English transaction types (`deposit` → `Einzahlung`, `withdrawal` → `Auszahlung`, `expense` → `Ausgabe`) at display time
+- **`format_date_babel`** — formats dates using Babel's `format_date()` for localized day/month names (e.g. `'EEEE, d MMMM'`)
+
+### Adding/updating translations
+
+```bash
+# Extract all translatable strings
+pybabel extract -F babel.cfg -k _ -k gettext -k lazy_gettext -o messages.pot .
+
+# Update existing catalogs with new/changed strings
+pybabel update -i messages.pot -d app/translations
+
+# Edit app/translations/de/LC_MESSAGES/messages.po (fill in msgstr for new entries)
+
+# Compile .po → .mo (must be done before deploy)
+pybabel compile -d app/translations
+```
+
+Both `.po` (source) and `.mo` (compiled) files are committed so Docker deploys work without build-time compilation.
+
+### Test considerations
+
+- `conftest.py` sets `set_setting('language', 'en')` in the `clean_db` fixture so all existing tests see English msgids and pass unchanged
+- Flask-Babel caches the locale on `g._flask_babel.babel_locale` per app context. In tests where the `clean_db` fixture wraps with `app.app_context()`, this cache persists across `client.get()`/`client.post()` calls. When switching languages mid-test, clear the cache: `del g._flask_babel.babel_locale`
+
+---
+
 ## Current State (as of last commit)
 
 All features are fully implemented and committed. The codebase has been through multiple rounds of improvements:
 
-### Round 7 — Deep audit remediation (most recent)
+### Round 8 — Internationalization (most recent)
+Full bilingual support (German + English) using Flask-Babel:
+- Added Flask-Babel dependency and Babel instance in `extensions.py`
+- Locale selector in `app.py` reads `language` setting from DB (default: `de`)
+- Wrapped ~427 user-facing strings with `_()` across all Python files and 10 Jinja2 templates
+- Added `tx_type` template filter for translating transaction type badges at display time
+- Added `format_date_babel` filter for localized day/month headers
+- Added `TEMPLATE_DEFAULTS_DE` in `config.py` for German email template defaults
+- Added `force_locale()` wrapping in `scheduler_jobs.py` for background jobs
+- Created complete German translation catalog (`app/translations/de/LC_MESSAGES/messages.po`)
+- Language dropdown in Settings → General (endonyms: Deutsch / English)
+- `<html lang>` attribute reflects current locale
+- Added 7 i18n-specific tests (85 tests total, all passing)
+- README translated to German
+
+### Round 7 — Deep audit remediation
 19 issues across security, performance, bugs, and cleanup resolved in a single pass:
 
 **Security:**
@@ -591,6 +678,7 @@ All features are fully implemented and committed. The codebase has been through 
 17. **PWA support** — Web App Manifest, service worker, installable on mobile
 18. **PWA icon management** — regenerate/upload/reset icons from Settings
 19. **Separated user lists** — active and deactivated users in separate lists
+20. **Internationalization** — full German + English support via Flask-Babel; ~427 translated strings; language selector in Settings
 
 ---
 
@@ -626,7 +714,7 @@ FLASK_TESTING=1 python -m pytest tests/ -v
 - Session-scoped `app` fixture; autouse `clean_db` fixture rolls back after each test
 - `make_user` factory fixture for quickly creating users with auto-incrementing names/emails
 
-### Test files (78 tests total)
+### Test files (85 tests total)
 | File | Tests | Coverage |
 |------|-------|----------|
 | `test_helpers.py` | 14 | `parse_amount` (dot, comma, negative, empty, invalid), `fmt_amount` (default/comma separator), `hex_to_rgb`, `apply_template` |
@@ -636,6 +724,7 @@ FLASK_TESTING=1 python -m pytest tests/ -v
 | `test_analytics.py` | 5 | Analytics page loads, data endpoint (no transactions, with transactions, user filter, date range) |
 | `test_health.py` | 4 | Health returns OK, correct JSON format, CSP header on HTML, no CSP on JSON |
 | `test_email_service.py` | 4 | `build_email_html`, `build_admin_summary_email`, `send_single_email` without SMTP, `build_backup_status_email` |
+| `test_i18n.py` | 7 | Language setting, language selector, flash translations (de/en), tx_type filter, language POST, html lang attribute |
 
 ---
 

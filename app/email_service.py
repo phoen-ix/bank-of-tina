@@ -10,6 +10,8 @@ from email.mime.multipart import MIMEMultipart
 import pytz
 from sqlalchemy.orm import joinedload
 
+from flask_babel import gettext as _
+
 from extensions import db
 from models import User, Transaction, EmailLog
 from helpers import get_setting, get_tpl, apply_template, fmt_amount, now_local
@@ -52,13 +54,13 @@ def build_email_html(user: User) -> str:
     sym = get_setting('currency_symbol', '\u20ac')
     if user.balance < 0:
         balance_class = "color: #dc3545;"
-        balance_status = f"You owe {sym}{fmt_amount(abs(user.balance))}"
+        balance_status = _('You owe %(sym)s%(amount)s', sym=sym, amount=fmt_amount(abs(user.balance)))
     elif user.balance > 0:
         balance_class = "color: #28a745;"
-        balance_status = f"You are owed {sym}{fmt_amount(user.balance)}"
+        balance_status = _('You are owed %(sym)s%(amount)s', sym=sym, amount=fmt_amount(user.balance))
     else:
         balance_class = "color: #6c757d;"
-        balance_status = "Your balance is settled"
+        balance_status = _('Your balance is settled')
 
     transactions_section_html = ""
     if show_tx_section:
@@ -93,23 +95,23 @@ def build_email_html(user: User) -> str:
                 </tr>
                 """
         else:
-            transactions_html = """
+            transactions_html = f"""
             <tr>
                 <td colspan="4" style="padding: 16px; text-align: center; color: #6c757d;">
-                    No recent transactions
+                    {_('No recent transactions')}
                 </td>
             </tr>
             """
 
         transactions_section_html = f"""
-            <h3 style="color: #495057; margin-top: 30px;">Recent Transactions</h3>
+            <h3 style="color: #495057; margin-top: 30px;">{_('Recent Transactions')}</h3>
             <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
                 <thead>
                     <tr style="background: #f8f9fa;">
-                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">Date</th>
-                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">Description</th>
-                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">With</th>
-                        <th style="padding: 10px; text-align: right; border-bottom: 2px solid #dee2e6;">Amount</th>
+                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">{_('Date')}</th>
+                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">{_('Description')}</th>
+                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">{_('With')}</th>
+                        <th style="padding: 10px; text-align: right; border-bottom: 2px solid #dee2e6;">{_('Amount')}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -142,7 +144,7 @@ def build_email_html(user: User) -> str:
     <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: linear-gradient(135deg, {grad_start} 0%, {grad_end} 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
             <h1 style="margin: 0; font-size: 28px;">\U0001f3e6 Bank of Tina</h1>
-            <p style="margin: 10px 0 0 0; opacity: 0.9;">Weekly Balance Update</p>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">{_('Weekly Balance Update')}</p>
         </div>
 
         <div style="background: white; padding: 30px; border: 1px solid #dee2e6; border-top: none; border-radius: 0 0 10px 10px;">
@@ -150,7 +152,7 @@ def build_email_html(user: User) -> str:
             {intro_html}
 
             <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-                <p style="margin: 0 0 10px 0; color: #6c757d; text-transform: uppercase; font-size: 12px; font-weight: bold;">Current Balance</p>
+                <p style="margin: 0 0 10px 0; color: #6c757d; text-transform: uppercase; font-size: 12px; font-weight: bold;">{_('Current Balance')}</p>
                 <h2 style="margin: 0; font-size: 36px; {balance_class}">{sym}{fmt_amount(user.balance)}</h2>
             </div>
 
@@ -193,7 +195,7 @@ def build_admin_summary_email(users: list[User], include_emails: bool = False) -
                 <td style="padding: 10px 8px; border-bottom: 1px solid #dee2e6; text-align: right; font-weight: bold; color: {color};">{sym}{fmt_amount(user.balance)}</td>
             </tr>"""
 
-    email_header = '<th style="padding: 10px 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Email</th>' if include_emails else ''
+    email_header = f'<th style="padding: 10px 8px; text-align: left; border-bottom: 2px solid #dee2e6;">{_("Email")}</th>' if include_emails else ''
 
     return f"""<!DOCTYPE html>
 <html>
@@ -201,17 +203,17 @@ def build_admin_summary_email(users: list[User], include_emails: bool = False) -
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 700px; margin: 0 auto; padding: 20px;">
     <div style="background: linear-gradient(135deg, {grad_start} 0%, {grad_end} 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
         <h1 style="margin: 0; font-size: 28px;">\U0001f3e6 Bank of Tina</h1>
-        <p style="margin: 10px 0 0 0; opacity: 0.9;">Admin Summary \u2014 {date_str}</p>
+        <p style="margin: 10px 0 0 0; opacity: 0.9;">{_('Admin Summary')} \u2014 {date_str}</p>
     </div>
     <div style="background: white; padding: 30px; border: 1px solid #dee2e6; border-top: none; border-radius: 0 0 10px 10px;">
         {intro_html}
-        <h3 style="color: #495057; margin-top: 0;">All Active Users</h3>
+        <h3 style="color: #495057; margin-top: 0;">{_('All Active Users')}</h3>
         <table style="width: 100%; border-collapse: collapse;">
             <thead>
                 <tr style="background: #f8f9fa;">
-                    <th style="padding: 10px 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Name</th>
+                    <th style="padding: 10px 8px; text-align: left; border-bottom: 2px solid #dee2e6;">{_('Name')}</th>
                     {email_header}
-                    <th style="padding: 10px 8px; text-align: right; border-bottom: 2px solid #dee2e6;">Balance</th>
+                    <th style="padding: 10px 8px; text-align: right; border-bottom: 2px solid #dee2e6;">{_('Balance')}</th>
                 </tr>
             </thead>
             <tbody>{rows_html}
@@ -234,7 +236,7 @@ def send_single_email(to_email: str, to_name: str, subject: str, html: str) -> t
     from_name     = get_setting('from_name', 'Bank of Tina')
 
     if not smtp_username or not smtp_password:
-        return False, 'SMTP credentials not configured'
+        return False, _('SMTP credentials not configured')
 
     msg = MIMEMultipart('alternative')
     msg['Subject'] = subject
@@ -257,7 +259,7 @@ def send_single_email(to_email: str, to_name: str, subject: str, html: str) -> t
 
 def send_all_emails() -> tuple[int, int, list[str]]:
     if get_setting('email_enabled', '1') != '1':
-        return 0, 0, ['Email sending is disabled in General settings.']
+        return 0, 0, [_('Email sending is disabled in General settings.')]
 
     all_active_users = db.session.execute(db.select(User).filter_by(is_active=True)).scalars().all()
     opted_in_users   = [u for u in all_active_users if u.email_opt_in]

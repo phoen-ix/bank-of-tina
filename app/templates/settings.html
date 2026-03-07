@@ -1,47 +1,47 @@
 {% extends "base.html" %}
 
-{% block title %}Settings - Bank of Tina{% endblock %}
+{% block title %}{{ _('Settings') }} - Bank of Tina{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2><i class="bi bi-gear"></i> Settings</h2>
+    <h2><i class="bi bi-gear"></i> {{ _('Settings') }}</h2>
 </div>
 
 <ul class="nav nav-tabs mb-4" id="settingsTabs">
     <li class="nav-item">
         <button class="nav-link" id="tab-btn-general"
                 data-bs-toggle="tab" data-bs-target="#tab-general" type="button">
-            <i class="bi bi-sliders"></i> General
+            <i class="bi bi-sliders"></i> {{ _('General') }}
         </button>
     </li>
     <li class="nav-item">
         <button class="nav-link" id="tab-btn-email"
                 data-bs-toggle="tab" data-bs-target="#tab-email" type="button">
-            <i class="bi bi-envelope"></i> Email
+            <i class="bi bi-envelope"></i> {{ _('Email') }}
         </button>
     </li>
     <li class="nav-item">
         <button class="nav-link" id="tab-btn-common-items"
                 data-bs-toggle="tab" data-bs-target="#tab-common-items" type="button">
-            <i class="bi bi-bookmark-star"></i> Common
+            <i class="bi bi-bookmark-star"></i> {{ _('Common') }}
         </button>
     </li>
     <li class="nav-item">
         <button class="nav-link" id="tab-btn-backup"
                 data-bs-toggle="tab" data-bs-target="#tab-backup" type="button">
-            <i class="bi bi-archive"></i> Backup
+            <i class="bi bi-archive"></i> {{ _('Backup') }}
         </button>
     </li>
     <li class="nav-item">
         <button class="nav-link" id="tab-btn-templates"
                 data-bs-toggle="tab" data-bs-target="#tab-templates" type="button">
-            <i class="bi bi-palette"></i> Templates
+            <i class="bi bi-palette"></i> {{ _('Templates') }}
         </button>
     </li>
     <li class="nav-item">
         <button class="nav-link" id="tab-btn-users"
                 data-bs-toggle="tab" data-bs-target="#tab-users" type="button">
-            <i class="bi bi-people"></i> Users
+            <i class="bi bi-people"></i> {{ _('Users') }}
             {% if all_users %}
                 <span class="badge bg-secondary ms-1">{{ all_users|length }}</span>
             {% endif %}
@@ -55,35 +55,35 @@
     <div class="tab-pane fade" id="tab-general">
         <div class="card">
             <div class="card-header">
-                <i class="bi bi-sliders"></i> General
+                <i class="bi bi-sliders"></i> {{ _('General') }}
             </div>
             <div class="card-body">
                 <form method="POST" action="{{ url_for('settings_bp.settings_general') }}">
                     <div class="mb-4">
-                        <label for="default_item_rows" class="form-label">Default empty item rows</label>
+                        <label for="default_item_rows" class="form-label">{{ _('Default empty item rows') }}</label>
                         <input type="number" class="form-control" id="default_item_rows"
                                name="default_item_rows" value="{{ cfg.default_item_rows }}"
                                min="0" max="20" style="width: 120px">
                         <div class="form-text">
-                            How many blank item rows to pre-fill when opening the Add Transaction form.
-                            Set to 0 to keep the current behaviour (no rows until you click Add Item).
+                            {{ _('How many blank item rows to pre-fill when opening the Add Transaction form.') }}
+                            {{ _('Set to 0 to keep the current behaviour (no rows until you click Add Item).') }}
                         </div>
                     </div>
                     <div class="mb-4">
                         <label for="recent_transactions_count" class="form-label">
-                            Recent transactions on dashboard
+                            {{ _('Recent transactions on dashboard') }}
                         </label>
                         <input type="number" class="form-control" id="recent_transactions_count"
                                name="recent_transactions_count"
                                value="{{ cfg.recent_transactions_count }}"
                                min="0" max="50" style="width: 120px">
                         <div class="form-text">
-                            How many recent transactions to show on the dashboard.
-                            Set to 0 to hide the section entirely.
+                            {{ _('How many recent transactions to show on the dashboard.') }}
+                            {{ _('Set to 0 to hide the section entirely.') }}
                         </div>
                     </div>
                     <div class="mb-4">
-                        <label for="timezone" class="form-label">Timezone</label>
+                        <label for="timezone" class="form-label">{{ _('Timezone') }}</label>
                         <select class="form-select" id="timezone" name="timezone" style="max-width: 360px">
                             {% for region, zones in timezone_groups.items() %}
                             <optgroup label="{{ region }}">
@@ -95,28 +95,37 @@
                             </optgroup>
                             {% endfor %}
                         </select>
-                        <div class="form-text">Used for displaying all dates and times throughout the app.</div>
+                        <div class="form-text">{{ _('Used for displaying all dates and times throughout the app.') }}</div>
                     </div>
 
                     <div class="mb-4">
-                        <label class="form-label">Decimal separator</label>
+                        <label for="language" class="form-label">{{ _('Language') }}</label>
+                        <select class="form-select w-auto" id="language" name="language">
+                            <option value="de" {% if cfg.language == 'de' %}selected{% endif %}>Deutsch</option>
+                            <option value="en" {% if cfg.language == 'en' %}selected{% endif %}>English</option>
+                        </select>
+                        <div class="form-text">{{ _('Display language for the entire application.') }}</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">{{ _('Decimal separator') }}</label>
                         <div class="d-flex gap-4">
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="decimal_separator" id="sep_dot"
                                        value="." {% if cfg.decimal_separator == '.' %}checked{% endif %}>
-                                <label class="form-check-label" for="sep_dot">Period &nbsp;<code>1.99</code></label>
+                                <label class="form-check-label" for="sep_dot">{{ _('Period') }} &nbsp;<code>1.99</code></label>
                             </div>
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="decimal_separator" id="sep_comma"
                                        value="," {% if cfg.decimal_separator == ',' %}checked{% endif %}>
-                                <label class="form-check-label" for="sep_comma">Comma &nbsp;<code>1,99</code></label>
+                                <label class="form-check-label" for="sep_comma">{{ _('Comma') }} &nbsp;<code>1,99</code></label>
                             </div>
                         </div>
-                        <div class="form-text">Used for displaying and entering all monetary amounts.</div>
+                        <div class="form-text">{{ _('Used for displaying and entering all monetary amounts.') }}</div>
                     </div>
 
                     <div class="mb-4">
-                      <label class="form-label">Currency symbol</label>
+                      <label class="form-label">{{ _('Currency symbol') }}</label>
                       <select class="form-select w-auto" name="currency_symbol">
                         {% set currencies = [
                             ('€', 'Euro — €'),
@@ -136,25 +145,25 @@
                           <option value="{{ val }}" {% if cfg.currency_symbol == val %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                       </select>
-                      <div class="form-text">Symbol shown before all monetary amounts.</div>
+                      <div class="form-text">{{ _('Symbol shown before all monetary amounts.') }}</div>
                     </div>
 
                     <div class="mb-4">
-                        <label class="form-label">Dashboard</label>
+                        <label class="form-label">{{ _('Dashboard') }}</label>
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" id="show_email_on_dashboard"
                                    name="show_email_on_dashboard"
                                    {% if cfg.show_email_on_dashboard == '1' %}checked{% endif %}>
                             <label class="form-check-label" for="show_email_on_dashboard">
-                                Show email address in user balances table
+                                {{ _('Show email address in user balances table') }}
                             </label>
                         </div>
                     </div>
 
                     <div class="mb-4">
-                        <label for="site_admin_id" class="form-label">Site Admin</label>
+                        <label for="site_admin_id" class="form-label">{{ _('Site Admin') }}</label>
                         <select class="form-select" id="site_admin_id" name="site_admin_id" style="max-width: 300px">
-                            <option value="">— None —</option>
+                            <option value="">{{ _('— None —') }}</option>
                             {% for user in all_users if user.is_active %}
                             <option value="{{ user.id }}" {% if cfg.site_admin_id == user.id|string %}selected{% endif %}>
                                 {{ user.name }} ({{ user.email }})
@@ -162,12 +171,12 @@
                             {% endfor %}
                         </select>
                         <div class="form-text">
-                            Used to send an admin summary email after each email run. Select a user or leave blank to disable.
+                            {{ _('Used to send an admin summary email after each email run. Select a user or leave blank to disable.') }}
                         </div>
                     </div>
 
                     <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-floppy"></i> Save
+                        <i class="bi bi-floppy"></i> {{ _('Save') }}
                     </button>
                 </form>
             </div>
@@ -182,41 +191,41 @@
             <div class="col-lg-6">
                 <div class="card h-100">
                     <div class="card-header">
-                        <i class="bi bi-envelope"></i> Email Credentials
+                        <i class="bi bi-envelope"></i> {{ _('Email Credentials') }}
                     </div>
                     <div class="card-body">
                         <form method="POST" action="{{ url_for('settings_bp.settings_email') }}">
                             <div class="mb-3">
-                                <label for="smtp_server" class="form-label">SMTP Server</label>
+                                <label for="smtp_server" class="form-label">{{ _('SMTP Server') }}</label>
                                 <input type="text" class="form-control" id="smtp_server" name="smtp_server"
                                        value="{{ cfg.smtp_server }}" placeholder="smtp.gmail.com">
                             </div>
                             <div class="mb-3">
-                                <label for="smtp_port" class="form-label">SMTP Port</label>
+                                <label for="smtp_port" class="form-label">{{ _('SMTP Port') }}</label>
                                 <input type="number" class="form-control" id="smtp_port" name="smtp_port"
                                        value="{{ cfg.smtp_port }}" placeholder="587">
                             </div>
                             <div class="mb-3">
-                                <label for="smtp_username" class="form-label">SMTP Username</label>
+                                <label for="smtp_username" class="form-label">{{ _('SMTP Username') }}</label>
                                 <input type="text" class="form-control" id="smtp_username" name="smtp_username"
                                        value="{{ cfg.smtp_username }}" autocomplete="username">
                             </div>
                             <div class="mb-3">
-                                <label for="smtp_password" class="form-label">SMTP Password</label>
+                                <label for="smtp_password" class="form-label">{{ _('SMTP Password') }}</label>
                                 <input type="password" class="form-control" id="smtp_password" name="smtp_password"
                                        placeholder="{{ '•••••••••' if cfg.smtp_password else '' }}"
                                        autocomplete="current-password">
                                 {% if cfg.smtp_password %}
-                                    <div class="form-text">Leave blank to keep the existing password.</div>
+                                    <div class="form-text">{{ _('Leave blank to keep the existing password.') }}</div>
                                 {% endif %}
                             </div>
                             <div class="mb-3">
-                                <label for="from_email" class="form-label">From Email</label>
+                                <label for="from_email" class="form-label">{{ _('From Email') }}</label>
                                 <input type="email" class="form-control" id="from_email" name="from_email"
                                        value="{{ cfg.from_email }}">
                             </div>
                             <div class="mb-3">
-                                <label for="from_name" class="form-label">From Name</label>
+                                <label for="from_name" class="form-label">{{ _('From Name') }}</label>
                                 <input type="text" class="form-control" id="from_name" name="from_name"
                                        value="{{ cfg.from_name }}">
                             </div>
@@ -229,11 +238,11 @@
                                            id="email_enabled" name="email_enabled" value="1"
                                            {% if cfg.email_enabled == '1' %}checked{% endif %}>
                                     <label class="form-check-label" for="email_enabled">
-                                        Enable email sending
+                                        {{ _('Enable email sending') }}
                                     </label>
                                 </div>
                                 <div class="form-text">
-                                    When off, both manual "Send Now" and the auto-schedule will do nothing.
+                                    {{ _('When off, both manual "Send Now" and the auto-schedule will do nothing.') }}
                                 </div>
                             </div>
 
@@ -243,11 +252,11 @@
                                            id="email_debug" name="email_debug" value="1"
                                            {% if cfg.email_debug == '1' %}checked{% endif %}>
                                     <label class="form-check-label" for="email_debug">
-                                        Debug mode — log runs to DB and show errors in the UI
+                                        {{ _('Debug mode — log runs to DB and show errors in the UI') }}
                                     </label>
                                 </div>
                                 <div class="form-text">
-                                    When on, every send run is written to the debug log below and SMTP errors are shown as flash notifications.
+                                    {{ _('When on, every send run is written to the debug log below and SMTP errors are shown as flash notifications.') }}
                                 </div>
                             </div>
 
@@ -258,20 +267,20 @@
                                            {% if cfg.admin_summary_email == '1' %}checked{% endif %}
                                            {% if not cfg.site_admin_id %}disabled{% endif %}>
                                     <label class="form-check-label" for="admin_summary_email">
-                                        Send admin summary email
+                                        {{ _('Send admin summary email') }}
                                     </label>
                                 </div>
                                 <div class="form-text">
                                     {% if cfg.site_admin_id %}
-                                        After each email run, send a full overview of all active users' balances to the site admin.
+                                        {{ _('After each email run, send a full overview of all active users\' balances to the site admin.') }}
                                     {% else %}
-                                        No site admin is configured. Set one in <strong>General</strong> to enable this option.
+                                        {{ _('No site admin is configured. Set one in <strong>General</strong> to enable this option.') }}
                                     {% endif %}
                                 </div>
                             </div>
 
                             <button type="submit" class="btn btn-primary w-100">
-                                <i class="bi bi-floppy"></i> Save Settings
+                                <i class="bi bi-floppy"></i> {{ _('Save Settings') }}
                             </button>
                         </form>
                     </div>
@@ -283,16 +292,15 @@
 
                 <div class="card">
                     <div class="card-header">
-                        <i class="bi bi-send"></i> Send Now
+                        <i class="bi bi-send"></i> {{ _('Send Now') }}
                     </div>
                     <div class="card-body">
                         <p class="text-muted mb-3">
-                            Send a balance-update email to every active user immediately using
-                            the credentials configured on the left.
+                            {{ _('Send a balance-update email to every active user immediately using the credentials configured on the left.') }}
                         </p>
                         <form method="POST" action="{{ url_for('settings_bp.settings_send_now') }}">
                             <button type="submit" class="btn btn-success w-100">
-                                <i class="bi bi-send-fill"></i> Send Emails Now
+                                <i class="bi bi-send-fill"></i> {{ _('Send Emails Now') }}
                             </button>
                         </form>
                     </div>
@@ -300,7 +308,7 @@
 
                 <div class="card">
                     <div class="card-header">
-                        <i class="bi bi-clock"></i> Auto-Schedule
+                        <i class="bi bi-clock"></i> {{ _('Auto-Schedule') }}
                     </div>
                     <div class="card-body">
                         <form method="POST" action="{{ url_for('settings_bp.settings_schedule') }}">
@@ -311,28 +319,28 @@
                                        {% if cfg.schedule_enabled == '1' %}checked{% endif %}
                                        data-toggle-target="schedule_fields">
                                 <label class="form-check-label" for="schedule_enabled">
-                                    Enable automatic schedule
+                                    {{ _('Enable automatic schedule') }}
                                 </label>
                             </div>
 
                             <div id="schedule_fields" {% if cfg.schedule_enabled != '1' %}style="display:none"{% endif %}>
 
                                 <div class="mb-3">
-                                    <label class="form-label">Day</label>
+                                    <label class="form-label">{{ _('Day') }}</label>
                                     <select class="form-select" name="schedule_day">
-                                        <option value="*"   {% if cfg.schedule_day == '*'   %}selected{% endif %}>Every day</option>
-                                        <option value="mon" {% if cfg.schedule_day == 'mon' %}selected{% endif %}>Monday</option>
-                                        <option value="tue" {% if cfg.schedule_day == 'tue' %}selected{% endif %}>Tuesday</option>
-                                        <option value="wed" {% if cfg.schedule_day == 'wed' %}selected{% endif %}>Wednesday</option>
-                                        <option value="thu" {% if cfg.schedule_day == 'thu' %}selected{% endif %}>Thursday</option>
-                                        <option value="fri" {% if cfg.schedule_day == 'fri' %}selected{% endif %}>Friday</option>
-                                        <option value="sat" {% if cfg.schedule_day == 'sat' %}selected{% endif %}>Saturday</option>
-                                        <option value="sun" {% if cfg.schedule_day == 'sun' %}selected{% endif %}>Sunday</option>
+                                        <option value="*"   {% if cfg.schedule_day == '*'   %}selected{% endif %}>{{ _('Every day') }}</option>
+                                        <option value="mon" {% if cfg.schedule_day == 'mon' %}selected{% endif %}>{{ _('Monday') }}</option>
+                                        <option value="tue" {% if cfg.schedule_day == 'tue' %}selected{% endif %}>{{ _('Tuesday') }}</option>
+                                        <option value="wed" {% if cfg.schedule_day == 'wed' %}selected{% endif %}>{{ _('Wednesday') }}</option>
+                                        <option value="thu" {% if cfg.schedule_day == 'thu' %}selected{% endif %}>{{ _('Thursday') }}</option>
+                                        <option value="fri" {% if cfg.schedule_day == 'fri' %}selected{% endif %}>{{ _('Friday') }}</option>
+                                        <option value="sat" {% if cfg.schedule_day == 'sat' %}selected{% endif %}>{{ _('Saturday') }}</option>
+                                        <option value="sun" {% if cfg.schedule_day == 'sun' %}selected{% endif %}>{{ _('Sunday') }}</option>
                                     </select>
                                 </div>
 
                                 <div class="mb-4">
-                                    <label class="form-label">Time <span class="text-muted">(24 h)</span></label>
+                                    <label class="form-label">{{ _('Time') }} <span class="text-muted">(24 h)</span></label>
                                     <div class="d-flex align-items-center gap-2">
                                         <select class="form-select w-auto" name="schedule_hour">
                                             {% for h in range(24) %}
@@ -354,14 +362,14 @@
                                 </div>
 
                                 {% if cfg.schedule_enabled == '1' %}
-                                {% set day_labels = {'*': 'every day', 'mon': 'every Monday',
-                                                     'tue': 'every Tuesday', 'wed': 'every Wednesday',
-                                                     'thu': 'every Thursday', 'fri': 'every Friday',
-                                                     'sat': 'every Saturday', 'sun': 'every Sunday'} %}
+                                {% set day_labels = {'*': _('every day'), 'mon': _('every Monday'),
+                                                     'tue': _('every Tuesday'), 'wed': _('every Wednesday'),
+                                                     'thu': _('every Thursday'), 'fri': _('every Friday'),
+                                                     'sat': _('every Saturday'), 'sun': _('every Sunday')} %}
                                 <div class="alert alert-success py-2 mb-3">
                                     <i class="bi bi-check-circle"></i>
-                                    Emails will be sent <strong>{{ day_labels.get(cfg.schedule_day, cfg.schedule_day) }}</strong>
-                                    at <strong>{{ '%02d:%02d'|format(cfg.schedule_hour|int, cfg.schedule_minute|int) }}</strong>
+                                    {{ _('Emails will be sent') }} <strong>{{ day_labels.get(cfg.schedule_day, cfg.schedule_day) }}</strong>
+                                    {{ _('at') }} <strong>{{ '%02d:%02d'|format(cfg.schedule_hour|int, cfg.schedule_minute|int) }}</strong>
                                     <span class="text-muted">({{ cfg.timezone }})</span>.
                                 </div>
                                 {% endif %}
@@ -369,7 +377,7 @@
                             </div>
 
                             <button type="submit" class="btn btn-primary w-100">
-                                <i class="bi bi-floppy"></i> Save Schedule
+                                <i class="bi bi-floppy"></i> {{ _('Save Schedule') }}
                             </button>
                         </form>
                     </div>
@@ -381,11 +389,11 @@
         {% if cfg.email_debug == '1' %}
         <div class="card mt-4">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-journal-text"></i> Email Debug Log</span>
+                <span><i class="bi bi-journal-text"></i> {{ _('Email Debug Log') }}</span>
                 <form method="POST" action="{{ url_for('settings_bp.settings_email_clear_log') }}" class="d-inline">
                     <button type="submit" class="btn btn-sm btn-outline-danger"
-                            data-confirm="Clear the entire email debug log?">
-                        <i class="bi bi-trash"></i> Clear Log
+                            data-confirm="{{ _('Clear the entire email debug log?') }}">
+                        <i class="bi bi-trash"></i> {{ _('Clear Log') }}
                     </button>
                 </form>
             </div>
@@ -394,7 +402,7 @@
                 <pre class="bg-dark text-light p-3 rounded small mb-0" style="max-height: 400px; overflow-y: auto; font-size: 0.78rem;">{% for log in email_logs %}{{ log.sent_at.strftime('%Y-%m-%d %H:%M') }} [{{ log.level|upper }}] {% if log.recipient %}{{ '%-40s'|format(log.recipient) }} {% endif %}{{ log.message }}
 {% endfor %}</pre>
                 {% else %}
-                <p class="text-muted small mb-0">No log entries yet. Send emails to generate log entries.</p>
+                <p class="text-muted small mb-0">{{ _('No log entries yet. Send emails to generate log entries.') }}</p>
                 {% endif %}
             </div>
         </div>
@@ -408,7 +416,7 @@
         <!-- Card 1 — Global toggle -->
         <div class="card mb-4">
             <div class="card-header">
-                <i class="bi bi-toggle-on"></i> Common Autocomplete
+                <i class="bi bi-toggle-on"></i> {{ _('Common Autocomplete') }}
             </div>
             <div class="card-body">
                 <form method="POST" action="{{ url_for('settings_bp.settings_common') }}">
@@ -417,14 +425,14 @@
                                id="common_enabled" name="common_enabled" value="1"
                                {% if cfg.common_enabled == '1' %}checked{% endif %}>
                         <label class="form-check-label" for="common_enabled">
-                            Enable Common autocomplete feature
+                            {{ _('Enable Common autocomplete feature') }}
                         </label>
                     </div>
                     <div class="form-text mb-3">
-                        When off, all autocomplete suggestions (item names, descriptions, prices) are disabled across the app.
+                        {{ _('When off, all autocomplete suggestions (item names, descriptions, prices) are disabled across the app.') }}
                     </div>
                     <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-floppy"></i> Save
+                        <i class="bi bi-floppy"></i> {{ _('Save') }}
                     </button>
                 </form>
             </div>
@@ -433,16 +441,16 @@
         <!-- Card 2 — Item Names -->
         <div class="card mb-4">
             <div class="card-header">
-                <i class="bi bi-bookmark-star"></i> Item Names
+                <i class="bi bi-bookmark-star"></i> {{ _('Item Names') }}
             </div>
             <div class="card-body">
                 <p class="text-muted mb-3">
-                    These appear as autocomplete suggestions in expense item name fields.
+                    {{ _('These appear as autocomplete suggestions in expense item name fields.') }}
                 </p>
                 <form method="POST" action="{{ url_for('settings_bp.add_common_item') }}" class="d-flex gap-2 mb-3">
-                    <input type="text" class="form-control" name="name" placeholder="New item name" required>
+                    <input type="text" class="form-control" name="name" placeholder="{{ _('New item name') }}" required>
                     <button type="submit" class="btn btn-success text-nowrap">
-                        <i class="bi bi-plus"></i> Add
+                        <i class="bi bi-plus"></i> {{ _('Add') }}
                     </button>
                 </form>
                 {% if common_items %}
@@ -452,7 +460,7 @@
                         {{ item.name }}
                         <form method="POST" action="{{ url_for('settings_bp.delete_common_item', item_id=item.id) }}" class="d-inline m-0">
                             <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent text-danger lh-1"
-                                    title="Remove" data-confirm="Remove '{{ item.name }}' from common items?">
+                                    title="{{ _('Remove') }}" data-confirm="{{ _("Remove '%(name)s' from common items?", name=item.name) }}">
                                 <i class="bi bi-x-lg" style="font-size:0.75rem"></i>
                             </button>
                         </form>
@@ -460,17 +468,17 @@
                     {% endfor %}
                 </div>
                 {% else %}
-                <p class="text-muted small mb-4">No common items saved yet.</p>
+                <p class="text-muted small mb-4">{{ _('No common items saved yet.') }}</p>
                 {% endif %}
 
                 <hr>
-                <h6 class="text-muted mb-1">Blacklist</h6>
-                <p class="text-muted small mb-2">Values listed here are never auto-collected, even if they meet the threshold.</p>
+                <h6 class="text-muted mb-1">{{ _('Blacklist') }}</h6>
+                <p class="text-muted small mb-2">{{ _('Values listed here are never auto-collected, even if they meet the threshold.') }}</p>
                 <form method="POST" action="{{ url_for('settings_bp.add_common_blacklist') }}" class="d-flex gap-2 mb-3">
                     <input type="hidden" name="type" value="item">
-                    <input type="text" class="form-control" name="value" placeholder="Item name to blacklist" required>
+                    <input type="text" class="form-control" name="value" placeholder="{{ _('Item name to blacklist') }}" required>
                     <button type="submit" class="btn btn-outline-secondary text-nowrap">
-                        <i class="bi bi-plus"></i> Add to blacklist
+                        <i class="bi bi-plus"></i> {{ _('Add to blacklist') }}
                     </button>
                 </form>
                 {% set item_blacklist = common_blacklist | selectattr('type', 'equalto', 'item') | list %}
@@ -481,7 +489,7 @@
                         {{ bl.value }}
                         <form method="POST" action="{{ url_for('settings_bp.delete_common_blacklist', item_id=bl.id) }}" class="d-inline m-0">
                             <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent text-dark lh-1"
-                                    title="Remove" data-confirm="Remove '{{ bl.value }}' from item blacklist?">
+                                    title="{{ _('Remove') }}" data-confirm="{{ _("Remove '%(value)s' from item blacklist?", value=bl.value) }}">
                                 <i class="bi bi-x-lg" style="font-size:0.75rem"></i>
                             </button>
                         </form>
@@ -489,7 +497,7 @@
                     {% endfor %}
                 </div>
                 {% else %}
-                <p class="text-muted small mb-0">No blacklisted item names.</p>
+                <p class="text-muted small mb-0">{{ _('No blacklisted item names.') }}</p>
                 {% endif %}
             </div>
         </div>
@@ -497,16 +505,16 @@
         <!-- Card 3 — Descriptions -->
         <div class="card mb-4">
             <div class="card-header">
-                <i class="bi bi-chat-left-text"></i> Descriptions
+                <i class="bi bi-chat-left-text"></i> {{ _('Descriptions') }}
             </div>
             <div class="card-body">
                 <p class="text-muted mb-3">
-                    These appear as autocomplete suggestions in the transaction description field.
+                    {{ _('These appear as autocomplete suggestions in the transaction description field.') }}
                 </p>
                 <form method="POST" action="{{ url_for('settings_bp.add_common_description') }}" class="d-flex gap-2 mb-3">
-                    <input type="text" class="form-control" name="value" placeholder="New description" required>
+                    <input type="text" class="form-control" name="value" placeholder="{{ _('New description') }}" required>
                     <button type="submit" class="btn btn-success text-nowrap">
-                        <i class="bi bi-plus"></i> Add
+                        <i class="bi bi-plus"></i> {{ _('Add') }}
                     </button>
                 </form>
                 {% if common_descriptions %}
@@ -516,7 +524,7 @@
                         {{ desc.value }}
                         <form method="POST" action="{{ url_for('settings_bp.delete_common_description', item_id=desc.id) }}" class="d-inline m-0">
                             <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent text-danger lh-1"
-                                    title="Remove" data-confirm="Remove '{{ desc.value }}' from common descriptions?">
+                                    title="{{ _('Remove') }}" data-confirm="{{ _("Remove '%(value)s' from common descriptions?", value=desc.value) }}">
                                 <i class="bi bi-x-lg" style="font-size:0.75rem"></i>
                             </button>
                         </form>
@@ -524,17 +532,17 @@
                     {% endfor %}
                 </div>
                 {% else %}
-                <p class="text-muted small mb-4">No common descriptions saved yet.</p>
+                <p class="text-muted small mb-4">{{ _('No common descriptions saved yet.') }}</p>
                 {% endif %}
 
                 <hr>
-                <h6 class="text-muted mb-1">Blacklist</h6>
-                <p class="text-muted small mb-2">Values listed here are never auto-collected, even if they meet the threshold.</p>
+                <h6 class="text-muted mb-1">{{ _('Blacklist') }}</h6>
+                <p class="text-muted small mb-2">{{ _('Values listed here are never auto-collected, even if they meet the threshold.') }}</p>
                 <form method="POST" action="{{ url_for('settings_bp.add_common_blacklist') }}" class="d-flex gap-2 mb-3">
                     <input type="hidden" name="type" value="description">
-                    <input type="text" class="form-control" name="value" placeholder="Description to blacklist" required>
+                    <input type="text" class="form-control" name="value" placeholder="{{ _('Description to blacklist') }}" required>
                     <button type="submit" class="btn btn-outline-secondary text-nowrap">
-                        <i class="bi bi-plus"></i> Add to blacklist
+                        <i class="bi bi-plus"></i> {{ _('Add to blacklist') }}
                     </button>
                 </form>
                 {% set desc_blacklist = common_blacklist | selectattr('type', 'equalto', 'description') | list %}
@@ -545,7 +553,7 @@
                         {{ bl.value }}
                         <form method="POST" action="{{ url_for('settings_bp.delete_common_blacklist', item_id=bl.id) }}" class="d-inline m-0">
                             <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent text-dark lh-1"
-                                    title="Remove" data-confirm="Remove '{{ bl.value }}' from description blacklist?">
+                                    title="{{ _('Remove') }}" data-confirm="{{ _("Remove '%(value)s' from description blacklist?", value=bl.value) }}">
                                 <i class="bi bi-x-lg" style="font-size:0.75rem"></i>
                             </button>
                         </form>
@@ -553,7 +561,7 @@
                     {% endfor %}
                 </div>
                 {% else %}
-                <p class="text-muted small mb-0">No blacklisted descriptions.</p>
+                <p class="text-muted small mb-0">{{ _('No blacklisted descriptions.') }}</p>
                 {% endif %}
             </div>
         </div>
@@ -561,17 +569,17 @@
         <!-- Card 4 — Prices -->
         <div class="card mb-4">
             <div class="card-header">
-                <i class="bi bi-currency-euro"></i> Prices
+                <i class="bi bi-currency-euro"></i> {{ _('Prices') }}
             </div>
             <div class="card-body">
                 <p class="text-muted mb-3">
-                    These appear as autocomplete suggestions in the expense item price fields.
+                    {{ _('These appear as autocomplete suggestions in the expense item price fields.') }}
                 </p>
                 <form method="POST" action="{{ url_for('settings_bp.add_common_price') }}" class="d-flex gap-2 mb-3">
-                    <input type="text" inputmode="decimal" class="form-control" name="value" placeholder="Price (e.g. 3{{ cfg.decimal_separator }}50)"
+                    <input type="text" inputmode="decimal" class="form-control" name="value" placeholder="{{ _('Price (e.g. 3%(sep)s50)', sep=cfg.decimal_separator) }}"
                            required style="max-width: 200px">
                     <button type="submit" class="btn btn-success text-nowrap">
-                        <i class="bi bi-plus"></i> Add
+                        <i class="bi bi-plus"></i> {{ _('Add') }}
                     </button>
                 </form>
                 {% if common_prices %}
@@ -581,7 +589,7 @@
                         {{ currency_symbol }}{{ price.value|money }}
                         <form method="POST" action="{{ url_for('settings_bp.delete_common_price', item_id=price.id) }}" class="d-inline m-0">
                             <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent text-danger lh-1"
-                                    title="Remove" data-confirm="Remove {{ currency_symbol }}{{ price.value|money }} from common prices?">
+                                    title="{{ _('Remove') }}" data-confirm="{{ _('Remove %(symbol)s%(amount)s from common prices?', symbol=currency_symbol, amount=price.value|money) }}">
                                 <i class="bi bi-x-lg" style="font-size:0.75rem"></i>
                             </button>
                         </form>
@@ -589,18 +597,18 @@
                     {% endfor %}
                 </div>
                 {% else %}
-                <p class="text-muted small mb-4">No common prices saved yet.</p>
+                <p class="text-muted small mb-4">{{ _('No common prices saved yet.') }}</p>
                 {% endif %}
 
                 <hr>
-                <h6 class="text-muted mb-1">Blacklist</h6>
-                <p class="text-muted small mb-2">Prices listed here are never auto-collected, even if they meet the threshold. Enter as decimal (e.g. 3{{ cfg.decimal_separator }}50).</p>
+                <h6 class="text-muted mb-1">{{ _('Blacklist') }}</h6>
+                <p class="text-muted small mb-2">{{ _('Prices listed here are never auto-collected, even if they meet the threshold. Enter as decimal (e.g. 3%(sep)s50).', sep=cfg.decimal_separator) }}</p>
                 <form method="POST" action="{{ url_for('settings_bp.add_common_blacklist') }}" class="d-flex gap-2 mb-3">
                     <input type="hidden" name="type" value="price">
-                    <input type="text" inputmode="decimal" class="form-control" name="value" placeholder="Price to blacklist (e.g. 3{{ cfg.decimal_separator }}50)"
+                    <input type="text" inputmode="decimal" class="form-control" name="value" placeholder="{{ _('Price to blacklist (e.g. 3%(sep)s50)', sep=cfg.decimal_separator) }}"
                            required style="max-width: 200px">
                     <button type="submit" class="btn btn-outline-secondary text-nowrap">
-                        <i class="bi bi-plus"></i> Add to blacklist
+                        <i class="bi bi-plus"></i> {{ _('Add to blacklist') }}
                     </button>
                 </form>
                 {% set price_blacklist = common_blacklist | selectattr('type', 'equalto', 'price') | list %}
@@ -611,7 +619,7 @@
                         {{ bl.value }}
                         <form method="POST" action="{{ url_for('settings_bp.delete_common_blacklist', item_id=bl.id) }}" class="d-inline m-0">
                             <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent text-dark lh-1"
-                                    title="Remove" data-confirm="Remove {{ bl.value }} from price blacklist?">
+                                    title="{{ _('Remove') }}" data-confirm="{{ _('Remove %(value)s from price blacklist?', value=bl.value) }}">
                                 <i class="bi bi-x-lg" style="font-size:0.75rem"></i>
                             </button>
                         </form>
@@ -619,7 +627,7 @@
                     {% endfor %}
                 </div>
                 {% else %}
-                <p class="text-muted small mb-0">No blacklisted prices.</p>
+                <p class="text-muted small mb-0">{{ _('No blacklisted prices.') }}</p>
                 {% endif %}
             </div>
         </div>
@@ -627,7 +635,7 @@
         <!-- Card 5 — Auto-Collect Schedule -->
         <div class="card mb-4">
             <div class="card-header">
-                <i class="bi bi-clock-history"></i> Auto-Collect Schedule
+                <i class="bi bi-clock-history"></i> {{ _('Auto-Collect Schedule') }}
             </div>
             <div class="card-body">
                 <form method="POST" action="{{ url_for('settings_bp.settings_common_auto') }}">
@@ -638,11 +646,11 @@
                                {% if cfg.common_auto_enabled == '1' %}checked{% endif %}
                                data-toggle-target="common_auto_fields">
                         <label class="form-check-label" for="common_auto_enabled">
-                            Enable auto-collect
+                            {{ _('Enable auto-collect') }}
                         </label>
                     </div>
                     <div class="form-text mb-3">
-                        Automatically promote frequently-used values to the common lists on a schedule.
+                        {{ _('Automatically promote frequently-used values to the common lists on a schedule.') }}
                     </div>
 
                     <div class="form-check form-switch mb-4">
@@ -650,7 +658,7 @@
                                id="common_auto_debug" name="common_auto_debug" value="1"
                                {% if cfg.common_auto_debug == '1' %}checked{% endif %}>
                         <label class="form-check-label" for="common_auto_debug">
-                            Debug mode — log all decisions to database
+                            {{ _('Debug mode — log all decisions to database') }}
                         </label>
                     </div>
 
@@ -663,10 +671,10 @@
                                         <input class="form-check-input" type="checkbox" role="switch"
                                                id="common_items_auto" name="common_items_auto" value="1"
                                                {% if cfg.common_items_auto == '1' %}checked{% endif %}>
-                                        <label class="form-check-label" for="common_items_auto">Item names</label>
+                                        <label class="form-check-label" for="common_items_auto">{{ _('Item names') }}</label>
                                     </div>
                                     <div class="d-flex align-items-center gap-2">
-                                        <label class="form-label mb-0 text-muted small">Min occurrences:</label>
+                                        <label class="form-label mb-0 text-muted small">{{ _('Min occurrences:') }}</label>
                                         <input type="number" class="form-control form-control-sm"
                                                name="common_items_threshold"
                                                value="{{ cfg.common_items_threshold }}"
@@ -678,10 +686,10 @@
                                         <input class="form-check-input" type="checkbox" role="switch"
                                                id="common_descriptions_auto" name="common_descriptions_auto" value="1"
                                                {% if cfg.common_descriptions_auto == '1' %}checked{% endif %}>
-                                        <label class="form-check-label" for="common_descriptions_auto">Descriptions</label>
+                                        <label class="form-check-label" for="common_descriptions_auto">{{ _('Descriptions') }}</label>
                                     </div>
                                     <div class="d-flex align-items-center gap-2">
-                                        <label class="form-label mb-0 text-muted small">Min occurrences:</label>
+                                        <label class="form-label mb-0 text-muted small">{{ _('Min occurrences:') }}</label>
                                         <input type="number" class="form-control form-control-sm"
                                                name="common_descriptions_threshold"
                                                value="{{ cfg.common_descriptions_threshold }}"
@@ -693,10 +701,10 @@
                                         <input class="form-check-input" type="checkbox" role="switch"
                                                id="common_prices_auto" name="common_prices_auto" value="1"
                                                {% if cfg.common_prices_auto == '1' %}checked{% endif %}>
-                                        <label class="form-check-label" for="common_prices_auto">Prices</label>
+                                        <label class="form-check-label" for="common_prices_auto">{{ _('Prices') }}</label>
                                     </div>
                                     <div class="d-flex align-items-center gap-2">
-                                        <label class="form-label mb-0 text-muted small">Min occurrences:</label>
+                                        <label class="form-label mb-0 text-muted small">{{ _('Min occurrences:') }}</label>
                                         <input type="number" class="form-control form-control-sm"
                                                name="common_prices_threshold"
                                                value="{{ cfg.common_prices_threshold }}"
@@ -707,19 +715,19 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Run</label>
+                            <label class="form-label">{{ _('Run') }}</label>
                             <div class="d-flex align-items-center gap-2 flex-wrap">
                                 <select class="form-select w-auto" name="common_auto_day">
-                                    <option value="*"   {% if cfg.common_auto_day == '*'   %}selected{% endif %}>Every day</option>
-                                    <option value="mon" {% if cfg.common_auto_day == 'mon' %}selected{% endif %}>Monday</option>
-                                    <option value="tue" {% if cfg.common_auto_day == 'tue' %}selected{% endif %}>Tuesday</option>
-                                    <option value="wed" {% if cfg.common_auto_day == 'wed' %}selected{% endif %}>Wednesday</option>
-                                    <option value="thu" {% if cfg.common_auto_day == 'thu' %}selected{% endif %}>Thursday</option>
-                                    <option value="fri" {% if cfg.common_auto_day == 'fri' %}selected{% endif %}>Friday</option>
-                                    <option value="sat" {% if cfg.common_auto_day == 'sat' %}selected{% endif %}>Saturday</option>
-                                    <option value="sun" {% if cfg.common_auto_day == 'sun' %}selected{% endif %}>Sunday</option>
+                                    <option value="*"   {% if cfg.common_auto_day == '*'   %}selected{% endif %}>{{ _('Every day') }}</option>
+                                    <option value="mon" {% if cfg.common_auto_day == 'mon' %}selected{% endif %}>{{ _('Monday') }}</option>
+                                    <option value="tue" {% if cfg.common_auto_day == 'tue' %}selected{% endif %}>{{ _('Tuesday') }}</option>
+                                    <option value="wed" {% if cfg.common_auto_day == 'wed' %}selected{% endif %}>{{ _('Wednesday') }}</option>
+                                    <option value="thu" {% if cfg.common_auto_day == 'thu' %}selected{% endif %}>{{ _('Thursday') }}</option>
+                                    <option value="fri" {% if cfg.common_auto_day == 'fri' %}selected{% endif %}>{{ _('Friday') }}</option>
+                                    <option value="sat" {% if cfg.common_auto_day == 'sat' %}selected{% endif %}>{{ _('Saturday') }}</option>
+                                    <option value="sun" {% if cfg.common_auto_day == 'sun' %}selected{% endif %}>{{ _('Sunday') }}</option>
                                 </select>
-                                <span class="text-muted">at</span>
+                                <span class="text-muted">{{ _('at') }}</span>
                                 <select class="form-select w-auto" name="common_auto_hour">
                                     {% for h in range(24) %}
                                     <option value="{{ h }}" {% if cfg.common_auto_hour|int == h %}selected{% endif %}>
@@ -740,14 +748,14 @@
                         </div>
 
                         {% if cfg.common_auto_enabled == '1' %}
-                        {% set auto_day_labels = {'*': 'every day', 'mon': 'every Monday',
-                                                  'tue': 'every Tuesday', 'wed': 'every Wednesday',
-                                                  'thu': 'every Thursday', 'fri': 'every Friday',
-                                                  'sat': 'every Saturday', 'sun': 'every Sunday'} %}
+                        {% set auto_day_labels = {'*': _('every day'), 'mon': _('every Monday'),
+                                                  'tue': _('every Tuesday'), 'wed': _('every Wednesday'),
+                                                  'thu': _('every Thursday'), 'fri': _('every Friday'),
+                                                  'sat': _('every Saturday'), 'sun': _('every Sunday')} %}
                         <div class="alert alert-success py-2 mb-3">
                             <i class="bi bi-check-circle"></i>
-                            Auto-collect runs <strong>{{ auto_day_labels.get(cfg.common_auto_day, cfg.common_auto_day) }}</strong>
-                            at <strong>{{ '%02d:%02d'|format(cfg.common_auto_hour|int, cfg.common_auto_minute|int) }}</strong>
+                            {{ _('Auto-collect runs') }} <strong>{{ auto_day_labels.get(cfg.common_auto_day, cfg.common_auto_day) }}</strong>
+                            {{ _('at') }} <strong>{{ '%02d:%02d'|format(cfg.common_auto_hour|int, cfg.common_auto_minute|int) }}</strong>
                             <span class="text-muted">({{ cfg.timezone }})</span>.
                         </div>
                         {% endif %}
@@ -756,25 +764,25 @@
 
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-floppy"></i> Save Auto-Collect
+                            <i class="bi bi-floppy"></i> {{ _('Save Auto-Collect') }}
                         </button>
                     </div>
                 </form>
 
                 <form method="POST" action="{{ url_for('settings_bp.settings_common_auto_run') }}" class="mt-2">
                     <button type="submit" class="btn btn-outline-secondary">
-                        <i class="bi bi-play-fill"></i> Run Now
+                        <i class="bi bi-play-fill"></i> {{ _('Run Now') }}
                     </button>
                 </form>
 
                 {% if cfg.common_auto_debug == '1' %}
                 <hr class="mt-4">
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h6 class="mb-0 text-muted">Debug Log</h6>
+                    <h6 class="mb-0 text-muted">{{ _('Debug Log') }}</h6>
                     <form method="POST" action="{{ url_for('settings_bp.settings_common_auto_clear_log') }}">
                         <button type="submit" class="btn btn-sm btn-outline-danger"
-                                data-confirm="Clear the entire debug log?">
-                            <i class="bi bi-trash"></i> Clear Log
+                                data-confirm="{{ _('Clear the entire debug log?') }}">
+                            <i class="bi bi-trash"></i> {{ _('Clear Log') }}
                         </button>
                     </form>
                 </div>
@@ -782,7 +790,7 @@
                 <pre class="bg-dark text-light p-3 rounded small" style="max-height: 400px; overflow-y: auto; font-size: 0.78rem;">{% for log in auto_collect_logs %}{{ log.ran_at.strftime('%Y-%m-%d %H:%M') }} [{{ log.level|upper }}] {{ '%-12s'|format(log.category) }} {{ log.message }}
 {% endfor %}</pre>
                 {% else %}
-                <p class="text-muted small">No log entries yet. Run auto-collect to generate log entries.</p>
+                <p class="text-muted small">{{ _('No log entries yet. Run auto-collect to generate log entries.') }}</p>
                 {% endif %}
                 {% endif %}
 
@@ -797,10 +805,10 @@
         <!-- Card 1 — Backups list + Create Now -->
         <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-archive"></i> Backups</span>
+                <span><i class="bi bi-archive"></i> {{ _('Backups') }}</span>
                 <form method="POST" action="{{ url_for('settings_bp.settings_backup_create') }}">
                     <button type="submit" class="btn btn-sm btn-success">
-                        <i class="bi bi-plus-circle"></i> Create Backup Now
+                        <i class="bi bi-plus-circle"></i> {{ _('Create Backup Now') }}
                     </button>
                 </form>
             </div>
@@ -810,9 +818,9 @@
                     <table class="table table-hover align-middle mb-0">
                         <thead>
                             <tr>
-                                <th>Filename</th>
-                                <th>Size</th>
-                                <th>Created</th>
+                                <th>{{ _('Filename') }}</th>
+                                <th>{{ _('Size') }}</th>
+                                <th>{{ _('Created') }}</th>
                                 <th></th>
                             </tr>
                         </thead>
@@ -830,16 +838,16 @@
                                     <div class="d-flex gap-2 justify-content-end">
                                         <a href="{{ url_for('settings_bp.backup_download', filename=b.filename) }}"
                                            class="btn btn-sm btn-outline-primary">
-                                            <i class="bi bi-download"></i> Download
+                                            <i class="bi bi-download"></i> {{ _('Download') }}
                                         </a>
                                         <button type="button" class="btn btn-sm btn-outline-success"
                                                 data-restore-file="{{ b.filename }}">
-                                            <i class="bi bi-arrow-counterclockwise"></i> Restore
+                                            <i class="bi bi-arrow-counterclockwise"></i> {{ _('Restore') }}
                                         </button>
                                         <form method="POST" action="{{ url_for('settings_bp.backup_delete', filename=b.filename) }}"
                                               class="d-inline">
                                             <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                    data-confirm="Delete {{ b.filename }}?">
+                                                    data-confirm="{{ _('Delete %(filename)s?', filename=b.filename) }}">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </form>
@@ -851,7 +859,7 @@
                     </table>
                 </div>
                 {% else %}
-                <p class="text-muted mb-0">No backups yet. Click "Create Backup Now" to create your first one.</p>
+                <p class="text-muted mb-0">{{ _('No backups yet. Click "Create Backup Now" to create your first one.') }}</p>
                 {% endif %}
             </div>
         </div>
@@ -862,12 +870,11 @@
         <!-- Card 2 — Upload & Restore -->
         <div class="card mb-4">
             <div class="card-header">
-                <i class="bi bi-upload"></i> Upload Backup
+                <i class="bi bi-upload"></i> {{ _('Upload Backup') }}
             </div>
             <div class="card-body">
                 <p class="text-muted mb-3">
-                    Upload a <code>bot_backup_*.tar.gz</code> file. Large files are sent in chunks
-                    so there is no size limit.
+                    {{ _('Upload a <code>bot_backup_*.tar.gz</code> file. Large files are sent in chunks so there is no size limit.') }}
                 </p>
 
                 <div class="mb-3">
@@ -875,7 +882,7 @@
                 </div>
 
                 <button type="button" class="btn btn-primary" id="uploadBtn">
-                    <i class="bi bi-upload"></i> Upload
+                    <i class="bi bi-upload"></i> {{ _('Upload') }}
                 </button>
 
                 <div id="uploadProgress" class="mt-3" style="display:none">
@@ -883,7 +890,7 @@
                         <div class="progress-bar progress-bar-striped progress-bar-animated"
                              id="uploadProgressBar" role="progressbar" style="width: 0%">0%</div>
                     </div>
-                    <small class="text-muted" id="uploadStatus">Preparing…</small>
+                    <small class="text-muted" id="uploadStatus">{{ _('Preparing…') }}</small>
                 </div>
             </div>
         </div>
@@ -891,7 +898,7 @@
         <!-- Card 3 — Auto-Schedule -->
         <div class="card mb-4">
             <div class="card-header">
-                <i class="bi bi-clock"></i> Auto-Backup Schedule
+                <i class="bi bi-clock"></i> {{ _('Auto-Backup Schedule') }}
             </div>
             <div class="card-body">
                 <form method="POST" action="{{ url_for('settings_bp.settings_backup') }}">
@@ -902,11 +909,11 @@
                                {% if cfg.backup_enabled == '1' %}checked{% endif %}
                                data-toggle-target="backup_schedule_fields">
                         <label class="form-check-label" for="backup_enabled">
-                            Enable automatic backups
+                            {{ _('Enable automatic backups') }}
                         </label>
                     </div>
                     <div class="form-text mb-3">
-                        Automatically create a backup on the configured schedule.
+                        {{ _('Automatically create a backup on the configured schedule.') }}
                     </div>
 
                     <div class="form-check form-switch mb-3">
@@ -914,7 +921,7 @@
                                id="backup_debug" name="backup_debug" value="1"
                                {% if cfg.backup_debug == '1' %}checked{% endif %}>
                         <label class="form-check-label" for="backup_debug">
-                            Debug mode — log backup runs to database
+                            {{ _('Debug mode — log backup runs to database') }}
                         </label>
                     </div>
 
@@ -925,14 +932,14 @@
                                    {% if cfg.backup_admin_email == '1' %}checked{% endif %}
                                    {% if not cfg.site_admin_id %}disabled{% endif %}>
                             <label class="form-check-label" for="backup_admin_email">
-                                Send backup status email to site admin
+                                {{ _('Send backup status email to site admin') }}
                             </label>
                         </div>
                         <div class="form-text">
                             {% if cfg.site_admin_id %}
-                                After each <strong>scheduled</strong> backup, send a status report to the site admin. Manual backups do not trigger this email.
+                                {{ _('After each <strong>scheduled</strong> backup, send a status report to the site admin. Manual backups do not trigger this email.') }}
                             {% else %}
-                                No site admin is configured. Set one in <strong>General</strong> to enable this option.
+                                {{ _('No site admin is configured. Set one in <strong>General</strong> to enable this option.') }}
                             {% endif %}
                         </div>
                     </div>
@@ -940,19 +947,19 @@
                     <div id="backup_schedule_fields" {% if cfg.backup_enabled != '1' %}style="display:none"{% endif %}>
 
                         <div class="mb-3">
-                            <label class="form-label">Run</label>
+                            <label class="form-label">{{ _('Run') }}</label>
                             <div class="d-flex align-items-center gap-2 flex-wrap">
                                 <select class="form-select w-auto" name="backup_day">
-                                    <option value="*"   {% if cfg.backup_day == '*'   %}selected{% endif %}>Every day</option>
-                                    <option value="mon" {% if cfg.backup_day == 'mon' %}selected{% endif %}>Monday</option>
-                                    <option value="tue" {% if cfg.backup_day == 'tue' %}selected{% endif %}>Tuesday</option>
-                                    <option value="wed" {% if cfg.backup_day == 'wed' %}selected{% endif %}>Wednesday</option>
-                                    <option value="thu" {% if cfg.backup_day == 'thu' %}selected{% endif %}>Thursday</option>
-                                    <option value="fri" {% if cfg.backup_day == 'fri' %}selected{% endif %}>Friday</option>
-                                    <option value="sat" {% if cfg.backup_day == 'sat' %}selected{% endif %}>Saturday</option>
-                                    <option value="sun" {% if cfg.backup_day == 'sun' %}selected{% endif %}>Sunday</option>
+                                    <option value="*"   {% if cfg.backup_day == '*'   %}selected{% endif %}>{{ _('Every day') }}</option>
+                                    <option value="mon" {% if cfg.backup_day == 'mon' %}selected{% endif %}>{{ _('Monday') }}</option>
+                                    <option value="tue" {% if cfg.backup_day == 'tue' %}selected{% endif %}>{{ _('Tuesday') }}</option>
+                                    <option value="wed" {% if cfg.backup_day == 'wed' %}selected{% endif %}>{{ _('Wednesday') }}</option>
+                                    <option value="thu" {% if cfg.backup_day == 'thu' %}selected{% endif %}>{{ _('Thursday') }}</option>
+                                    <option value="fri" {% if cfg.backup_day == 'fri' %}selected{% endif %}>{{ _('Friday') }}</option>
+                                    <option value="sat" {% if cfg.backup_day == 'sat' %}selected{% endif %}>{{ _('Saturday') }}</option>
+                                    <option value="sun" {% if cfg.backup_day == 'sun' %}selected{% endif %}>{{ _('Sunday') }}</option>
                                 </select>
-                                <span class="text-muted">at</span>
+                                <span class="text-muted">{{ _('at') }}</span>
                                 <select class="form-select w-auto" name="backup_hour">
                                     {% for h in range(24) %}
                                     <option value="{{ h }}" {% if cfg.backup_hour|int == h %}selected{% endif %}>
@@ -973,23 +980,23 @@
                         </div>
 
                         <div class="mb-4">
-                            <label for="backup_keep" class="form-label">Keep last</label>
+                            <label for="backup_keep" class="form-label">{{ _('Keep last') }}</label>
                             <div class="d-flex align-items-center gap-2">
                                 <input type="number" class="form-control" id="backup_keep" name="backup_keep"
                                        value="{{ cfg.backup_keep }}" min="1" max="365" style="width: 90px">
-                                <span class="text-muted">backups (older ones are deleted automatically)</span>
+                                <span class="text-muted">{{ _('backups (older ones are deleted automatically)') }}</span>
                             </div>
                         </div>
 
                         {% if cfg.backup_enabled == '1' %}
-                        {% set bday_labels = {'*': 'every day', 'mon': 'every Monday',
-                                              'tue': 'every Tuesday', 'wed': 'every Wednesday',
-                                              'thu': 'every Thursday', 'fri': 'every Friday',
-                                              'sat': 'every Saturday', 'sun': 'every Sunday'} %}
+                        {% set bday_labels = {'*': _('every day'), 'mon': _('every Monday'),
+                                              'tue': _('every Tuesday'), 'wed': _('every Wednesday'),
+                                              'thu': _('every Thursday'), 'fri': _('every Friday'),
+                                              'sat': _('every Saturday'), 'sun': _('every Sunday')} %}
                         <div class="alert alert-success py-2 mb-3">
                             <i class="bi bi-check-circle"></i>
-                            Backups run <strong>{{ bday_labels.get(cfg.backup_day, cfg.backup_day) }}</strong>
-                            at <strong>{{ '%02d:%02d'|format(cfg.backup_hour|int, cfg.backup_minute|int) }}</strong>
+                            {{ _('Backups run') }} <strong>{{ bday_labels.get(cfg.backup_day, cfg.backup_day) }}</strong>
+                            {{ _('at') }} <strong>{{ '%02d:%02d'|format(cfg.backup_hour|int, cfg.backup_minute|int) }}</strong>
                             <span class="text-muted">({{ cfg.timezone }})</span>.
                         </div>
                         {% endif %}
@@ -997,7 +1004,7 @@
                     </div><!-- /backup_schedule_fields -->
 
                     <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-floppy"></i> Save Schedule
+                        <i class="bi bi-floppy"></i> {{ _('Save Schedule') }}
                     </button>
                 </form>
             </div>
@@ -1006,11 +1013,11 @@
         {% if cfg.backup_debug == '1' %}
         <div class="card mt-4">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-journal-text"></i> Backup Debug Log</span>
+                <span><i class="bi bi-journal-text"></i> {{ _('Backup Debug Log') }}</span>
                 <form method="POST" action="{{ url_for('settings_bp.settings_backup_clear_log') }}" class="d-inline">
                     <button type="submit" class="btn btn-sm btn-outline-danger"
-                            data-confirm="Clear the entire backup debug log?">
-                        <i class="bi bi-trash"></i> Clear Log
+                            data-confirm="{{ _('Clear the entire backup debug log?') }}">
+                        <i class="bi bi-trash"></i> {{ _('Clear Log') }}
                     </button>
                 </form>
             </div>
@@ -1019,7 +1026,7 @@
                 <pre class="bg-dark text-light p-3 rounded small mb-0" style="max-height: 400px; overflow-y: auto; font-size: 0.78rem;">{% for log in backup_logs %}{{ log.ran_at.strftime('%Y-%m-%d %H:%M') }} [{{ log.level|upper }}] {{ log.message }}
 {% endfor %}</pre>
                 {% else %}
-                <p class="text-muted small mb-0">No log entries yet.</p>
+                <p class="text-muted small mb-0">{{ _('No log entries yet.') }}</p>
                 {% endif %}
             </div>
         </div>
@@ -1034,24 +1041,24 @@
             <!-- Colors / Theme -->
             <div class="card mb-4">
                 <div class="card-header">
-                    <i class="bi bi-palette"></i> Colors &amp; Theme
+                    <i class="bi bi-palette"></i> {{ _('Colors & Theme') }}
                 </div>
                 <div class="card-body">
                     <!-- Preset selector -->
                     <div class="mb-4">
-                        <label class="form-label">Preset theme</label>
+                        <label class="form-label">{{ _('Preset theme') }}</label>
                         <select class="form-select" id="theme_preset" style="max-width: 220px">
-                            <option value="custom" {% if current_theme == 'custom' %}selected{% endif %}>— Custom —</option>
+                            <option value="custom" {% if current_theme == 'custom' %}selected{% endif %}>{{ _('— Custom —') }}</option>
                             {% for key, theme in themes.items() %}
                             <option value="{{ key }}" {% if current_theme == key %}selected{% endif %}>{{ theme.label }}</option>
                             {% endfor %}
                         </select>
-                        <div class="form-text">Selecting a preset fills all color pickers below. Changing any picker switches to Custom.</div>
+                        <div class="form-text">{{ _('Selecting a preset fills all color pickers below. Changing any picker switches to Custom.') }}</div>
                     </div>
 
                     <div class="row g-3">
                         <div class="col-sm-6 col-lg-4">
-                            <label for="color_navbar" class="form-label">Navbar color</label>
+                            <label for="color_navbar" class="form-label">{{ _('Navbar color') }}</label>
                             <div class="input-group" style="max-width: 240px">
                                 <input type="color" class="form-control form-control-color"
                                        id="color_navbar" name="color_navbar"
@@ -1064,7 +1071,7 @@
                             </div>
                         </div>
                         <div class="col-sm-6 col-lg-4">
-                            <label for="color_email_grad_start" class="form-label">Email gradient start</label>
+                            <label for="color_email_grad_start" class="form-label">{{ _('Email gradient start') }}</label>
                             <div class="input-group" style="max-width: 240px">
                                 <input type="color" class="form-control form-control-color"
                                        id="color_email_grad_start" name="color_email_grad_start"
@@ -1077,7 +1084,7 @@
                             </div>
                         </div>
                         <div class="col-sm-6 col-lg-4">
-                            <label for="color_email_grad_end" class="form-label">Email gradient end</label>
+                            <label for="color_email_grad_end" class="form-label">{{ _('Email gradient end') }}</label>
                             <div class="input-group" style="max-width: 240px">
                                 <input type="color" class="form-control form-control-color"
                                        id="color_email_grad_end" name="color_email_grad_end"
@@ -1090,7 +1097,7 @@
                             </div>
                         </div>
                         <div class="col-sm-6 col-lg-4">
-                            <label for="color_balance_positive" class="form-label">Positive balance color</label>
+                            <label for="color_balance_positive" class="form-label">{{ _('Positive balance color') }}</label>
                             <div class="input-group" style="max-width: 240px">
                                 <input type="color" class="form-control form-control-color"
                                        id="color_balance_positive" name="color_balance_positive"
@@ -1103,7 +1110,7 @@
                             </div>
                         </div>
                         <div class="col-sm-6 col-lg-4">
-                            <label for="color_balance_negative" class="form-label">Negative balance color</label>
+                            <label for="color_balance_negative" class="form-label">{{ _('Negative balance color') }}</label>
                             <div class="input-group" style="max-width: 240px">
                                 <input type="color" class="form-control form-control-color"
                                        id="color_balance_negative" name="color_balance_negative"
@@ -1122,43 +1129,43 @@
             <!-- Weekly Email template -->
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <span><i class="bi bi-envelope"></i> Weekly Balance Email</span>
+                    <span><i class="bi bi-envelope"></i> {{ _('Weekly Balance Email') }}</span>
                     <a href="{{ url_for('settings_bp.preview_email') }}" target="_blank" class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-eye"></i> Preview
+                        <i class="bi bi-eye"></i> {{ _('Preview') }}
                     </a>
                 </div>
                 <div class="card-body">
                     <p class="text-muted small mb-3">
-                        Available placeholders: <code>[Name]</code> <code>[Balance]</code> <code>[BalanceStatus]</code> <code>[Date]</code>
-                        &nbsp;— Leave a body field blank to omit that line from the email.
+                        {{ _('Available placeholders:') }} <code>[Name]</code> <code>[Balance]</code> <code>[BalanceStatus]</code> <code>[Date]</code>
+                        &nbsp;— {{ _('Leave a body field blank to omit that line from the email.') }}
                     </p>
                     <div class="mb-3">
-                        <label for="tpl_email_subject" class="form-label">Subject</label>
+                        <label for="tpl_email_subject" class="form-label">{{ _('Subject') }}</label>
                         <input type="text" class="form-control" id="tpl_email_subject"
                                name="tpl_email_subject" value="{{ cfg.tpl_email_subject }}"
                                placeholder="Bank of Tina - Weekly Balance Update ([Date])">
                     </div>
                     <div class="mb-3">
-                        <label for="tpl_email_greeting" class="form-label">Greeting</label>
+                        <label for="tpl_email_greeting" class="form-label">{{ _('Greeting') }}</label>
                         <input type="text" class="form-control" id="tpl_email_greeting"
                                name="tpl_email_greeting" value="{{ cfg.tpl_email_greeting }}"
                                placeholder="Hi [Name],">
-                        <div class="form-text">First line of the email body.</div>
+                        <div class="form-text">{{ _('First line of the email body.') }}</div>
                     </div>
                     <div class="mb-3">
-                        <label for="tpl_email_intro" class="form-label">Intro line</label>
+                        <label for="tpl_email_intro" class="form-label">{{ _('Intro line') }}</label>
                         <input type="text" class="form-control" id="tpl_email_intro"
                                name="tpl_email_intro" value="{{ cfg.tpl_email_intro }}"
                                placeholder="Here's your weekly update from the Bank of Tina:">
                     </div>
                     <div class="mb-3">
-                        <label for="tpl_email_footer1" class="form-label">Footer line 1</label>
+                        <label for="tpl_email_footer1" class="form-label">{{ _('Footer line 1') }}</label>
                         <input type="text" class="form-control" id="tpl_email_footer1"
                                name="tpl_email_footer1" value="{{ cfg.tpl_email_footer1 }}"
                                placeholder="This is an automated weekly update from the Bank of Tina system.">
                     </div>
                     <div class="mb-3">
-                        <label for="tpl_email_footer2" class="form-label">Footer line 2</label>
+                        <label for="tpl_email_footer2" class="form-label">{{ _('Footer line 2') }}</label>
                         <input type="text" class="form-control" id="tpl_email_footer2"
                                name="tpl_email_footer2" value="{{ cfg.tpl_email_footer2 }}"
                                placeholder="Making office lunches easier! 🥗">
@@ -1169,30 +1176,30 @@
             <!-- Admin Summary Email template -->
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <span><i class="bi bi-person-badge"></i> Admin Summary Email</span>
+                    <span><i class="bi bi-person-badge"></i> {{ _('Admin Summary Email') }}</span>
                     <a href="{{ url_for('settings_bp.preview_admin_summary') }}" target="_blank" class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-eye"></i> Preview
+                        <i class="bi bi-eye"></i> {{ _('Preview') }}
                     </a>
                 </div>
                 <div class="card-body">
                     <p class="text-muted small mb-3">
-                        Available placeholders: <code>[Date]</code> <code>[UserCount]</code>
-                        &nbsp;— Leave a body field blank to omit that line.
+                        {{ _('Available placeholders:') }} <code>[Date]</code> <code>[UserCount]</code>
+                        &nbsp;— {{ _('Leave a body field blank to omit that line.') }}
                     </p>
                     <div class="mb-3">
-                        <label for="tpl_admin_subject" class="form-label">Subject</label>
+                        <label for="tpl_admin_subject" class="form-label">{{ _('Subject') }}</label>
                         <input type="text" class="form-control" id="tpl_admin_subject"
                                name="tpl_admin_subject" value="{{ cfg.tpl_admin_subject }}"
                                placeholder="Bank of Tina - Admin Summary ([Date])">
                     </div>
                     <div class="mb-3">
-                        <label for="tpl_admin_intro" class="form-label">Intro line</label>
+                        <label for="tpl_admin_intro" class="form-label">{{ _('Intro line') }}</label>
                         <input type="text" class="form-control" id="tpl_admin_intro"
                                name="tpl_admin_intro" value="{{ cfg.tpl_admin_intro }}"
                                placeholder="(optional intro above the table)">
                     </div>
                     <div class="mb-3">
-                        <label for="tpl_admin_footer" class="form-label">Footer</label>
+                        <label for="tpl_admin_footer" class="form-label">{{ _('Footer') }}</label>
                         <input type="text" class="form-control" id="tpl_admin_footer"
                                name="tpl_admin_footer" value="{{ cfg.tpl_admin_footer }}"
                                placeholder="This is an automated admin summary from the Bank of Tina system.">
@@ -1203,10 +1210,10 @@
                                    id="admin_summary_include_emails" name="admin_summary_include_emails" value="1"
                                    {% if cfg.admin_summary_include_emails == '1' %}checked{% endif %}>
                             <label class="form-check-label" for="admin_summary_include_emails">
-                                Include email addresses in summary table
+                                {{ _('Include email addresses in summary table') }}
                             </label>
                         </div>
-                        <div class="form-text">When off, only names and balances are shown. Default: off.</div>
+                        <div class="form-text">{{ _('When off, only names and balances are shown. Default: off.') }}</div>
                     </div>
                 </div>
             </div>
@@ -1214,24 +1221,24 @@
             <!-- Backup Status Email template -->
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <span><i class="bi bi-archive"></i> Backup Status Email</span>
+                    <span><i class="bi bi-archive"></i> {{ _('Backup Status Email') }}</span>
                     <a href="{{ url_for('settings_bp.preview_backup') }}" target="_blank" class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-eye"></i> Preview
+                        <i class="bi bi-eye"></i> {{ _('Preview') }}
                     </a>
                 </div>
                 <div class="card-body">
                     <p class="text-muted small mb-3">
-                        Available placeholders: <code>[Date]</code> <code>[BackupStatus]</code>
-                        &nbsp;— Leave the footer blank to omit it.
+                        {{ _('Available placeholders:') }} <code>[Date]</code> <code>[BackupStatus]</code>
+                        &nbsp;— {{ _('Leave the footer blank to omit it.') }}
                     </p>
                     <div class="mb-3">
-                        <label for="tpl_backup_subject" class="form-label">Subject</label>
+                        <label for="tpl_backup_subject" class="form-label">{{ _('Subject') }}</label>
                         <input type="text" class="form-control" id="tpl_backup_subject"
                                name="tpl_backup_subject" value="{{ cfg.tpl_backup_subject }}"
                                placeholder="Bank of Tina - Backup [BackupStatus] ([Date])">
                     </div>
                     <div class="mb-3">
-                        <label for="tpl_backup_footer" class="form-label">Footer</label>
+                        <label for="tpl_backup_footer" class="form-label">{{ _('Footer') }}</label>
                         <input type="text" class="form-control" id="tpl_backup_footer"
                                name="tpl_backup_footer" value="{{ cfg.tpl_backup_footer }}"
                                placeholder="This is an automated backup report from the Bank of Tina system.">
@@ -1241,10 +1248,10 @@
 
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-floppy"></i> Save Templates
+                    <i class="bi bi-floppy"></i> {{ _('Save Templates') }}
                 </button>
                 <button type="button" class="btn btn-outline-secondary" id="btn-reset-templates">
-                    <i class="bi bi-arrow-counterclockwise"></i> Reset to Defaults
+                    <i class="bi bi-arrow-counterclockwise"></i> {{ _('Reset to Defaults') }}
                 </button>
             </div>
         </form>
@@ -1255,13 +1262,13 @@
         <!-- App Icon -->
         <div class="card mb-4 mt-4">
             <div class="card-header">
-                <i class="bi bi-image"></i> App Icon
+                <i class="bi bi-image"></i> {{ _('App Icon') }}
             </div>
             <div class="card-body">
                 <div class="mb-3">
-                    <label class="form-label">Current icon</label>
+                    <label class="form-label">{{ _('Current icon') }}</label>
                     <div>
-                        <img src="/static/icons/icon-192.png?v={{ icon_version }}" alt="Current app icon"
+                        <img src="/static/icons/icon-192.png?v={{ icon_version }}" alt="{{ _('Current app icon') }}"
                              style="width: 96px; height: 96px; border-radius: 12px; border: 1px solid #dee2e6;"
                              id="icon-preview">
                     </div>
@@ -1269,26 +1276,26 @@
 
                 <div class="card bg-light mb-3">
                     <div class="card-body py-2">
-                        <div class="fw-semibold mb-1">Generate from theme</div>
+                        <div class="fw-semibold mb-1">{{ _('Generate from theme') }}</div>
                         <p class="text-muted small mb-2">
-                            Uses current navbar color as background with the bank silhouette in white.
+                            {{ _('Uses current navbar color as background with the bank silhouette in white.') }}
                         </p>
                         <form method="POST" action="{{ url_for('settings_bp.settings_icon') }}">
                             <input type="hidden" name="action" value="generate">
                             <button type="submit" class="btn btn-sm btn-primary">
-                                <i class="bi bi-arrow-repeat"></i> Regenerate with Navbar Color
+                                <i class="bi bi-arrow-repeat"></i> {{ _('Regenerate with Navbar Color') }}
                             </button>
                         </form>
                     </div>
                 </div>
 
-                <div class="text-center text-muted mb-3">&mdash; or &mdash;</div>
+                <div class="text-center text-muted mb-3">&mdash; {{ _('or') }} &mdash;</div>
 
                 <div class="card bg-light mb-3">
                     <div class="card-body py-2">
-                        <div class="fw-semibold mb-1">Upload custom icon</div>
+                        <div class="fw-semibold mb-1">{{ _('Upload custom icon') }}</div>
                         <p class="text-muted small mb-2">
-                            PNG or JPG, will be resized to 32&times;32, 192&times;192, and 512&times;512.
+                            {{ _('PNG or JPG, will be resized to 32x32, 192x192, and 512x512.') }}
                         </p>
                         <form method="POST" action="{{ url_for('settings_bp.settings_icon') }}" enctype="multipart/form-data">
                             <input type="hidden" name="action" value="upload">
@@ -1296,7 +1303,7 @@
                                 <input type="file" class="form-control form-control-sm" name="icon_file"
                                        accept=".png,.jpg,.jpeg" style="max-width: 280px;">
                                 <button type="submit" class="btn btn-sm btn-primary">
-                                    <i class="bi bi-upload"></i> Upload
+                                    <i class="bi bi-upload"></i> {{ _('Upload') }}
                                 </button>
                             </div>
                         </form>
@@ -1306,7 +1313,7 @@
                 <form method="POST" action="{{ url_for('settings_bp.settings_icon') }}">
                     <input type="hidden" name="action" value="reset">
                     <button type="submit" class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-arrow-counterclockwise"></i> Reset to Default
+                        <i class="bi bi-arrow-counterclockwise"></i> {{ _('Reset to Default') }}
                     </button>
                 </form>
             </div>
@@ -1320,40 +1327,40 @@
         <!-- Add User -->
         <div class="card mb-4">
             <div class="card-header">
-                <i class="bi bi-person-plus"></i> Add User
+                <i class="bi bi-person-plus"></i> {{ _('Add User') }}
             </div>
             <div class="card-body">
                 <form method="POST" action="{{ url_for('main.add_user') }}" class="row g-3">
                     <div class="col-sm-6">
-                        <label for="new_user_name" class="form-label">Name</label>
+                        <label for="new_user_name" class="form-label">{{ _('Name') }}</label>
                         <input type="text" class="form-control" id="new_user_name" name="name" required>
                     </div>
                     <div class="col-sm-6">
-                        <label for="new_user_email" class="form-label">Email</label>
+                        <label for="new_user_email" class="form-label">{{ _('Email') }}</label>
                         <input type="email" class="form-control" id="new_user_email" name="email" required>
                     </div>
                     <div class="col-sm-12 col-md-6">
-                        <label class="form-label">Weekly email report</label>
+                        <label class="form-label">{{ _('Weekly email report') }}</label>
                         <div class="form-check form-switch mt-1">
                             <input class="form-check-input" type="checkbox" name="email_opt_in"
                                    value="1" id="new_user_email_opt_in" checked>
                             <label class="form-check-label" for="new_user_email_opt_in">
-                                Send weekly balance email
+                                {{ _('Send weekly balance email') }}
                             </label>
                         </div>
                     </div>
                     <div class="col-sm-12 col-md-6">
-                        <label for="new_user_email_transactions" class="form-label">Include in email</label>
+                        <label for="new_user_email_transactions" class="form-label">{{ _('Include in email') }}</label>
                         <select class="form-select" name="email_transactions" id="new_user_email_transactions">
-                            <option value="none">No transactions</option>
-                            <option value="last3" selected>Last 3 transactions</option>
-                            <option value="this_week">Transactions this week</option>
-                            <option value="this_month">Transactions this month</option>
+                            <option value="none">{{ _('No transactions') }}</option>
+                            <option value="last3" selected>{{ _('Last 3 transactions') }}</option>
+                            <option value="this_week">{{ _('Transactions this week') }}</option>
+                            <option value="this_month">{{ _('Transactions this month') }}</option>
                         </select>
                     </div>
                     <div class="col-sm-12">
                         <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-plus-circle"></i> Add
+                            <i class="bi bi-plus-circle"></i> {{ _('Add') }}
                         </button>
                     </div>
                 </form>
@@ -1363,7 +1370,7 @@
         <!-- Active Users -->
         <div class="card">
             <div class="card-header">
-                <i class="bi bi-people"></i> Active Users
+                <i class="bi bi-people"></i> {{ _('Active Users') }}
             </div>
             <div class="card-body">
                 {% set active_users = all_users|selectattr('is_active')|list %}
@@ -1372,9 +1379,9 @@
                     <table class="table table-hover align-middle mb-0">
                         <thead>
                             <tr>
-                                <th>Name</th>
-                                <th>Email</th>
-                                <th class="text-end">Balance</th>
+                                <th>{{ _('Name') }}</th>
+                                <th>{{ _('Email') }}</th>
+                                <th class="text-end">{{ _('Balance') }}</th>
                                 <th></th>
                             </tr>
                         </thead>
@@ -1395,8 +1402,8 @@
                                 <td class="text-end">
                                     <form method="POST" action="{{ url_for('main.toggle_user_active', user_id=user.id) }}">
                                         <button type="submit" class="btn btn-sm btn-outline-secondary"
-                                                data-confirm="Deactivate {{ user.name }}?">
-                                            <i class="bi bi-person-dash"></i> Deactivate
+                                                data-confirm="{{ _('Deactivate %(name)s?', name=user.name) }}">
+                                            <i class="bi bi-person-dash"></i> {{ _('Deactivate') }}
                                         </button>
                                     </form>
                                 </td>
@@ -1406,7 +1413,7 @@
                     </table>
                 </div>
                 {% else %}
-                <p class="text-muted mb-0">No active users. Add your first user above.</p>
+                <p class="text-muted mb-0">{{ _('No active users. Add your first user above.') }}</p>
                 {% endif %}
             </div>
         </div>
@@ -1416,16 +1423,16 @@
         {% if deactivated_users %}
         <div class="card mt-3">
             <div class="card-header">
-                <i class="bi bi-person-slash"></i> Deactivated Users
+                <i class="bi bi-person-slash"></i> {{ _('Deactivated Users') }}
             </div>
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
                         <thead>
                             <tr>
-                                <th>Name</th>
-                                <th>Email</th>
-                                <th class="text-end">Balance</th>
+                                <th>{{ _('Name') }}</th>
+                                <th>{{ _('Email') }}</th>
+                                <th class="text-end">{{ _('Balance') }}</th>
                                 <th></th>
                             </tr>
                         </thead>
@@ -1446,7 +1453,7 @@
                                 <td class="text-end">
                                     <form method="POST" action="{{ url_for('main.toggle_user_active', user_id=user.id) }}">
                                         <button type="submit" class="btn btn-sm btn-outline-success">
-                                            <i class="bi bi-person-check"></i> Reactivate
+                                            <i class="bi bi-person-check"></i> {{ _('Reactivate') }}
                                         </button>
                                     </form>
                                 </td>
@@ -1479,7 +1486,7 @@ function toggleBackupFields(checkbox) {
 }
 
 function confirmRestore(filename) {
-    if (!confirm('Restore from ' + filename + '?\n\nThis will overwrite the current database and all receipt images. This cannot be undone.')) return;
+    if (!confirm('{{ _("Restore from this backup?") }}\n\n{{ _("This will overwrite the current database and all receipt images. This cannot be undone.") }}')) return;
     const form = document.getElementById('restoreForm');
     form.action = '/backups/restore/' + encodeURIComponent(filename);
     form.submit();
@@ -1488,7 +1495,7 @@ function confirmRestore(filename) {
 function startChunkedUpload() {
     const fileInput = document.getElementById('backupFileInput');
     const file = fileInput.files[0];
-    if (!file) { alert('Please select a file first.'); return; }
+    if (!file) { alert('{{ _("Please select a file first.") }}'); return; }
 
     const CHUNK_SIZE = 5 * 1024 * 1024; // 5 MB
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
@@ -1525,11 +1532,11 @@ function startChunkedUpload() {
                 const pct = Math.round((chunkIndex / totalChunks) * 100);
                 bar.style.width = pct + '%';
                 bar.textContent = pct + '%';
-                status.textContent = `Uploading… chunk ${chunkIndex} of ${totalChunks}`;
+                status.textContent = `{{ _('Uploading…') }} ${chunkIndex} / ${totalChunks}`;
 
                 if (data.done) {
                     bar.classList.remove('progress-bar-animated');
-                    status.textContent = 'Upload complete: ' + data.filename;
+                    status.textContent = '{{ _("Upload complete:") }} ' + data.filename;
                     btn.disabled = false;
                     setTimeout(() => location.reload(), 1200);
                 } else {
@@ -1537,7 +1544,7 @@ function startChunkedUpload() {
                 }
             })
             .catch(err => {
-                status.textContent = 'Upload error: ' + err;
+                status.textContent = '{{ _("Upload error:") }} ' + err;
                 btn.disabled = false;
             });
     }
@@ -1637,7 +1644,7 @@ document.querySelectorAll('.hex-input').forEach(function(input) {
 
 // Reset templates button — confirm and submit the hidden form
 document.getElementById('btn-reset-templates').addEventListener('click', function() {
-    if (confirm('Reset all templates and colors to defaults?')) {
+    if (confirm('{{ _("Reset all templates and colors to defaults?") }}')) {
         document.getElementById('reset-templates-form').submit();
     }
 });

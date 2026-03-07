@@ -13,13 +13,14 @@ from decimal import Decimal
 
 import pytz
 from flask import Blueprint, Response, render_template, request, redirect, url_for, flash, jsonify, abort, current_app
+from flask_babel import gettext as _
 
 from extensions import db, scheduler, limiter
 from models import (User, CommonItem, CommonDescription, CommonPrice, CommonBlacklist,
                     AutoCollectLog, EmailLog, BackupLog)
 from helpers import (get_setting, set_setting, get_tpl, parse_amount, fmt_amount,
                      detect_theme, generate_and_save_icons, now_local)
-from config import THEMES, TEMPLATE_DEFAULTS, BACKUP_DIR, DEFAULT_ICON_BG
+from config import THEMES, TEMPLATE_DEFAULTS, TEMPLATE_DEFAULTS_DE, BACKUP_DIR, DEFAULT_ICON_BG
 from email_service import send_all_emails, build_email_html, build_admin_summary_email
 from backup_service import run_backup, _list_backups, build_backup_status_email
 from scheduler_jobs import (_add_email_job, _add_common_job, _add_backup_job,
@@ -57,6 +58,7 @@ def settings() -> str:
         'email_enabled': get_setting('email_enabled', '1'),
         'email_debug': get_setting('email_debug', '0'),
         'admin_summary_email': get_setting('admin_summary_email', '0'),
+        'language': get_setting('language', 'de'),
         'timezone': get_setting('timezone', 'UTC'),
         'common_enabled':                get_setting('common_enabled', '1'),
         'common_auto_enabled':           get_setting('common_auto_enabled', '0'),
@@ -134,7 +136,7 @@ def settings_email() -> Response:
     set_setting('email_debug',         '1' if request.form.get('email_debug')         else '0')
     set_setting('admin_summary_email', '1' if request.form.get('admin_summary_email') else '0')
 
-    flash('Settings saved.', 'success')
+    flash(_('Settings saved.'), 'success')
     return redirect(url_for('settings_bp.settings'))
 
 
@@ -142,10 +144,10 @@ def settings_email() -> Response:
 @limiter.limit("5/minute")
 def settings_send_now() -> Response:
     success, fail, errors = send_all_emails()
-    flash(f'{success} email(s) sent, {fail} failed.', 'success' if fail == 0 else 'error')
+    flash(_('%(success)s email(s) sent, %(fail)s failed.', success=success, fail=fail), 'success' if fail == 0 else 'error')
     if errors and get_setting('email_debug', '0') == '1':
         for err in errors:
-            flash(f'Debug: {err}', 'error')
+            flash(_('Debug: %(err)s', err=err), 'error')
     return redirect(url_for('settings_bp.settings'))
 
 
@@ -153,7 +155,7 @@ def settings_send_now() -> Response:
 def settings_email_clear_log() -> Response:
     db.session.execute(db.delete(EmailLog))
     db.session.commit()
-    flash('Email debug log cleared.', 'success')
+    flash(_('Email debug log cleared.'), 'success')
     return redirect(url_for('settings_bp.settings'))
 
 
@@ -174,11 +176,11 @@ def settings_schedule() -> Response:
 
     if enabled == '1':
         _add_email_job(current_app._get_current_object())
-        flash('Schedule saved and enabled.', 'success')
+        flash(_('Schedule saved and enabled.'), 'success')
     else:
         if scheduler.get_job('email_job'):
             scheduler.remove_job('email_job')
-        flash('Schedule disabled.', 'success')
+        flash(_('Schedule disabled.'), 'success')
 
     return redirect(url_for('settings_bp.settings'))
 
@@ -195,6 +197,10 @@ def settings_general() -> Response:
     except ValueError:
         count = 5
     set_setting('recent_transactions_count', str(count))
+    language = request.form.get('language', 'de')
+    if language in ('de', 'en'):
+        set_setting('language', language)
+
     timezone = request.form.get('timezone', 'UTC')
     if timezone in pytz.common_timezones:
         set_setting('timezone', timezone)
@@ -211,7 +217,7 @@ def settings_general() -> Response:
     set_setting('decimal_separator', sep)
     set_setting('currency_symbol', request.form.get('currency_symbol', '\u20ac'))
     set_setting('show_email_on_dashboard', '1' if request.form.get('show_email_on_dashboard') else '0')
-    flash('General settings saved.', 'success')
+    flash(_('General settings saved.'), 'success')
     return redirect(url_for('settings_bp.settings'))
 
 
@@ -243,12 +249,12 @@ def api_common_prices() -> Response:
 def add_common_item() -> Response:
     name = request.form.get('name', '').strip()
     if not name:
-        flash('Item name is required.', 'error')
+        flash(_('Item name is required.'), 'error')
         return redirect(url_for('settings_bp.settings'))
     if not db.session.execute(db.select(CommonItem).filter_by(name=name)).scalar():
         db.session.add(CommonItem(name=name))
         db.session.commit()
-    flash(f'"{name}" added to common items.', 'success')
+    flash(_('"%(name)s" added to common items.', name=name), 'success')
     return redirect(url_for('settings_bp.settings'))
 
 
@@ -258,7 +264,7 @@ def delete_common_item(item_id: int) -> Response:
     name = item.name
     db.session.delete(item)
     db.session.commit()
-    flash(f'"{name}" removed from common items.', 'success')
+    flash(_('"%(name)s" removed from common items.', name=name), 'success')
     return redirect(url_for('settings_bp.settings'))
 
 
@@ -266,12 +272,12 @@ def delete_common_item(item_id: int) -> Response:
 def add_common_description() -> Response:
     value = request.form.get('value', '').strip()
     if not value:
-        flash('Description is required.', 'error')
+        flash(_('Description is required.'), 'error')
         return redirect(url_for('settings_bp.settings'))
     if not db.session.execute(db.select(CommonDescription).filter_by(value=value)).scalar():
         db.session.add(CommonDescription(value=value))
         db.session.commit()
-    flash(f'"{value}" added to common descriptions.', 'success')
+    flash(_('"%(value)s" added to common descriptions.', value=value), 'success')
     return redirect(url_for('settings_bp.settings'))
 
 
@@ -281,7 +287,7 @@ def delete_common_description(item_id: int) -> Response:
     value = item.value
     db.session.delete(item)
     db.session.commit()
-    flash(f'"{value}" removed from common descriptions.', 'success')
+    flash(_('"%(value)s" removed from common descriptions.', value=value), 'success')
     return redirect(url_for('settings_bp.settings'))
 
 
@@ -290,12 +296,12 @@ def add_common_price() -> Response:
     try:
         value = parse_amount(request.form.get('value', ''))
     except (ValueError, TypeError):
-        flash('Valid price is required.', 'error')
+        flash(_('Valid price is required.'), 'error')
         return redirect(url_for('settings_bp.settings'))
     if not db.session.execute(db.select(CommonPrice).filter_by(value=value)).scalar():
         db.session.add(CommonPrice(value=value))
         db.session.commit()
-    flash(f'{get_setting("currency_symbol", "€")}{fmt_amount(value)} added to common prices.', 'success')
+    flash(_('%(sym)s%(amount)s added to common prices.', sym=get_setting("currency_symbol", "\u20ac"), amount=fmt_amount(value)), 'success')
     return redirect(url_for('settings_bp.settings'))
 
 
@@ -305,7 +311,7 @@ def delete_common_price(item_id: int) -> Response:
     value = item.value
     db.session.delete(item)
     db.session.commit()
-    flash(f'{get_setting("currency_symbol", "€")}{fmt_amount(value)} removed from common prices.', 'success')
+    flash(_('%(sym)s%(amount)s removed from common prices.', sym=get_setting("currency_symbol", "\u20ac"), amount=fmt_amount(value)), 'success')
     return redirect(url_for('settings_bp.settings'))
 
 
@@ -314,12 +320,12 @@ def add_common_blacklist() -> Response:
     bl_type = request.form.get('type', '').strip()
     value   = request.form.get('value', '').strip()
     if bl_type not in ('item', 'description', 'price') or not value:
-        flash('Invalid blacklist entry.', 'error')
+        flash(_('Invalid blacklist entry.'), 'error')
         return redirect(url_for('settings_bp.settings'))
     if not db.session.execute(db.select(CommonBlacklist).filter_by(type=bl_type, value=value)).scalar():
         db.session.add(CommonBlacklist(type=bl_type, value=value))
         db.session.commit()
-    flash(f'"{value}" added to {bl_type} blacklist.', 'success')
+    flash(_('"%(value)s" added to %(type)s blacklist.', value=value, type=bl_type), 'success')
     return redirect(url_for('settings_bp.settings'))
 
 
@@ -329,7 +335,7 @@ def delete_common_blacklist(item_id: int) -> Response:
     value, bl_type = item.value, item.type
     db.session.delete(item)
     db.session.commit()
-    flash(f'"{value}" removed from {bl_type} blacklist.', 'success')
+    flash(_('"%(value)s" removed from %(type)s blacklist.', value=value, type=bl_type), 'success')
     return redirect(url_for('settings_bp.settings'))
 
 
@@ -337,7 +343,7 @@ def delete_common_blacklist(item_id: int) -> Response:
 def settings_common() -> Response:
     enabled = '1' if request.form.get('common_enabled') else '0'
     set_setting('common_enabled', enabled)
-    flash('Common autocomplete settings saved.', 'success')
+    flash(_('Common autocomplete settings saved.'), 'success')
     return redirect(url_for('settings_bp.settings'))
 
 
@@ -381,11 +387,11 @@ def settings_common_auto() -> Response:
 
     if enabled == '1':
         _add_common_job(current_app._get_current_object())
-        flash('Auto-collect schedule saved and enabled.', 'success')
+        flash(_('Auto-collect schedule saved and enabled.'), 'success')
     else:
         if scheduler.get_job('common_job'):
             scheduler.remove_job('common_job')
-        flash('Auto-collect schedule disabled.', 'success')
+        flash(_('Auto-collect schedule disabled.'), 'success')
 
     return redirect(url_for('settings_bp.settings'))
 
@@ -393,7 +399,7 @@ def settings_common_auto() -> Response:
 @settings_bp.route('/settings/common-auto/run', methods=['POST'])
 def settings_common_auto_run() -> Response:
     auto_collect_common()
-    flash('Auto-collect job ran successfully.', 'success')
+    flash(_('Auto-collect job ran successfully.'), 'success')
     return redirect(url_for('settings_bp.settings'))
 
 
@@ -401,7 +407,7 @@ def settings_common_auto_run() -> Response:
 def settings_common_auto_clear_log() -> Response:
     db.session.execute(db.delete(AutoCollectLog))
     db.session.commit()
-    flash('Debug log cleared.', 'success')
+    flash(_('Debug log cleared.'), 'success')
     return redirect(url_for('settings_bp.settings'))
 
 
@@ -424,16 +430,17 @@ def settings_templates() -> Response:
     set_setting('admin_summary_include_emails', '1' if request.form.get('admin_summary_include_emails') else '0', commit=False)
     db.session.commit()
 
-    flash('Templates saved.', 'success')
+    flash(_('Templates saved.'), 'success')
     return redirect(url_for('settings_bp.settings'))
 
 
 @settings_bp.route('/settings/templates/reset', methods=['POST'])
 def settings_templates_reset() -> Response:
-    for key, val in TEMPLATE_DEFAULTS.items():
+    defaults = TEMPLATE_DEFAULTS_DE if get_setting('language', 'de') == 'de' else TEMPLATE_DEFAULTS
+    for key, val in defaults.items():
         set_setting(key, val, commit=False)
     db.session.commit()
-    flash('Templates reset to defaults.', 'success')
+    flash(_('Templates reset to defaults.'), 'success')
     return redirect(url_for('settings_bp.settings'))
 
 
@@ -446,21 +453,21 @@ def settings_icon() -> Response:
     if action == 'generate':
         bg = get_tpl('color_navbar')
         generate_and_save_icons(bg)
-        flash('Icon regenerated with current navbar color.', 'success')
+        flash(_('Icon regenerated with current navbar color.'), 'success')
 
     elif action == 'reset':
         generate_and_save_icons(DEFAULT_ICON_BG)
-        flash('Icon reset to default.', 'success')
+        flash(_('Icon reset to default.'), 'success')
 
     elif action == 'upload':
         file = request.files.get('icon_file')
         if not file or not file.filename:
-            flash('No file selected.', 'danger')
+            flash(_('No file selected.'), 'danger')
             return redirect(url_for('settings_bp.settings'))
 
         ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
         if ext not in ('png', 'jpg', 'jpeg'):
-            flash('Only PNG or JPG files are accepted.', 'danger')
+            flash(_('Only PNG or JPG files are accepted.'), 'danger')
             return redirect(url_for('settings_bp.settings'))
 
         try:
@@ -475,13 +482,13 @@ def settings_icon() -> Response:
             version = str(int(time.time()))
             set_setting('icon_version', version)
             set_setting('icon_mode', 'custom')
-            flash('Custom icon uploaded.', 'success')
+            flash(_('Custom icon uploaded.'), 'success')
         except ImportError:
-            flash('Pillow is not installed \u2014 cannot process uploaded images.', 'danger')
+            flash(_('Pillow is not installed \u2014 cannot process uploaded images.'), 'danger')
         except Exception as e:
-            flash(f'Failed to process image: {e}', 'danger')
+            flash(_('Failed to process image: %(error)s', error=e), 'danger')
     else:
-        flash('Unknown action.', 'danger')
+        flash(_('Unknown action.'), 'danger')
 
     return redirect(url_for('settings_bp.settings'))
 
@@ -544,11 +551,11 @@ def settings_backup() -> Response:
 
     if enabled == '1':
         _add_backup_job(current_app._get_current_object())
-        flash('Backup schedule saved and enabled.', 'success')
+        flash(_('Backup schedule saved and enabled.'), 'success')
     else:
         if scheduler.get_job('backup_job'):
             scheduler.remove_job('backup_job')
-        flash('Backup schedule disabled.', 'success')
+        flash(_('Backup schedule disabled.'), 'success')
 
     return redirect(url_for('settings_bp.settings'))
 
@@ -558,9 +565,9 @@ def settings_backup() -> Response:
 def settings_backup_create() -> Response:
     ok, result = run_backup()
     if ok:
-        flash(f'Backup created: {result}', 'success')
+        flash(_('Backup created: %(result)s', result=result), 'success')
     else:
-        flash(f'Backup failed: {result}', 'error')
+        flash(_('Backup failed: %(result)s', result=result), 'error')
     return redirect(url_for('settings_bp.settings'))
 
 
@@ -568,7 +575,7 @@ def settings_backup_create() -> Response:
 def settings_backup_clear_log() -> Response:
     db.session.execute(db.delete(BackupLog))
     db.session.commit()
-    flash('Backup debug log cleared.', 'success')
+    flash(_('Backup debug log cleared.'), 'success')
     return redirect(url_for('settings_bp.settings'))
 
 
@@ -583,14 +590,14 @@ def backup_download(filename: str) -> Response:
 @settings_bp.route('/backups/delete/<filename>', methods=['POST'])
 def backup_delete(filename: str) -> Response:
     if not BACKUP_FILENAME_RE.match(filename):
-        flash('Invalid filename.', 'error')
+        flash(_('Invalid filename.'), 'error')
         return redirect(url_for('settings_bp.settings'))
     path = os.path.join(BACKUP_DIR, filename)
     if os.path.exists(path):
         os.remove(path)
-        flash(f'{filename} deleted.', 'success')
+        flash(_('%(filename)s deleted.', filename=filename), 'success')
     else:
-        flash('Backup file not found.', 'error')
+        flash(_('Backup file not found.'), 'error')
     return redirect(url_for('settings_bp.settings'))
 
 
@@ -635,12 +642,12 @@ def backup_upload_chunk() -> tuple[Response, int] | Response:
 @limiter.limit("3/minute")
 def backup_restore(filename: str) -> Response:
     if not BACKUP_FILENAME_RE.match(filename):
-        flash('Invalid filename.', 'error')
+        flash(_('Invalid filename.'), 'error')
         return redirect(url_for('settings_bp.settings'))
 
     path = os.path.join(BACKUP_DIR, filename)
     if not os.path.exists(path):
-        flash('Backup file not found.', 'error')
+        flash(_('Backup file not found.'), 'error')
         return redirect(url_for('settings_bp.settings'))
 
     try:
@@ -680,15 +687,14 @@ def backup_restore(filename: str) -> Response:
                     )
                 if result.returncode != 0:
                     err = result.stderr.decode(errors='replace')[:300]
-                    flash(f'Database restore failed: {err}', 'error')
+                    flash(_('Database restore failed: %(err)s', err=err), 'error')
                     return redirect(url_for('settings_bp.settings'))
 
         logger.info('Backup restored: %s', filename)
-        flash(f'Restore from {filename} completed successfully. '
-              f'Check the .env file inside the backup if credentials changed.', 'success')
+        flash(_('Restore from %(filename)s completed successfully. Check the .env file inside the backup if credentials changed.', filename=filename), 'success')
 
     except Exception as e:
         logger.error('Backup restore failed: %s', str(e)[:200])
-        flash(f'Restore failed: {str(e)[:200]}', 'error')
+        flash(_('Restore failed: %(error)s', error=str(e)[:200]), 'error')
 
     return redirect(url_for('settings_bp.settings'))

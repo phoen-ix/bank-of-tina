@@ -5,7 +5,7 @@
     <div class="col-md-8">
         <div class="card mb-4">
             <div class="card-header">
-                <i class="bi bi-people"></i> User Balances
+                <i class="bi bi-people"></i> {{ _('User Balances') }}
             </div>
             <div class="card-body">
                 {% if users %}
@@ -13,9 +13,9 @@
                         <table class="table table-hover">
                             <thead>
                                 <tr>
-                                    <th>Name</th>
-                                    {% if show_email %}<th>Email</th>{% endif %}
-                                    <th class="text-end">Balance</th>
+                                    <th>{{ _('Name') }}</th>
+                                    {% if show_email %}<th>{{ _('Email') }}</th>{% endif %}
+                                    <th class="text-end">{{ _('Balance') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -38,7 +38,7 @@
                         </table>
                     </div>
                 {% else %}
-                    <p class="text-muted">No users yet. <a href="{{ url_for('settings_bp.settings') }}?tab=users">Add users from Settings → Users</a>.</p>
+                    <p class="text-muted">{{ _('No users yet.') }} <a href="{{ url_for('settings_bp.settings') }}?tab=users">{{ _('Add users from Settings → Users') }}</a>.</p>
                 {% endif %}
             </div>
         </div>
@@ -46,7 +46,7 @@
         {% if show_recent %}
         <div class="card">
             <div class="card-header">
-                <i class="bi bi-clock-history"></i> Recent Transactions
+                <i class="bi bi-clock-history"></i> {{ _('Recent Transactions') }}
             </div>
             <div class="card-body">
                 {% if transactions %}
@@ -58,7 +58,7 @@
                                 <small class="text-muted">{{ trans.date | localdt('%Y-%m-%d %H:%M') }}</small>
                             </div>
                             <p class="mb-1">
-                                <span class="badge bg-info">{{ trans.transaction_type }}</span>
+                                <span class="badge bg-info">{{ trans.transaction_type|tx_type }}</span>
                                 {% if trans.from_user %}
                                     <strong>{{ trans.from_user.name }}</strong>
                                 {% endif %}
@@ -70,7 +70,7 @@
                             {% if trans.receipt_path %}
                                 <small>
                                     <i class="bi bi-paperclip"></i>
-                                    <a href="{{ url_for('main.view_receipt', filepath=trans.receipt_path) }}" target="_blank">View Receipt</a>
+                                    <a href="{{ url_for('main.view_receipt', filepath=trans.receipt_path) }}" target="_blank">{{ _('View Receipt') }}</a>
                                 </small>
                             {% endif %}
                         </div>
@@ -78,11 +78,11 @@
                     </div>
                     <div class="mt-3 text-center">
                         <a href="{{ url_for('main.view_transactions') }}" class="btn btn-outline-primary">
-                            View All Transactions
+                            {{ _('View All Transactions') }}
                         </a>
                     </div>
                 {% else %}
-                    <p class="text-muted">No transactions yet.</p>
+                    <p class="text-muted">{{ _('No transactions yet.') }}</p>
                 {% endif %}
             </div>
         </div>
@@ -92,21 +92,21 @@
     <div class="col-md-4">
         <div class="card mb-4 border-primary">
             <div class="card-header bg-primary text-white">
-                <i class="bi bi-info-circle"></i> Quick Stats
+                <i class="bi bi-info-circle"></i> {{ _('Quick Stats') }}
             </div>
             <div class="card-body">
                 <ul class="list-unstyled">
                     <li class="mb-2">
                         <i class="bi bi-people-fill text-primary"></i>
-                        <strong>Total Users:</strong> {{ users|length }}
+                        <strong>{{ _('Total Users:') }}</strong> {{ users|length }}
                     </li>
                     <li class="mb-2">
                         <i class="bi bi-cash-stack text-success"></i>
-                        <strong>Positive Balances:</strong> {{ users|selectattr('balance', 'gt', 0)|list|length }}
+                        <strong>{{ _('Positive Balances:') }}</strong> {{ users|selectattr('balance', 'gt', 0)|list|length }}
                     </li>
                     <li class="mb-2">
                         <i class="bi bi-exclamation-triangle text-danger"></i>
-                        <strong>Negative Balances:</strong> {{ users|selectattr('balance', 'lt', 0)|list|length }}
+                        <strong>{{ _('Negative Balances:') }}</strong> {{ users|selectattr('balance', 'lt', 0)|list|length }}
                     </li>
                 </ul>
             </div>
@@ -114,18 +114,18 @@
 
         <div class="card border-success">
             <div class="card-header bg-success text-white">
-                <i class="bi bi-plus-square"></i> Quick Actions
+                <i class="bi bi-plus-square"></i> {{ _('Quick Actions') }}
             </div>
             <div class="card-body">
                 <div class="d-grid gap-2">
                     <a href="{{ url_for('main.add_transaction') }}?type=expense" class="btn btn-outline-primary">
-                        <i class="bi bi-receipt"></i> Record Expense
+                        <i class="bi bi-receipt"></i> {{ _('Record Expense') }}
                     </a>
                     <a href="{{ url_for('main.add_transaction') }}?type=deposit" class="btn btn-outline-success">
-                        <i class="bi bi-arrow-down-circle"></i> Add Money
+                        <i class="bi bi-arrow-down-circle"></i> {{ _('Add Money') }}
                     </a>
                     <a href="{{ url_for('main.add_transaction') }}?type=withdrawal" class="btn btn-outline-danger">
-                        <i class="bi bi-arrow-up-circle"></i> Withdraw Money
+                        <i class="bi bi-arrow-up-circle"></i> {{ _('Withdraw Money') }}
                     </a>
                 </div>
             </div>

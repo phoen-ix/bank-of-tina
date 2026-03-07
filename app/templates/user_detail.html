@@ -9,45 +9,45 @@
             <div class="card-header {% if not user.is_active %}bg-secondary{% else %}bg-primary{% endif %} text-white d-flex justify-content-between align-items-center">
                 <span><i class="bi bi-person-circle"></i> {{ user.name }}</span>
                 {% if not user.is_active %}
-                    <span class="badge bg-light text-dark">Inactive</span>
+                    <span class="badge bg-light text-dark">{{ _('Inactive') }}</span>
                 {% endif %}
             </div>
             <div class="card-body">
                 <dl class="row mb-0">
-                    <dt class="col-sm-4">Email:</dt>
+                    <dt class="col-sm-4">{{ _('Email:') }}</dt>
                     <dd class="col-sm-8">{{ user.email }}</dd>
 
-                    <dt class="col-sm-4">Balance:</dt>
+                    <dt class="col-sm-4">{{ _('Balance:') }}</dt>
                     <dd class="col-sm-8">
                         <h4 class="mb-0 {% if user.balance >= 0 %}balance-positive{% else %}balance-negative{% endif %}">
                             {{ currency_symbol }}{{ user.balance|money }}
                         </h4>
                     </dd>
 
-                    <dt class="col-sm-4">Member since:</dt>
+                    <dt class="col-sm-4">{{ _('Member since:') }}</dt>
                     <dd class="col-sm-8">{{ user.created_at.strftime('%Y-%m-%d') }}</dd>
                 </dl>
 
 
                 <div class="mt-3 d-grid gap-2">
                     <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#editUserModal">
-                        <i class="bi bi-pencil"></i> Edit User
+                        <i class="bi bi-pencil"></i> {{ _('Edit User') }}
                     </button>
                     <form method="POST" action="{{ url_for('main.toggle_user_active', user_id=user.id) }}">
                         <button type="submit" class="btn btn-sm w-100 {% if user.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}">
                             <i class="bi {% if user.is_active %}bi-person-dash{% else %}bi-person-check{% endif %}"></i>
-                            {% if user.is_active %}Deactivate User{% else %}Reactivate User{% endif %}
+                            {% if user.is_active %}{{ _('Deactivate User') }}{% else %}{{ _('Reactivate User') }}{% endif %}
                         </button>
                     </form>
                 </div>
             </div>
         </div>
     </div>
-    
+
     <div class="col-md-8">
         <div class="card">
             <div class="card-header">
-                <i class="bi bi-clock-history"></i> Transaction History
+                <i class="bi bi-clock-history"></i> {{ _('Transaction History') }}
             </div>
             <div class="card-body">
                 {% if pagination.items %}
@@ -62,7 +62,7 @@
                                         {% elif trans.transaction_type == 'withdrawal' %}bg-danger
                                         {% elif trans.transaction_type == 'expense' %}bg-primary
                                         {% else %}bg-secondary{% endif %}">
-                                        {{ trans.transaction_type }}
+                                        {{ trans.transaction_type|tx_type }}
                                     </span>
                                 </h6>
                                 <small class="text-muted">{{ trans.date | localdt('%Y-%m-%d %H:%M') }}</small>
@@ -70,17 +70,17 @@
                             <p class="mb-1">
                                 {% if trans.from_user and trans.from_user.id == user.id %}
                                     <span class="text-danger">
-                                        <i class="bi bi-arrow-up"></i> Paid {{ currency_symbol }}{{ trans.amount|money }}
+                                        <i class="bi bi-arrow-up"></i> {{ _('Paid') }} {{ currency_symbol }}{{ trans.amount|money }}
                                     </span>
                                     {% if trans.to_user %}
-                                        to <strong>{{ trans.to_user.name }}</strong>
+                                        {{ _('to') }} <strong>{{ trans.to_user.name }}</strong>
                                     {% endif %}
                                 {% elif trans.to_user and trans.to_user.id == user.id %}
                                     <span class="text-success">
-                                        <i class="bi bi-arrow-down"></i> Received {{ currency_symbol }}{{ trans.amount|money }}
+                                        <i class="bi bi-arrow-down"></i> {{ _('Received') }} {{ currency_symbol }}{{ trans.amount|money }}
                                     </span>
                                     {% if trans.from_user %}
-                                        from <strong>{{ trans.from_user.name }}</strong>
+                                        {{ _('from') }} <strong>{{ trans.from_user.name }}</strong>
                                     {% endif %}
                                 {% endif %}
                             </p>
@@ -89,7 +89,7 @@
                             {% endif %}
                             {% if trans.items %}
                                 <small class="text-muted">
-                                    <strong>Items:</strong>
+                                    <strong>{{ _('Items:') }}</strong>
                                     {% for item in trans.items %}
                                         {{ item.item_name }} ({{ currency_symbol }}{{ item.price|money }}){% if not loop.last %}, {% endif %}
                                     {% endfor %}
@@ -98,19 +98,19 @@
                             {% if trans.receipt_path %}
                                 <div class="mt-2">
                                     <a href="{{ url_for('main.view_receipt', filepath=trans.receipt_path) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
-                                        <i class="bi bi-paperclip"></i> View Receipt
+                                        <i class="bi bi-paperclip"></i> {{ _('View Receipt') }}
                                     </a>
                                 </div>
                             {% endif %}
                             <div class="mt-2 d-flex gap-1">
                                 <a href="{{ url_for('main.edit_transaction', transaction_id=trans.id) }}"
                                    class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-pencil"></i> Edit
+                                    <i class="bi bi-pencil"></i> {{ _('Edit') }}
                                 </a>
                                 <form method="POST" action="{{ url_for('main.delete_transaction', transaction_id=trans.id) }}"
-                                      data-confirm="Delete this transaction? Balances will be reversed.">
+                                      data-confirm="{{ _('Delete this transaction? Balances will be reversed.') }}">
                                     <button type="submit" class="btn btn-sm btn-outline-danger">
-                                        <i class="bi bi-trash"></i> Delete
+                                        <i class="bi bi-trash"></i> {{ _('Delete') }}
                                     </button>
                                 </form>
                             </div>
@@ -121,7 +121,7 @@
                         {% include '_pagination.html' %}
                     {% endwith %}
                 {% else %}
-                    <p class="text-muted">No transactions yet for this user.</p>
+                    <p class="text-muted">{{ _('No transactions yet for this user.') }}</p>
                 {% endif %}
             </div>
         </div>
@@ -130,7 +130,7 @@
 
 <div class="mt-3">
     <a href="{{ url_for('main.index') }}" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left"></i> Back to Dashboard
+        <i class="bi bi-arrow-left"></i> {{ _('Back to Dashboard') }}
     </a>
 </div>
 
@@ -139,47 +139,47 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Edit User</h5>
+                <h5 class="modal-title">{{ _('Edit User') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form method="POST" action="{{ url_for('main.edit_user', user_id=user.id) }}">
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="editName" class="form-label">Name</label>
+                        <label for="editName" class="form-label">{{ _('Name') }}</label>
                         <input type="text" class="form-control" id="editName" name="name" value="{{ user.name }}" required>
                     </div>
                     <div class="mb-3">
-                        <label for="editEmail" class="form-label">Email</label>
+                        <label for="editEmail" class="form-label">{{ _('Email') }}</label>
                         <input type="email" class="form-control" id="editEmail" name="email" value="{{ user.email }}" required>
                     </div>
                     <div class="mb-3">
-                        <label for="editCreatedAt" class="form-label">Member since</label>
+                        <label for="editCreatedAt" class="form-label">{{ _('Member since') }}</label>
                         <input type="date" class="form-control" id="editCreatedAt" name="created_at" value="{{ user.created_at.strftime('%Y-%m-%d') }}" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Weekly email report</label>
+                        <label class="form-label">{{ _('Weekly email report') }}</label>
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" name="email_opt_in"
                                    value="1" id="editEmailOptIn"
                                    {% if user.email_opt_in %}checked{% endif %}>
                             <label class="form-check-label" for="editEmailOptIn">
-                                Send weekly balance email
+                                {{ _('Send weekly balance email') }}
                             </label>
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label for="editEmailTransactions" class="form-label">Include in email</label>
+                        <label for="editEmailTransactions" class="form-label">{{ _('Include in email') }}</label>
                         <select class="form-select" name="email_transactions" id="editEmailTransactions">
-                            <option value="none"       {% if user.email_transactions == 'none'       %}selected{% endif %}>No transactions</option>
-                            <option value="last3"      {% if user.email_transactions == 'last3'      %}selected{% endif %}>Last 3 transactions</option>
-                            <option value="this_week"  {% if user.email_transactions == 'this_week'  %}selected{% endif %}>Transactions this week</option>
-                            <option value="this_month" {% if user.email_transactions == 'this_month' %}selected{% endif %}>Transactions this month</option>
+                            <option value="none"       {% if user.email_transactions == 'none'       %}selected{% endif %}>{{ _('No transactions') }}</option>
+                            <option value="last3"      {% if user.email_transactions == 'last3'      %}selected{% endif %}>{{ _('Last 3 transactions') }}</option>
+                            <option value="this_week"  {% if user.email_transactions == 'this_week'  %}selected{% endif %}>{{ _('Transactions this week') }}</option>
+                            <option value="this_month" {% if user.email_transactions == 'this_month' %}selected{% endif %}>{{ _('Transactions this month') }}</option>
                         </select>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ _('Save Changes') }}</button>
                 </div>
             </form>
         </div>

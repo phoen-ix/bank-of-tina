@@ -4,7 +4,7 @@
 <div class="card">
     <div class="card-header d-flex flex-wrap align-items-center gap-2">
         <i class="bi bi-list-ul me-1"></i>
-        <span class="me-auto">Transactions</span>
+        <span class="me-auto">{{ _('Transactions') }}</span>
 
         <!-- Prev / Next navigation -->
         <a href="{{ url_for('main.view_transactions', year=prev_year, month=prev_month) }}"
@@ -23,10 +23,8 @@
 
         <!-- Jump-to picker -->
         <select id="jump-month" class="form-select form-select-sm w-auto">
-            {% set month_names = ['January','February','March','April','May','June',
-                                  'July','August','September','October','November','December'] %}
             {% for i in range(1, 13) %}
-            <option value="{{ i }}" {% if i == month %}selected{% endif %}>{{ month_names[i-1] }}</option>
+            <option value="{{ i }}" {% if i == month %}selected{% endif %}>{{ localized_months[i-1] }}</option>
             {% endfor %}
         </select>
         <select id="jump-year" class="form-select form-select-sm w-auto">
@@ -42,13 +40,13 @@
                 <table class="table table-hover mb-0">
                     <thead>
                         <tr>
-                            <th>Time</th>
-                            <th>Type</th>
-                            <th>Description</th>
-                            <th>From</th>
-                            <th>To</th>
-                            <th class="text-end">Amount</th>
-                            <th>Receipt</th>
+                            <th>{{ _('Time') }}</th>
+                            <th>{{ _('Type') }}</th>
+                            <th>{{ _('Description') }}</th>
+                            <th>{{ _('From') }}</th>
+                            <th>{{ _('To') }}</th>
+                            <th class="text-end">{{ _('Amount') }}</th>
+                            <th>{{ _('Receipt') }}</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -58,7 +56,7 @@
                         <tr class="table-secondary">
                             <td colspan="8" class="py-1 px-3">
                                 <h6 class="mb-0 fw-semibold">
-                                    {{ day.strftime('%A, %-d %B') }}
+                                    {{ day|format_date_babel }}
                                 </h6>
                             </td>
                         </tr>
@@ -71,7 +69,7 @@
                                     {% elif trans.transaction_type == 'withdrawal' %}bg-danger
                                     {% elif trans.transaction_type == 'expense' %}bg-primary
                                     {% else %}bg-secondary{% endif %}">
-                                    {{ trans.transaction_type }}
+                                    {{ trans.transaction_type|tx_type }}
                                 </span>
                             </td>
                             <td>{{ trans.description }}</td>
@@ -97,7 +95,7 @@
                             <td>
                                 {% if trans.receipt_path %}
                                     <a href="{{ url_for('main.view_receipt', filepath=trans.receipt_path) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
-                                        <i class="bi bi-paperclip"></i> View
+                                        <i class="bi bi-paperclip"></i> {{ _('View') }}
                                     </a>
                                 {% else %}
                                     -
@@ -110,7 +108,7 @@
                                 </a>
                                 <form method="POST" action="{{ url_for('main.delete_transaction', transaction_id=trans.id) }}"
                                       class="d-inline"
-                                      data-confirm="Delete this transaction? Balances will be reversed.">
+                                      data-confirm="{{ _('Delete this transaction? Balances will be reversed.') }}">
                                     <button type="submit" class="btn btn-sm btn-outline-danger">
                                         <i class="bi bi-trash"></i>
                                     </button>
@@ -122,7 +120,7 @@
                                 <td colspan="8">
                                     <small class="ms-4">
                                         {% if trans.items %}
-                                            <strong>Items:</strong>
+                                            <strong>{{ _('Items:') }}</strong>
                                             {% for item in trans.items %}
                                                 {{ item.item_name }} ({{ currency_symbol }}{{ item.price|money }}){% if not loop.last %}, {% endif %}
                                             {% endfor %}
@@ -141,13 +139,13 @@
                 </table>
             </div>
         {% else %}
-            <p class="text-muted p-4 mb-0">No transactions recorded in {{ month_name }} {{ year }}.</p>
+            <p class="text-muted p-4 mb-0">{{ _('No transactions recorded in %(month)s %(year)s.', month=month_name, year=year) }}</p>
         {% endif %}
     </div>
 
     {% if tx_count %}
     <div class="card-footer text-muted small">
-        {{ tx_count }} transaction{{ 's' if tx_count != 1 else '' }} &middot; Total: {{ currency_symbol }}{{ tx_total|money }}
+        {{ _('%(count)s transaction(s)', count=tx_count) }} &middot; {{ _('Total:') }} {{ currency_symbol }}{{ tx_total|money }}
     </div>
     {% endif %}
 </div>

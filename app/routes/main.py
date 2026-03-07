@@ -9,6 +9,7 @@ from decimal import Decimal
 
 import calendar as cal_mod
 from flask import Blueprint, Response, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, current_app, abort
+from flask_babel import gettext as _, format_date as babel_format_date
 
 from extensions import db, limiter
 from models import User, Transaction, ExpenseItem
@@ -64,11 +65,11 @@ def add_user() -> Response:
     email = request.form.get('email')
 
     if not name or not email:
-        flash('Name and email are required!', 'error')
+        flash(_('Name and email are required!'), 'error')
         return redirect(url_for('settings_bp.settings'))
 
     if db.session.execute(db.select(User).filter_by(name=name)).scalar():
-        flash('User already exists!', 'error')
+        flash(_('User already exists!'), 'error')
         return redirect(url_for('settings_bp.settings'))
 
     email_opt_in = request.form.get('email_opt_in') == '1'
@@ -82,7 +83,7 @@ def add_user() -> Response:
     db.session.add(user)
     db.session.commit()
     logger.info('User created: id=%s name=%s', user.id, name)
-    flash(f'User {name} added successfully!', 'success')
+    flash(_('User %(name)s added successfully!', name=name), 'success')
     return redirect(url_for('settings_bp.settings'))
 
 
@@ -94,23 +95,23 @@ def edit_user(user_id: int) -> Response:
     created_at_str = request.form.get('created_at', '').strip()
 
     if not name or not email or not created_at_str:
-        flash('All fields are required!', 'error')
+        flash(_('All fields are required!'), 'error')
         return redirect(url_for('main.user_detail', user_id=user_id))
 
     existing = db.session.execute(db.select(User).where(User.name == name, User.id != user_id)).scalar()
     if existing:
-        flash('Another user with that name already exists!', 'error')
+        flash(_('Another user with that name already exists!'), 'error')
         return redirect(url_for('main.user_detail', user_id=user_id))
 
     existing_email = db.session.execute(db.select(User).where(User.email == email, User.id != user_id)).scalar()
     if existing_email:
-        flash('Another user with that email already exists!', 'error')
+        flash(_('Another user with that email already exists!'), 'error')
         return redirect(url_for('main.user_detail', user_id=user_id))
 
     try:
         user.created_at = datetime.strptime(created_at_str, '%Y-%m-%d')
     except ValueError:
-        flash('Invalid date format!', 'error')
+        flash(_('Invalid date format!'), 'error')
         return redirect(url_for('main.user_detail', user_id=user_id))
 
     user.name = name
@@ -122,7 +123,7 @@ def edit_user(user_id: int) -> Response:
     user.email_transactions = email_transactions
     db.session.commit()
     logger.info('User edited: id=%s name=%s', user_id, name)
-    flash('User updated successfully!', 'success')
+    flash(_('User updated successfully!'), 'success')
     return redirect(url_for('main.user_detail', user_id=user_id))
 
 
@@ -131,9 +132,11 @@ def toggle_user_active(user_id: int) -> Response:
     user = db.session.get(User, user_id) or abort(404)
     user.is_active = not user.is_active
     db.session.commit()
-    status = 'activated' if user.is_active else 'deactivated'
     logger.info('User toggled: id=%s name=%s active=%s', user_id, user.name, user.is_active)
-    flash(f'User {user.name} has been {status}.', 'success')
+    if user.is_active:
+        flash(_('User %(name)s has been activated.', name=user.name), 'success')
+    else:
+        flash(_('User %(name)s has been deactivated.', name=user.name), 'success')
     return redirect(request.referrer or url_for('settings_bp.settings'))
 
 
@@ -167,7 +170,7 @@ def add_transaction() -> str | Response:
         db.session.add(transaction)
         update_balance(user_id, amount)
         logger.info('Transaction created: deposit id=%s amount=%s', transaction.id, amount)
-        flash(f'Deposit of {get_setting("currency_symbol", "€")}{fmt_amount(amount)} added successfully!', 'success')
+        flash(_('Deposit of %(sym)s%(amount)s added successfully!', sym=get_setting("currency_symbol", "\u20ac"), amount=fmt_amount(amount)), 'success')
 
     elif transaction_type == 'withdrawal':
         user_id = int(request.form.get('user_id'))
@@ -185,7 +188,7 @@ def add_transaction() -> str | Response:
         db.session.add(transaction)
         update_balance(user_id, -amount)
         logger.info('Transaction created: withdrawal id=%s amount=%s', transaction.id, amount)
-        flash(f'Withdrawal of {get_setting("currency_symbol", "€")}{fmt_amount(amount)} processed successfully!', 'success')
+        flash(_('Withdrawal of %(sym)s%(amount)s processed successfully!', sym=get_setting("currency_symbol", "\u20ac"), amount=fmt_amount(amount)), 'success')
 
     elif transaction_type == 'expense':
         buyer_id = int(request.form.get('buyer_id'))
@@ -234,9 +237,9 @@ def add_transaction() -> str | Response:
 
             db.session.commit()
             logger.info('Transaction created: expense buyer_id=%s', buyer_id)
-            flash('Expense recorded successfully!', 'success')
+            flash(_('Expense recorded successfully!'), 'success')
         else:
-            flash('At least one item is required for an expense.', 'error')
+            flash(_('At least one item is required for an expense.'), 'error')
 
     return redirect(url_for('main.index'))
 
@@ -267,16 +270,19 @@ def view_transactions() -> str:
     start_year = first.date.year if first else today.year
     year_range = list(range(start_year, today.year + 1))
 
+    localized_months = [babel_format_date(datetime(2000, m, 1), 'MMMM') for m in range(1, 13)]
+
     return render_template('transactions.html',
         grouped=grouped,
         year=year, month=month,
-        month_name=datetime(year, month, 1).strftime('%B'),
+        month_name=babel_format_date(datetime(year, month, 1), 'MMMM'),
         prev_year=prev_year, prev_month=prev_month,
         next_year=next_year, next_month=next_month,
         is_current_month=(year == today.year and month == today.month),
         year_range=year_range,
         tx_count=len(transactions),
         tx_total=sum(t.amount for t in transactions),
+        localized_months=localized_months,
     )
 
 
@@ -405,9 +411,9 @@ def service_worker() -> Response:
 def pwa_manifest() -> Response:
     color = get_tpl('color_navbar')
     data = {
-        "name": "Bank of Tina",
-        "short_name": "Bank of Tina",
-        "description": "Track shared expenses and balances",
+        "name": _("Bank of Tina"),
+        "short_name": _("Bank of Tina"),
+        "description": _("Track shared expenses and balances"),
         "start_url": "/",
         "display": "standalone",
         "background_color": "#ffffff",
@@ -457,7 +463,7 @@ def edit_transaction(transaction_id: int) -> str | Response:
             except ValueError:
                 continue
         if not date_parsed:
-            flash('Could not parse date — keeping the original value.', 'error')
+            flash(_('Could not parse date — keeping the original value.'), 'error')
 
     from_id = request.form.get('from_user_id') or None
     to_id   = request.form.get('to_user_id')   or None
@@ -518,7 +524,7 @@ def edit_transaction(transaction_id: int) -> str | Response:
 
     db.session.commit()
     logger.info('Transaction edited: id=%s type=%s amount=%s', trans.id, trans.transaction_type, trans.amount)
-    flash('Transaction updated successfully!', 'success')
+    flash(_('Transaction updated successfully!'), 'success')
     return redirect(url_for('main.view_transactions'))
 
 
@@ -541,7 +547,7 @@ def delete_transaction(transaction_id: int) -> Response:
     db.session.commit()
     logger.info('Transaction deleted: id=%s type=%s amount=%s', transaction_id, trans.transaction_type, trans.amount)
 
-    flash('Transaction deleted.', 'success')
+    flash(_('Transaction deleted.'), 'success')
     return redirect(url_for('main.view_transactions'))
 
 

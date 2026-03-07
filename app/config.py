@@ -65,4 +65,22 @@ TEMPLATE_DEFAULTS: dict[str, str] = {
     'tpl_backup_footer':   'This is an automated backup report from the Bank of Tina system.',
 }
 
+TEMPLATE_DEFAULTS_DE: dict[str, str] = {
+    'color_navbar':             '#0d6efd',
+    'color_email_grad_start':   '#667eea',
+    'color_email_grad_end':     '#764ba2',
+    'color_balance_positive':   '#28a745',
+    'color_balance_negative':   '#dc3545',
+    'tpl_email_subject':   'Bank of Tina - Wöchentliches Saldo-Update ([Date])',
+    'tpl_email_greeting':  'Hallo [Name],',
+    'tpl_email_intro':     'Hier ist dein wöchentliches Update von der Bank of Tina:',
+    'tpl_email_footer1':   'Dies ist ein automatisches wöchentliches Update vom Bank of Tina System.',
+    'tpl_email_footer2':   'Gemeinsames Mittagessen leicht gemacht! \U0001f957',
+    'tpl_admin_subject':   'Bank of Tina - Admin-Zusammenfassung ([Date])',
+    'tpl_admin_intro':     '',
+    'tpl_admin_footer':    'Dies ist eine automatische Admin-Zusammenfassung vom Bank of Tina System.',
+    'tpl_backup_subject':  'Bank of Tina - Backup [BackupStatus] ([Date])',
+    'tpl_backup_footer':   'Dies ist ein automatischer Backup-Bericht vom Bank of Tina System.',
+}
+
 DEFAULT_ICON_BG: str = '#0d6efd'

@@ -5,23 +5,23 @@
     <div class="col-md-8 mx-auto">
         <div class="card">
             <div class="card-header">
-                <i class="bi bi-plus-circle"></i> Add Transaction
+                <i class="bi bi-plus-circle"></i> {{ _('Add Transaction') }}
             </div>
             <div class="card-body">
                 <ul class="nav nav-tabs mb-4" id="transactionTabs" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active" id="expense-tab" data-bs-toggle="tab" data-bs-target="#expense" type="button">
-                            <i class="bi bi-receipt"></i> Expense
+                            <i class="bi bi-receipt"></i> {{ _('Expense') }}
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="deposit-tab" data-bs-toggle="tab" data-bs-target="#deposit" type="button">
-                            <i class="bi bi-arrow-down-circle"></i> Deposit
+                            <i class="bi bi-arrow-down-circle"></i> {{ _('Deposit') }}
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="withdrawal-tab" data-bs-toggle="tab" data-bs-target="#withdrawal" type="button">
-                            <i class="bi bi-arrow-up-circle"></i> Withdrawal
+                            <i class="bi bi-arrow-up-circle"></i> {{ _('Withdrawal') }}
                         </button>
                     </li>
                 </ul>
@@ -37,9 +37,9 @@
                             <datalist id="commonPricesList"></datalist>
 
                             <div class="mb-3">
-                                <label for="buyer_id" class="form-label">Who paid?</label>
+                                <label for="buyer_id" class="form-label">{{ _('Who paid?') }}</label>
                                 <select class="form-select" id="buyer_id" name="buyer_id" required>
-                                    <option value="">Select person...</option>
+                                    <option value="">{{ _('Select person...') }}</option>
                                     {% for user in users %}
                                     <option value="{{ user.id }}">{{ user.name }}</option>
                                     {% endfor %}
@@ -47,46 +47,46 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="description" class="form-label">Description</label>
-                                <input type="text" class="form-control" id="description" name="description" placeholder="e.g., Supermarket lunch" list="commonDescriptionsList" required>
+                                <label for="description" class="form-label">{{ _('Description') }}</label>
+                                <input type="text" class="form-control" id="description" name="description" placeholder="{{ _('e.g., Supermarket lunch') }}" list="commonDescriptionsList" required>
                             </div>
 
                             <div class="mb-3">
-                                <label for="receipt" class="form-label">Receipt (optional)</label>
+                                <label for="receipt" class="form-label">{{ _('Receipt (optional)') }}</label>
                                 <input type="file" class="form-control" id="receipt" name="receipt" accept="image/*,.pdf">
-                                <small class="form-text text-muted">Supported: JPG, PNG, PDF (max 16MB)</small>
+                                <small class="form-text text-muted">{{ _('Supported: JPG, PNG, PDF (max 16MB)') }}</small>
                             </div>
 
                             <div class="card mb-3">
                                 <div class="card-header d-flex justify-content-between align-items-center">
-                                    <span>Items</span>
+                                    <span>{{ _('Items') }}</span>
                                     <button type="button" class="btn btn-sm btn-success" id="btn-add-item">
-                                        <i class="bi bi-plus"></i> Add Item
+                                        <i class="bi bi-plus"></i> {{ _('Add Item') }}
                                     </button>
                                 </div>
                                 <div class="card-body">
                                     <div id="expenseItems">
-                                        <p class="text-muted">Click "Add Item" to add items from the receipt.</p>
+                                        <p class="text-muted">{{ _('Click "Add Item" to add items from the receipt.') }}</p>
                                     </div>
                                     <div class="mt-3">
-                                        <strong>Total: {{ currency_symbol }}<span id="totalAmount">0{{ decimal_sep }}00</span></strong>
+                                        <strong>{{ _('Total:') }} {{ currency_symbol }}<span id="totalAmount">0{{ decimal_sep }}00</span></strong>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="mb-3">
-                                <label for="expense_date" class="form-label">Date &amp; time</label>
+                                <label for="expense_date" class="form-label">{{ _('Date & time') }}</label>
                                 <input type="datetime-local" class="form-control" id="expense_date"
                                        name="date" value="{{ default_date }}">
                             </div>
 
                             <div class="mb-3">
-                                <label for="expense_notes" class="form-label">Notes <span class="text-muted fw-normal">(optional)</span></label>
-                                <textarea class="form-control" id="expense_notes" name="notes" rows="2" placeholder="Any additional context or justification…"></textarea>
+                                <label for="expense_notes" class="form-label">{{ _('Notes') }} <span class="text-muted fw-normal">({{ _('optional') }})</span></label>
+                                <textarea class="form-control" id="expense_notes" name="notes" rows="2" placeholder="{{ _('Any additional context or justification…') }}"></textarea>
                             </div>
 
                             <button type="submit" class="btn btn-primary w-100">
-                                <i class="bi bi-check-circle"></i> Record Expense
+                                <i class="bi bi-check-circle"></i> {{ _('Record Expense') }}
                             </button>
                         </form>
                     </div>
@@ -95,11 +95,11 @@
                     <div class="tab-pane fade" id="deposit" role="tabpanel">
                         <form method="POST" action="{{ url_for('main.add_transaction') }}">
                             <input type="hidden" name="transaction_type" value="deposit">
-                            
+
                             <div class="mb-3">
-                                <label for="deposit_user_id" class="form-label">User</label>
+                                <label for="deposit_user_id" class="form-label">{{ _('User') }}</label>
                                 <select class="form-select" id="deposit_user_id" name="user_id" required>
-                                    <option value="">Select person...</option>
+                                    <option value="">{{ _('Select person...') }}</option>
                                     {% for user in users %}
                                     <option value="{{ user.id }}">{{ user.name }}</option>
                                     {% endfor %}
@@ -107,28 +107,28 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="deposit_amount" class="form-label">Amount ({{ currency_symbol }})</label>
+                                <label for="deposit_amount" class="form-label">{{ _('Amount') }} ({{ currency_symbol }})</label>
                                 <input type="text" inputmode="decimal" class="form-control" id="deposit_amount" name="amount" placeholder="0{{ decimal_sep }}00" required>
                             </div>
 
                             <div class="mb-3">
-                                <label for="deposit_description" class="form-label">Description (optional)</label>
-                                <input type="text" class="form-control" id="deposit_description" name="description" placeholder="e.g., Monthly deposit" list="commonDescriptionsList">
+                                <label for="deposit_description" class="form-label">{{ _('Description (optional)') }}</label>
+                                <input type="text" class="form-control" id="deposit_description" name="description" placeholder="{{ _('e.g., Monthly deposit') }}" list="commonDescriptionsList">
                             </div>
 
                             <div class="mb-3">
-                                <label for="deposit_date" class="form-label">Date &amp; time</label>
+                                <label for="deposit_date" class="form-label">{{ _('Date & time') }}</label>
                                 <input type="datetime-local" class="form-control" id="deposit_date"
                                        name="date" value="{{ default_date }}">
                             </div>
 
                             <div class="mb-3">
-                                <label for="deposit_notes" class="form-label">Notes <span class="text-muted fw-normal">(optional)</span></label>
-                                <textarea class="form-control" id="deposit_notes" name="notes" rows="2" placeholder="Any additional context or justification…"></textarea>
+                                <label for="deposit_notes" class="form-label">{{ _('Notes') }} <span class="text-muted fw-normal">({{ _('optional') }})</span></label>
+                                <textarea class="form-control" id="deposit_notes" name="notes" rows="2" placeholder="{{ _('Any additional context or justification…') }}"></textarea>
                             </div>
 
                             <button type="submit" class="btn btn-success w-100">
-                                <i class="bi bi-check-circle"></i> Add Money
+                                <i class="bi bi-check-circle"></i> {{ _('Add Money') }}
                             </button>
                         </form>
                     </div>
@@ -137,11 +137,11 @@
                     <div class="tab-pane fade" id="withdrawal" role="tabpanel">
                         <form method="POST" action="{{ url_for('main.add_transaction') }}">
                             <input type="hidden" name="transaction_type" value="withdrawal">
-                            
+
                             <div class="mb-3">
-                                <label for="withdrawal_user_id" class="form-label">User</label>
+                                <label for="withdrawal_user_id" class="form-label">{{ _('User') }}</label>
                                 <select class="form-select" id="withdrawal_user_id" name="user_id" required>
-                                    <option value="">Select person...</option>
+                                    <option value="">{{ _('Select person...') }}</option>
                                     {% for user in users %}
                                     <option value="{{ user.id }}">{{ user.name }}</option>
                                     {% endfor %}
@@ -149,28 +149,28 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="withdrawal_amount" class="form-label">Amount ({{ currency_symbol }})</label>
+                                <label for="withdrawal_amount" class="form-label">{{ _('Amount') }} ({{ currency_symbol }})</label>
                                 <input type="text" inputmode="decimal" class="form-control" id="withdrawal_amount" name="amount" placeholder="0{{ decimal_sep }}00" required>
                             </div>
 
                             <div class="mb-3">
-                                <label for="withdrawal_description" class="form-label">Description (optional)</label>
-                                <input type="text" class="form-control" id="withdrawal_description" name="description" placeholder="e.g., Cash withdrawal" list="commonDescriptionsList">
+                                <label for="withdrawal_description" class="form-label">{{ _('Description (optional)') }}</label>
+                                <input type="text" class="form-control" id="withdrawal_description" name="description" placeholder="{{ _('e.g., Cash withdrawal') }}" list="commonDescriptionsList">
                             </div>
 
                             <div class="mb-3">
-                                <label for="withdrawal_date" class="form-label">Date &amp; time</label>
+                                <label for="withdrawal_date" class="form-label">{{ _('Date & time') }}</label>
                                 <input type="datetime-local" class="form-control" id="withdrawal_date"
                                        name="date" value="{{ default_date }}">
                             </div>
 
                             <div class="mb-3">
-                                <label for="withdrawal_notes" class="form-label">Notes <span class="text-muted fw-normal">(optional)</span></label>
-                                <textarea class="form-control" id="withdrawal_notes" name="notes" rows="2" placeholder="Any additional context or justification…"></textarea>
+                                <label for="withdrawal_notes" class="form-label">{{ _('Notes') }} <span class="text-muted fw-normal">({{ _('optional') }})</span></label>
+                                <textarea class="form-control" id="withdrawal_notes" name="notes" rows="2" placeholder="{{ _('Any additional context or justification…') }}"></textarea>
                             </div>
 
                             <button type="submit" class="btn btn-danger w-100">
-                                <i class="bi bi-check-circle"></i> Withdraw Money
+                                <i class="bi bi-check-circle"></i> {{ _('Withdraw Money') }}
                             </button>
                         </form>
                     </div>
@@ -185,6 +185,9 @@
 <script nonce="{{ csp_nonce }}">
 const DECIMAL_SEP = {{ decimal_sep | tojson }};
 const CURRENCY_SYM = {{ currency_symbol | tojson }};
+const MSG_ADD_ITEM = {{ _('Please add at least one item!')|tojson }};
+const MSG_ITEM_NAME = {{ _('Item name')|tojson }};
+const MSG_WHO_OWES = {{ _('Who owes?')|tojson }};
 let itemCounter = 0;
 let expenseItems = [];
 
@@ -199,14 +202,14 @@ function addExpenseItem() {
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-5">
-                        <input type="text" class="form-control item-name" placeholder="Item name" list="commonItemsList">
+                        <input type="text" class="form-control item-name" placeholder="${MSG_ITEM_NAME}" list="commonItemsList">
                     </div>
                     <div class="col-md-3">
                         <input type="text" inputmode="decimal" class="form-control item-price" placeholder="0${DECIMAL_SEP}00" list="commonPricesList">
                     </div>
                     <div class="col-md-3">
                         <select class="form-select item-debtor">
-                            <option value="">Who owes?</option>
+                            <option value="">${MSG_WHO_OWES}</option>
                             {% for user in users %}
                             <option value="{{ user.id }}">{{ user.name }}</option>
                             {% endfor %}
@@ -265,7 +268,7 @@ document.getElementById('expenseForm').addEventListener('submit', function(e) {
     });
 
     if (items.length === 0) {
-        alert('Please add at least one item!');
+        alert(MSG_ADD_ITEM);
         return;
     }
 

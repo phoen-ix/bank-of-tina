@@ -1,20 +1,20 @@
 {% extends "base.html" %}
 
-{% block title %}Search Transactions – Bank of Tina{% endblock %}
+{% block title %}{{ _('Search Transactions') }} – Bank of Tina{% endblock %}
 
 {% block content %}
 <div class="card mb-4">
     <div class="card-header">
-        <i class="bi bi-search me-1"></i> Search Transactions
+        <i class="bi bi-search me-1"></i> {{ _('Search Transactions') }}
     </div>
     <div class="card-body">
         <form method="GET" action="{{ url_for('main.search') }}">
             <!-- Main search bar -->
             <div class="input-group mb-3">
                 <input class="form-control" type="search" name="q"
-                       placeholder="Search transactions…" value="{{ q }}">
+                       placeholder="{{ _('Search transactions…') }}" value="{{ q }}">
                 <button class="btn btn-primary" type="submit">
-                    <i class="bi bi-search"></i> Search
+                    <i class="bi bi-search"></i> {{ _('Search') }}
                 </button>
             </div>
 
@@ -23,46 +23,46 @@
                 <a class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse"
                    href="#advancedFilters" role="button" aria-expanded="false"
                    aria-controls="advancedFilters" id="advancedToggle">
-                    <i class="bi bi-sliders"></i> Advanced filters
+                    <i class="bi bi-sliders"></i> {{ _('Advanced filters') }}
                 </a>
             </div>
 
             <div class="collapse mt-3" id="advancedFilters">
                 <div class="row g-3">
                     <div class="col-sm-6 col-md-3">
-                        <label class="form-label small fw-semibold">Type</label>
+                        <label class="form-label small fw-semibold">{{ _('Type') }}</label>
                         <select class="form-select form-select-sm" name="type">
-                            <option value="" {% if not tx_type %}selected{% endif %}>All types</option>
-                            <option value="expense"    {% if tx_type == 'expense'    %}selected{% endif %}>Expense</option>
-                            <option value="transfer"   {% if tx_type == 'transfer'   %}selected{% endif %}>Transfer</option>
-                            <option value="deposit"    {% if tx_type == 'deposit'    %}selected{% endif %}>Deposit</option>
-                            <option value="withdrawal" {% if tx_type == 'withdrawal' %}selected{% endif %}>Withdrawal</option>
+                            <option value="" {% if not tx_type %}selected{% endif %}>{{ _('All types') }}</option>
+                            <option value="expense"    {% if tx_type == 'expense'    %}selected{% endif %}>{{ _('Expense') }}</option>
+                            <option value="transfer"   {% if tx_type == 'transfer'   %}selected{% endif %}>{{ _('Transfer') }}</option>
+                            <option value="deposit"    {% if tx_type == 'deposit'    %}selected{% endif %}>{{ _('Deposit') }}</option>
+                            <option value="withdrawal" {% if tx_type == 'withdrawal' %}selected{% endif %}>{{ _('Withdrawal') }}</option>
                         </select>
                     </div>
                     <div class="col-sm-6 col-md-3">
-                        <label class="form-label small fw-semibold">User</label>
+                        <label class="form-label small fw-semibold">{{ _('User') }}</label>
                         <select class="form-select form-select-sm" name="user">
-                            <option value="" {% if not user_id %}selected{% endif %}>All users</option>
+                            <option value="" {% if not user_id %}selected{% endif %}>{{ _('All users') }}</option>
                             {% for u in all_users %}
                             <option value="{{ u.id }}" {% if user_id == u.id %}selected{% endif %}>{{ u.name }}</option>
                             {% endfor %}
                         </select>
                     </div>
                     <div class="col-sm-6 col-md-3">
-                        <label class="form-label small fw-semibold">From date</label>
+                        <label class="form-label small fw-semibold">{{ _('From date') }}</label>
                         <input type="date" class="form-control form-control-sm" name="date_from" value="{{ date_from }}">
                     </div>
                     <div class="col-sm-6 col-md-3">
-                        <label class="form-label small fw-semibold">To date</label>
+                        <label class="form-label small fw-semibold">{{ _('To date') }}</label>
                         <input type="date" class="form-control form-control-sm" name="date_to" value="{{ date_to }}">
                     </div>
                     <div class="col-sm-6 col-md-3">
-                        <label class="form-label small fw-semibold">Min amount ({{ currency_symbol }})</label>
+                        <label class="form-label small fw-semibold">{{ _('Min amount') }} ({{ currency_symbol }})</label>
                         <input type="text" inputmode="decimal" class="form-control form-control-sm"
                                name="amount_min" value="{{ amount_min }}" placeholder="0{{ decimal_sep }}00">
                     </div>
                     <div class="col-sm-6 col-md-3">
-                        <label class="form-label small fw-semibold">Max amount ({{ currency_symbol }})</label>
+                        <label class="form-label small fw-semibold">{{ _('Max amount') }} ({{ currency_symbol }})</label>
                         <input type="text" inputmode="decimal" class="form-control form-control-sm"
                                name="amount_max" value="{{ amount_max }}" placeholder="—">
                     </div>
@@ -72,13 +72,13 @@
                                    id="has_receipt" name="has_receipt" value="1"
                                    {% if has_receipt %}checked{% endif %}>
                             <label class="form-check-label small fw-semibold" for="has_receipt">
-                                Has attachment / receipt
+                                {{ _('Has attachment / receipt') }}
                             </label>
                         </div>
                     </div>
                     <div class="col-12">
                         <button class="btn btn-primary btn-sm" type="submit">
-                            <i class="bi bi-search"></i> Search
+                            <i class="bi bi-search"></i> {{ _('Search') }}
                         </button>
                     </div>
                 </div>
@@ -88,7 +88,7 @@
 </div>
 
 {% if not searched %}
-    <p class="text-muted">Enter a search term or use advanced filters to find transactions across all months.</p>
+    <p class="text-muted">{{ _('Enter a search term or use advanced filters to find transactions across all months.') }}</p>
 
 {% elif pagination and pagination.items %}
     <div class="card">
@@ -97,13 +97,13 @@
                 <table class="table table-hover mb-0">
                     <thead>
                         <tr>
-                            <th>Date</th>
-                            <th>Type</th>
-                            <th>Description</th>
-                            <th>From</th>
-                            <th>To</th>
-                            <th class="text-end">Amount</th>
-                            <th>Receipt</th>
+                            <th>{{ _('Date') }}</th>
+                            <th>{{ _('Type') }}</th>
+                            <th>{{ _('Description') }}</th>
+                            <th>{{ _('From') }}</th>
+                            <th>{{ _('To') }}</th>
+                            <th class="text-end">{{ _('Amount') }}</th>
+                            <th>{{ _('Receipt') }}</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -117,7 +117,7 @@
                                     {% elif trans.transaction_type == 'withdrawal' %}bg-danger
                                     {% elif trans.transaction_type == 'expense' %}bg-primary
                                     {% else %}bg-secondary{% endif %}">
-                                    {{ trans.transaction_type }}
+                                    {{ trans.transaction_type|tx_type }}
                                 </span>
                             </td>
                             <td>{{ trans.description }}</td>
@@ -143,7 +143,7 @@
                             <td>
                                 {% if trans.receipt_path %}
                                     <a href="{{ url_for('main.view_receipt', filepath=trans.receipt_path) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
-                                        <i class="bi bi-paperclip"></i> View
+                                        <i class="bi bi-paperclip"></i> {{ _('View') }}
                                     </a>
                                 {% else %}
                                     -
@@ -156,7 +156,7 @@
                                 </a>
                                 <form method="POST" action="{{ url_for('main.delete_transaction', transaction_id=trans.id) }}"
                                       class="d-inline"
-                                      data-confirm="Delete this transaction? Balances will be reversed.">
+                                      data-confirm="{{ _('Delete this transaction? Balances will be reversed.') }}">
                                     <button type="submit" class="btn btn-sm btn-outline-danger">
                                         <i class="bi bi-trash"></i>
                                     </button>
@@ -168,7 +168,7 @@
                                 <td colspan="8">
                                     <small class="ms-4">
                                         {% if trans.items %}
-                                            <strong>Items:</strong>
+                                            <strong>{{ _('Items:') }}</strong>
                                             {% for item in trans.items %}
                                                 {{ item.item_name }} ({{ currency_symbol }}{{ item.price|money }}){% if not loop.last %}, {% endif %}
                                             {% endfor %}
@@ -187,8 +187,8 @@
             </div>
         </div>
         <div class="card-footer text-muted small">
-            {{ pagination.total }} transaction{{ 's' if pagination.total != 1 else '' }} found
-            (showing page {{ pagination.page }} of {{ pagination.pages }})
+            {{ _('%(total)s transaction(s) found', total=pagination.total) }}
+            ({{ _('showing page %(page)s of %(pages)s', page=pagination.page, pages=pagination.pages) }})
         </div>
     </div>
     {% with kwargs=page_kwargs %}
@@ -196,7 +196,7 @@
     {% endwith %}
 
 {% else %}
-    <p class="text-muted">No transactions found for your search.</p>
+    <p class="text-muted">{{ _('No transactions found for your search.') }}</p>
 {% endif %}
 {% endblock %}
 

@@ -12,6 +12,8 @@ from datetime import UTC, datetime
 
 from flask import current_app
 
+from flask_babel import gettext as _
+
 from extensions import db
 from models import BackupLog
 from helpers import get_setting, get_tpl, apply_template, now_local, fmt_amount
@@ -132,22 +134,22 @@ def build_backup_status_email(ok: bool, result: str, kept: int, pruned: int) -> 
     if ok:
         status_color = '#28a745'
         status_icon  = '\u2714'
-        status_text  = 'Backup completed successfully'
+        status_text  = _('Backup completed successfully')
         detail_rows  = f"""
-            <tr><td style="padding:8px;color:#6c757d;width:140px;">File</td>
+            <tr><td style="padding:8px;color:#6c757d;width:140px;">{_('File')}</td>
                 <td style="padding:8px;font-family:monospace;">{html_mod.escape(result)}</td></tr>
-            <tr><td style="padding:8px;color:#6c757d;">Backups kept</td>
+            <tr><td style="padding:8px;color:#6c757d;">{_('Backups kept')}</td>
                 <td style="padding:8px;">{kept}</td></tr>"""
         if pruned:
             detail_rows += f"""
-            <tr><td style="padding:8px;color:#6c757d;">Pruned</td>
-                <td style="padding:8px;">{pruned} old backup(s) deleted</td></tr>"""
+            <tr><td style="padding:8px;color:#6c757d;">{_('Pruned')}</td>
+                <td style="padding:8px;">{_('%(count)d old backup(s) deleted', count=pruned)}</td></tr>"""
     else:
         status_color = '#dc3545'
         status_icon  = '\u2718'
-        status_text  = 'Backup failed'
+        status_text  = _('Backup failed')
         detail_rows  = f"""
-            <tr><td style="padding:8px;color:#6c757d;width:140px;">Error</td>
+            <tr><td style="padding:8px;color:#6c757d;width:140px;">{_('Error')}</td>
                 <td style="padding:8px;color:#dc3545;">{html_mod.escape(result)}</td></tr>"""
 
     return f"""<!DOCTYPE html>
@@ -156,7 +158,7 @@ def build_backup_status_email(ok: bool, result: str, kept: int, pruned: int) -> 
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height:1.6; color:#333; max-width:600px; margin:0 auto; padding:20px;">
     <div style="background:linear-gradient(135deg,{grad_start} 0%,{grad_end} 100%); color:white; padding:30px; border-radius:10px 10px 0 0; text-align:center;">
         <h1 style="margin:0; font-size:28px;">\U0001f3e6 Bank of Tina</h1>
-        <p style="margin:10px 0 0 0; opacity:0.9;">Scheduled Backup Report \u2014 {date_str}</p>
+        <p style="margin:10px 0 0 0; opacity:0.9;">{_('Scheduled Backup Report')} \u2014 {date_str}</p>
     </div>
     <div style="background:white; padding:30px; border:1px solid #dee2e6; border-top:none; border-radius:0 0 10px 10px;">
         <div style="background:#f8f9fa; padding:16px 20px; border-radius:8px; margin-bottom:24px; border-left:4px solid {status_color};">

@@ -6,6 +6,8 @@ import pytz
 from flask import Flask
 from sqlalchemy import func
 
+from flask_babel import force_locale
+
 from extensions import db, scheduler
 from models import (User, Transaction, ExpenseItem, CommonItem, CommonDescription,
                     CommonPrice, CommonBlacklist, AutoCollectLog)
@@ -28,7 +30,9 @@ def _add_email_job(app: Flask) -> None:
 
     def job() -> None:
         with app.app_context():
-            send_all_emails()
+            locale = get_setting('language', 'de')
+            with force_locale(locale):
+                send_all_emails()
 
     scheduler.add_job(job, 'cron', day_of_week=day, hour=hour, minute=minute,
                       timezone=tz, id='email_job', replace_existing=True)
@@ -142,23 +146,25 @@ def _add_backup_job(app: Flask) -> None:
 
     def job() -> None:
         with app.app_context():
-            ok, result = run_backup()
-            pruned = 0
-            if ok and keep > 0:
-                before = len(_list_backups())
-                _prune_old_backups(keep)
-                pruned = max(0, before - len(_list_backups()))
+            locale = get_setting('language', 'de')
+            with force_locale(locale):
+                ok, result = run_backup()
+                pruned = 0
+                if ok and keep > 0:
+                    before = len(_list_backups())
+                    _prune_old_backups(keep)
+                    pruned = max(0, before - len(_list_backups()))
 
-            if get_setting('backup_admin_email', '0') == '1':
-                admin_id = get_setting('site_admin_id', '')
-                admin = db.session.get(User, int(admin_id)) if admin_id.isdigit() else None
-                if admin:
-                    kept = len(_list_backups())
-                    html = build_backup_status_email(ok, result, kept, pruned)
-                    subject = apply_template(get_tpl('tpl_backup_subject'),
-                                             Date=now_local().strftime('%Y-%m-%d'),
-                                             BackupStatus='Success' if ok else 'Failed')
-                    send_single_email(admin.email, admin.name, subject, html)
+                if get_setting('backup_admin_email', '0') == '1':
+                    admin_id = get_setting('site_admin_id', '')
+                    admin = db.session.get(User, int(admin_id)) if admin_id.isdigit() else None
+                    if admin:
+                        kept = len(_list_backups())
+                        html = build_backup_status_email(ok, result, kept, pruned)
+                        subject = apply_template(get_tpl('tpl_backup_subject'),
+                                                 Date=now_local().strftime('%Y-%m-%d'),
+                                                 BackupStatus='Success' if ok else 'Failed')
+                        send_single_email(admin.email, admin.name, subject, html)
 
     scheduler.add_job(job, 'cron', day_of_week=day, hour=hour, minute=minute,
                       timezone=tz, id='backup_job', replace_existing=True)

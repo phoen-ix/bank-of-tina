@@ -13,7 +13,8 @@ from flask import Flask, Response, g
 from flask.json.provider import DefaultJSONProvider
 
 from flask import request, redirect, url_for, flash, jsonify
-from extensions import db, csrf, migrate, limiter, scheduler
+from flask_babel import gettext as _, format_date as babel_format_date
+from extensions import db, csrf, migrate, limiter, scheduler, babel
 from helpers import get_setting, get_tpl, hex_to_rgb, to_local
 from config import TEMPLATE_DEFAULTS
 
@@ -76,10 +77,22 @@ app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
 app.json_provider_class = DecimalJSONProvider
 app.json = DecimalJSONProvider(app)
 
+app.config['BABEL_DEFAULT_LOCALE'] = 'de'
+app.config['BABEL_TRANSLATION_DIRECTORIES'] = 'translations'
+
+
+def get_locale() -> str:
+    try:
+        return get_setting('language', 'de')
+    except Exception:
+        return 'de'
+
+
 db.init_app(app)
 migrate.init_app(app, db)
 csrf.init_app(app)
 limiter.init_app(app)
+babel.init_app(app, locale_selector=get_locale)
 
 # Import models so they are registered with SQLAlchemy
 import models  # noqa: F401
@@ -92,7 +105,7 @@ register_blueprints(app)
 def ratelimit_handler(e: Exception) -> tuple[Response, int] | Response:
     if request.is_json:
         return jsonify({'status': 'error', 'detail': str(e.description)}), 429
-    flash('Too many requests. Please wait and try again.', 'error')
+    flash(_('Too many requests. Please wait and try again.'), 'error')
     return redirect(request.referrer or url_for('main.index'))
 
 
@@ -114,6 +127,20 @@ def localdt_filter(dt: datetime | None, fmt: str = '%Y-%m-%d %H:%M') -> str:
     return to_local(dt).strftime(fmt)
 
 
+@app.template_filter('format_date_babel')
+def format_date_babel_filter(value: datetime, fmt: str = 'EEEE, d MMMM') -> str:
+    return babel_format_date(value, fmt)
+
+
+@app.template_filter('tx_type')
+def tx_type_filter(value: str) -> str:
+    return {
+        'deposit': _('deposit'),
+        'withdrawal': _('withdrawal'),
+        'expense': _('expense'),
+    }.get(value, value)
+
+
 @app.context_processor
 def inject_theme() -> dict[str, str]:
     """Inject theme colors and CSP nonce into every template."""
@@ -131,6 +158,7 @@ def inject_theme() -> dict[str, str]:
         currency_symbol=get_setting('currency_symbol', '\u20ac'),
         icon_version=get_setting('icon_version', '0'),
         csp_nonce=nonce,
+        current_locale=get_locale(),
     )
 
 
