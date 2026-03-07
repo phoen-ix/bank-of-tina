@@ -15,7 +15,7 @@ from werkzeug.utils import secure_filename
 
 from extensions import db
 from models import Setting, Transaction
-from config import ALLOWED_EXTENSIONS, TEMPLATE_DEFAULTS, DEFAULT_ICON_BG
+from config import ALLOWED_EXTENSIONS, TEMPLATE_DEFAULTS, TEMPLATE_DEFAULTS_DE, DEFAULT_ICON_BG
 
 
 def allowed_file(filename: str) -> bool:
@@ -92,7 +92,15 @@ def now_local() -> datetime:
 
 
 def get_tpl(key: str) -> str:
-    """Get a template/theme setting, falling back to TEMPLATE_DEFAULTS."""
+    """Get a template/theme setting, falling back to language-appropriate defaults.
+
+    For ``tpl_*`` keys the value is stored per-language (e.g. ``tpl_email_subject_de``).
+    Color keys (``color_*``) are language-independent and stored without suffix.
+    """
+    if key.startswith('tpl_'):
+        lang = get_setting('language', 'de')
+        defaults = TEMPLATE_DEFAULTS_DE if lang == 'de' else TEMPLATE_DEFAULTS
+        return get_setting(f'{key}_{lang}', defaults.get(key, ''))
     return get_setting(key, TEMPLATE_DEFAULTS.get(key, ''))
 
 

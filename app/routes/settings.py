@@ -420,12 +420,13 @@ def settings_templates() -> Response:
         if re.match(r'^#[0-9a-fA-F]{6}$', val):
             set_setting(key, val, commit=False)
 
+    lang = get_setting('language', 'de')
     text_keys = ['tpl_email_subject', 'tpl_email_greeting', 'tpl_email_intro',
                  'tpl_email_footer1', 'tpl_email_footer2',
                  'tpl_admin_subject', 'tpl_admin_intro', 'tpl_admin_footer',
                  'tpl_backup_subject', 'tpl_backup_footer']
     for key in text_keys:
-        set_setting(key, request.form.get(key, '')[:500], commit=False)
+        set_setting(f'{key}_{lang}', request.form.get(key, '')[:500], commit=False)
 
     set_setting('admin_summary_include_emails', '1' if request.form.get('admin_summary_include_emails') else '0', commit=False)
     db.session.commit()
@@ -436,9 +437,13 @@ def settings_templates() -> Response:
 
 @settings_bp.route('/settings/templates/reset', methods=['POST'])
 def settings_templates_reset() -> Response:
-    defaults = TEMPLATE_DEFAULTS_DE if get_setting('language', 'de') == 'de' else TEMPLATE_DEFAULTS
+    lang = get_setting('language', 'de')
+    defaults = TEMPLATE_DEFAULTS_DE if lang == 'de' else TEMPLATE_DEFAULTS
     for key, val in defaults.items():
-        set_setting(key, val, commit=False)
+        if key.startswith('tpl_'):
+            set_setting(f'{key}_{lang}', val, commit=False)
+        else:
+            set_setting(key, val, commit=False)
     db.session.commit()
     flash(_('Templates reset to defaults.'), 'success')
     return redirect(url_for('settings_bp.settings'))

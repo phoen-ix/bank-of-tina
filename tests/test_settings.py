@@ -140,15 +140,15 @@ def test_template_color_update(client, app):
 
 def test_template_reset(client, app):
     with app.app_context():
-        from helpers import set_setting
-        set_setting('tpl_email_subject', 'Modified Subject')
+        from helpers import set_setting, get_setting, get_tpl
+        from config import TEMPLATE_DEFAULTS
+        # Language is 'en' in tests (set by clean_db fixture)
+        set_setting('tpl_email_subject_en', 'Modified Subject')
 
         response = client.post('/settings/templates/reset', follow_redirects=True)
         assert response.status_code == 200
 
-        from helpers import get_setting
-        from config import TEMPLATE_DEFAULTS
-        assert get_setting('tpl_email_subject') == TEMPLATE_DEFAULTS['tpl_email_subject']
+        assert get_tpl('tpl_email_subject') == TEMPLATE_DEFAULTS['tpl_email_subject']
 
 
 def test_schedule_update(client, app):

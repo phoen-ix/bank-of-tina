@@ -199,15 +199,15 @@ The `settings()` view builds a `cfg` dict from all keys and passes it to `settin
 | `color_navbar` | `#0d6efd` | Theme: navbar background |
 | `color_email_grad_start/end` | `#667eea / #764ba2` | Theme: email header gradient |
 | `color_balance_positive/negative` | `#28a745 / #dc3545` | Theme: balance colors |
-| `tpl_email_subject` | `Bank of Tina - Weekly Balance Update ([Date])` | |
-| `tpl_email_greeting` | `Hi [Name],` | |
-| `tpl_email_intro` | `Here's your weekly update...` | |
-| `tpl_email_footer1/2` | see code | |
-| `tpl_admin_subject` | `Bank of Tina - Admin Summary ([Date])` | |
-| `tpl_admin_intro` | `` | Empty = omit |
-| `tpl_admin_footer` | `This is an automated admin summary...` | |
-| `tpl_backup_subject` | `Bank of Tina - Backup [BackupStatus] ([Date])` | |
-| `tpl_backup_footer` | `This is an automated backup report...` | |
+| `tpl_email_subject_{lang}` | see `TEMPLATE_DEFAULTS` / `TEMPLATE_DEFAULTS_DE` | Stored per-language (e.g. `_de`, `_en`); accessed via `get_tpl('tpl_email_subject')` which auto-appends current language |
+| `tpl_email_greeting_{lang}` | | |
+| `tpl_email_intro_{lang}` | | |
+| `tpl_email_footer1_{lang}` / `tpl_email_footer2_{lang}` | | |
+| `tpl_admin_subject_{lang}` | | |
+| `tpl_admin_intro_{lang}` | | Empty = omit |
+| `tpl_admin_footer_{lang}` | | |
+| `tpl_backup_subject_{lang}` | | |
+| `tpl_backup_footer_{lang}` | | |
 
 ---
 
@@ -215,7 +215,7 @@ The `settings()` view builds a `cfg` dict from all keys and passes it to `settin
 
 ```python
 now_local()              # datetime.now() in configured timezone. Works in both request and APScheduler contexts.
-get_tpl(key)             # Like get_setting() but falls back to TEMPLATE_DEFAULTS dict.
+get_tpl(key)             # For tpl_* keys: reads language-suffixed DB key (e.g. tpl_email_subject_de), falls back to TEMPLATE_DEFAULTS_DE/TEMPLATE_DEFAULTS. Color keys are language-independent.
 apply_template(text, **kwargs)  # Replaces [Key] placeholders: apply_template("Hi [Name]", Name="Alice") -> "Hi Alice"
 parse_amount(s)          # Parses decimal string, normalises '.' and ',' separators. Returns Decimal.
 fmt_amount(value)        # Formats Decimal to 2 places using configured decimal_separator.

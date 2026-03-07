@@ -207,6 +207,26 @@ if os.environ.get('FLASK_TESTING') != '1':
                     upgrade()
                     logger.info('Database migrations up to date')
 
+                # Migrate unsuffixed tpl_* keys to per-language keys
+                from helpers import set_setting as _set
+                from models import Setting
+                _tpl_keys = ['tpl_email_subject', 'tpl_email_greeting', 'tpl_email_intro',
+                             'tpl_email_footer1', 'tpl_email_footer2',
+                             'tpl_admin_subject', 'tpl_admin_intro', 'tpl_admin_footer',
+                             'tpl_backup_subject', 'tpl_backup_footer']
+                # Only run if old unsuffixed keys exist and new suffixed keys don't
+                _first_old = db.session.get(Setting, _tpl_keys[0])
+                _first_new = db.session.get(Setting, f'{_tpl_keys[0]}_de') or db.session.get(Setting, f'{_tpl_keys[0]}_en')
+                if _first_old and not _first_new:
+                    _lang = get_setting('language', 'de')
+                    for _k in _tpl_keys:
+                        _old = db.session.get(Setting, _k)
+                        if _old:
+                            _set(f'{_k}_{_lang}', _old.value, commit=False)
+                            db.session.delete(_old)
+                    db.session.commit()
+                    logger.info('Migrated email templates to per-language keys (%s)', _lang)
+
                 icons_dir = os.path.join(app.root_path, 'static', 'icons')
                 if not os.path.exists(os.path.join(icons_dir, 'icon-192.png')) or not os.path.exists(os.path.join(icons_dir, 'icon-32.png')):
                     from config import DEFAULT_ICON_BG
