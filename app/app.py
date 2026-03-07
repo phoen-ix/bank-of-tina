@@ -243,6 +243,25 @@ if os.environ.get('FLASK_TESTING') != '1':
                             db.session.delete(_s)
                 db.session.commit()
 
+                # Clean up color settings that match previous defaults so the
+                # current TEMPLATE_DEFAULTS values take effect.
+                _OLD_COLORS = {
+                    'color_navbar': ('#0d6efd',),
+                    'color_email_grad_start': ('#667eea', '#7f8dbb'),
+                    'color_email_grad_end': ('#764ba2',),
+                    'color_balance_positive': ('#28a745',),
+                    'color_balance_negative': ('#dc3545',),
+                }
+                _changed = False
+                for _ck, _old_vals in _OLD_COLORS.items():
+                    _s = db.session.get(Setting, _ck)
+                    if _s and _s.value in _old_vals:
+                        db.session.delete(_s)
+                        _changed = True
+                if _changed:
+                    db.session.commit()
+                    logger.info('Removed old default color settings')
+
                 icons_dir = os.path.join(app.root_path, 'static', 'icons')
                 if not os.path.exists(os.path.join(icons_dir, 'icon-192.png')) or not os.path.exists(os.path.join(icons_dir, 'icon-32.png')):
                     from config import DEFAULT_ICON_BG
