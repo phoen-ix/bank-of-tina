@@ -57,7 +57,7 @@ THEMES: dict[str, dict[str, str]] = {
 
 TEMPLATE_DEFAULTS: dict[str, str] = {
     'color_navbar':             '#7f8dbb',
-    'color_email_grad_start':   '#7f8dbb',
+    'color_email_grad_start':   '#4e5d88',
     'color_email_grad_end':     '#e7b44e',
     'color_balance_positive':   '#5a9a7a',
     'color_balance_negative':   '#c9534a',
@@ -75,7 +75,7 @@ TEMPLATE_DEFAULTS: dict[str, str] = {
 
 TEMPLATE_DEFAULTS_DE: dict[str, str] = {
     'color_navbar':             '#7f8dbb',
-    'color_email_grad_start':   '#7f8dbb',
+    'color_email_grad_start':   '#4e5d88',
     'color_email_grad_end':     '#e7b44e',
     'color_balance_positive':   '#5a9a7a',
     'color_balance_negative':   '#c9534a',
