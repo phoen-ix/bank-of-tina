@@ -247,8 +247,8 @@ if os.environ.get('FLASK_TESTING') != '1':
                 # current TEMPLATE_DEFAULTS values take effect.
                 _OLD_COLORS = {
                     'color_navbar': ('#0d6efd',),
-                    'color_email_grad_start': ('#667eea', '#7f8dbb'),
-                    'color_email_grad_end': ('#764ba2', '#e7b44e'),
+                    'color_email_grad_start': ('#667eea', '#4e5d88'),
+                    'color_email_grad_end': ('#764ba2', '#e7b44e', '#a8b4d4'),
                     'color_balance_positive': ('#28a745',),
                     'color_balance_negative': ('#dc3545',),
                 }
