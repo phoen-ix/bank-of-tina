@@ -86,7 +86,7 @@ Eine selbst gehostete Webanwendung zur Verwaltung gemeinsamer Ausgaben und Salde
 
 ### Vorlagen & Design
 - **Farbpalette** — Navigationsfarbe, E-Mail-Header-Farbverlauf (Anfang + Ende), positive und negative Saldofarben; jede mit Farbwähler und Hex-Textfeld
-- **Vordefinierte Designs** — Auswahl aus Standard, Ozean, Wald, Sonnenuntergang oder Schiefer über ein Dropdown; ein Preset auswählen füllt sofort alle Wähler; manuelles Ändern eines Wählers wechselt zu „Benutzerdefiniert"
+- **Vordefinierte Designs** — Auswahl aus Standard, Klassisch, Ozean, Wald, Sonnenuntergang oder Schiefer über ein Dropdown; ein Preset auswählen füllt sofort alle Wähler; manuelles Ändern eines Wählers wechselt zu „Benutzerdefiniert"
 - **E-Mail-Betreffs** — bearbeitbare Betreffzeile für jeden der drei E-Mail-Typen
 - **E-Mail-Textvorlagen** — Begrüßung, Einleitung, Fußzeile 1 und Fußzeile 2 der wöchentlichen Saldo-E-Mail bearbeiten; Einleitung und Fußzeile der Admin-Zusammenfassungs-E-Mail; Fußzeile der Backup-Status-E-Mail; ein Feld leer lassen um die Zeile auszulassen; **pro Sprache gespeichert** — jede Sprache hat eigene Vorlagentexte, Sprachwechsel zeigt die Vorlagen der jeweiligen Sprache
 - **E-Mail-Adressen-Schalter** — Admin-Zusammenfassungs-E-Mail-Karte hat einen „E-Mail-Adressen in Zusammenfassungstabelle anzeigen"-Schalter (Standard aus); wenn aus, werden nur Namen und Salden angezeigt
@@ -485,7 +485,7 @@ A self-hosted web application for tracking shared expenses and balances within a
 
 ### Templates & Theming
 - **Color palette** — navbar color, email header gradient (start + end), positive and negative balance colors; each has a color picker paired with a hex text field
-- **Preset themes** — choose from Default, Ocean, Forest, Sunset, or Slate via a dropdown; selecting a preset fills all pickers instantly; manually changing any picker switches to "Custom"
+- **Preset themes** — choose from Default, Classic, Ocean, Forest, Sunset, or Slate via a dropdown; selecting a preset fills all pickers instantly; manually changing any picker switches to "Custom"
 - **Email subjects** — editable subject line for each of the three email types
 - **Email body templates** — edit the greeting, intro, footer line 1, and footer line 2 of the weekly balance email; set the intro and footer of the admin summary email; set the footer of the backup status email; leave any field blank to omit that line; **stored per language** — each language has its own template text, switching language shows that language's templates
 - **Include email addresses toggle** — admin summary email card has an "Include email addresses in summary table" switch (default off); when off, only names and balances are shown

@@ -196,9 +196,9 @@ The `settings()` view builds a `cfg` dict from all keys and passes it to `settin
 | `language` | `de` | `'de'` or `'en'` |
 | `icon_version` | `0` | Unix timestamp for cache-busting |
 | `icon_mode` | `generated` | `'generated'` or `'custom'` |
-| `color_navbar` | `#0d6efd` | Theme: navbar background |
-| `color_email_grad_start/end` | `#667eea / #764ba2` | Theme: email header gradient |
-| `color_balance_positive/negative` | `#28a745 / #dc3545` | Theme: balance colors |
+| `color_navbar` | `#7f8dbb` | Theme: navbar background |
+| `color_email_grad_start/end` | `#7f8dbb / #e7b44e` | Theme: email header gradient |
+| `color_balance_positive/negative` | `#5a9a7a / #c9534a` | Theme: balance colors |
 | `tpl_email_subject_{lang}` | see `TEMPLATE_DEFAULTS` / `TEMPLATE_DEFAULTS_DE` | Stored per-language (e.g. `_de`, `_en`); accessed via `get_tpl('tpl_email_subject')` which auto-appends current language |
 | `tpl_email_greeting_{lang}` | | |
 | `tpl_email_intro_{lang}` | | |
