@@ -449,7 +449,7 @@ def edit_transaction(transaction_id: int) -> str | Response:
         if old_to:
             old_to.balance = Decimal(str(old_to.balance)) - old_amount
 
-    trans.description = request.form.get('description', trans.description).strip()
+    trans.description = request.form.get('description', '').strip()
     trans.notes = request.form.get('notes', '').strip() or None
 
     date_str = request.form.get('date', '').strip()
