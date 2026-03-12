@@ -10,8 +10,25 @@ os.environ['SQLALCHEMY_DATABASE_URI'] = 'sqlite://'
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'app'))
 
 import pytest
+from sqlalchemy import event, Numeric
 from app import app as _app
 from extensions import db as _db
+
+
+def _coerce_numeric_to_float(target, _context):
+    """Simulate MariaDB/PyMySQL behavior: Numeric columns are returned as float.
+
+    SQLite returns Decimal natively, which hides type mismatches that only
+    surface in production with MariaDB.  This listener fires after every ORM
+    load and converts every Numeric column value to float so that tests fail
+    when code does ``Decimal + float`` or ``float += Decimal``.
+    """
+    mapper = type(target).__mapper__  # type: ignore[attr-defined]
+    for col in mapper.columns:
+        if isinstance(col.type, Numeric):
+            val = getattr(target, col.key, None)
+            if val is not None:
+                setattr(target, col.key, float(val))
 
 
 @pytest.fixture(scope='session')
@@ -27,6 +44,8 @@ def app():
     os.makedirs('/tmp/bot_test_uploads', exist_ok=True)
     with _app.app_context():
         _db.create_all()
+    # Simulate MariaDB/PyMySQL: coerce all Numeric columns to float on load
+    event.listen(_db.Model, 'load', _coerce_numeric_to_float, propagate=True)
     yield _app
 
 

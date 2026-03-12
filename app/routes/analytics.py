@@ -61,7 +61,7 @@ def analytics_data() -> Response:
 
     delta_days = (date_to.date() - date_from.date()).days
 
-    balances = [{'name': u.name, 'balance': round(u.balance, 2)} for u in users]
+    balances = [{'name': u.name, 'balance': round(Decimal(str(u.balance)), 2)} for u in users]
 
     sample_dates: list[datetime.date] = []
     if delta_days <= 90:
@@ -101,13 +101,13 @@ def analytics_data() -> Response:
         series: list[float] = []
         for d in sample_dates:
             cutoff = datetime.combine(d, datetime.max.time())
-            bal = user.balance
+            bal = Decimal(str(user.balance))
             for tx in user_txs:
                 if tx.date > cutoff:
                     if tx.to_user_id == user.id:
-                        bal -= tx.amount
+                        bal -= Decimal(str(tx.amount))
                     elif tx.from_user_id == user.id:
-                        bal += tx.amount
+                        bal += Decimal(str(tx.amount))
             series.append(round(bal, 2))
 
         history_datasets[user.name] = series
@@ -119,7 +119,7 @@ def analytics_data() -> Response:
         else:
             key = tx.date.strftime('%Y-%m')
         vol[key]['count']  += 1
-        vol[key]['amount'] += tx.amount
+        vol[key]['amount'] += Decimal(str(tx.amount))
 
     sorted_vol_keys = sorted(vol.keys())
     if delta_days <= 90:
@@ -140,7 +140,7 @@ def analytics_data() -> Response:
         for item in db.session.execute(db.select(ExpenseItem).where(ExpenseItem.transaction_id.in_(expense_ids))).scalars().all():
             name = item.item_name.strip()
             item_stats[name]['count'] += 1
-            item_stats[name]['total'] += item.price
+            item_stats[name]['total'] += Decimal(str(item.price))
 
     top_sorted = sorted(item_stats.items(), key=lambda x: x[1]['total'], reverse=True)[:15]
     top_items = {
