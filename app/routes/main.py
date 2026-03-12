@@ -443,11 +443,11 @@ def edit_transaction(transaction_id: int) -> str | Response:
     if trans.from_user_id:
         old_from = db.session.get(User, trans.from_user_id)
         if old_from:
-            old_from.balance += old_amount
+            old_from.balance = Decimal(str(old_from.balance)) + old_amount
     if trans.to_user_id:
         old_to = db.session.get(User, trans.to_user_id)
         if old_to:
-            old_to.balance -= old_amount
+            old_to.balance = Decimal(str(old_to.balance)) - old_amount
 
     trans.description = request.form.get('description', trans.description).strip()
     trans.notes = request.form.get('notes', '').strip() or None
@@ -502,11 +502,11 @@ def edit_transaction(transaction_id: int) -> str | Response:
     if trans.from_user_id:
         new_from = db.session.get(User, trans.from_user_id)
         if new_from:
-            new_from.balance -= trans.amount
+            new_from.balance = Decimal(str(new_from.balance)) - trans.amount
     if trans.to_user_id:
         new_to = db.session.get(User, trans.to_user_id)
         if new_to:
-            new_to.balance += trans.amount
+            new_to.balance = Decimal(str(new_to.balance)) + trans.amount
 
     if request.form.get('remove_receipt'):
         delete_receipt_file(trans.receipt_path, trans.id)
@@ -535,11 +535,11 @@ def delete_transaction(transaction_id: int) -> Response:
     if trans.from_user_id:
         from_user = db.session.get(User, trans.from_user_id)
         if from_user:
-            from_user.balance += trans.amount
+            from_user.balance = Decimal(str(from_user.balance)) + trans.amount
     if trans.to_user_id:
         to_user = db.session.get(User, trans.to_user_id)
         if to_user:
-            to_user.balance -= trans.amount
+            to_user.balance = Decimal(str(to_user.balance)) - trans.amount
 
     delete_receipt_file(trans.receipt_path, trans.id)
     db.session.execute(db.delete(ExpenseItem).filter_by(transaction_id=trans.id))

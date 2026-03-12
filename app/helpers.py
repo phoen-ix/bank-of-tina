@@ -64,7 +64,7 @@ def update_balance(user_id: int, amount: Decimal) -> None:
     from models import User
     user = db.session.get(User, user_id)
     if user:
-        user.balance += amount
+        user.balance = Decimal(str(user.balance)) + amount
         db.session.commit()
 
 

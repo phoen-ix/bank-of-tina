@@ -246,8 +246,8 @@ generate_and_save_icons(bg_hex)          # Generates 32, 192, 512 PNGs, saves to
 
 Balances are maintained directly on `User.balance`. Every transaction mutates balances immediately:
 
-- **Expense/Withdrawal**: `from_user.balance -= amount`
-- **Deposit/Transfer**: `to_user.balance += amount`
+- **Expense/Withdrawal**: `from_user.balance = Decimal(str(from_user.balance)) - amount`
+- **Deposit/Transfer**: `to_user.balance = Decimal(str(to_user.balance)) + amount`
 - **Delete**: effects are fully reversed
 - **Edit**: old effects reversed first, new effects applied after
 
@@ -360,7 +360,7 @@ Both `.po` and `.mo` files are committed.
 ## Common Gotchas
 
 - **Adding a new column** — edit `models.py`, run `flask db migrate -m "description"`. Migration runs automatically on next start.
-- **Monetary values use `Decimal`** — all columns use `db.Numeric(12, 2)`. Always use `parse_amount()` to read form values and `fmt_amount()` / `|money` to display them.
+- **Monetary values use `Decimal`** — all columns use `db.Numeric(12, 2)`. Always use `parse_amount()` to read form values and `fmt_amount()` / `|money` to display them. **MariaDB/PyMySQL returns `Numeric` as `float`** — always wrap `user.balance` in `Decimal(str(...))` before arithmetic with `Decimal` values (e.g. `user.balance = Decimal(str(user.balance)) + amount`).
 - **`datetime.now()` is UTC in Docker** — use `now_local()` for display/filenames. For UTC: `datetime.now(UTC).replace(tzinfo=None)`.
 - **Balance is stored, not derived** — never recalculate from transactions; mutate `user.balance` carefully.
 - **`/uploads` and `/app/static/icons` are bind-mounts** — cannot `rmtree` the directories; clear contents only.

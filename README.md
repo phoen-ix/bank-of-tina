@@ -353,6 +353,7 @@ docker compose up -d
 | Port 5000 belegt | Host-Port in `docker-compose.yml` ändern (`"8080:5000"`) |
 | Web-Container startet nicht | `docker compose logs web` — die App wiederholt DB-Verbindungen bis zu 5 Mal mit exponentiellem Backoff beim Start; db-Logs prüfen wenn alle Versuche fehlschlagen |
 | DB-Verbindung abgelehnt | Sicherstellen dass `mariadb-data/` beschreibbar ist; `docker compose restart db` |
+| 500-Fehler beim Hinzufügen/Bearbeiten von Transaktionen | Wurde in v1.x behoben — MariaDB/PyMySQL liefert `Numeric`-Spalten als `float`, was bei Arithmetik mit `Decimal`-Werten einen `TypeError` verursachte. Lösung: Salden vor Berechnungen immer mit `Decimal(str(...))` umwandeln |
 
 ---
 
@@ -700,6 +701,7 @@ docker compose up -d
 | Port 5000 in use | Change the host port in `docker-compose.yml` (`"8080:5000"`) |
 | Web container won't start | `docker compose logs web` — the app retries DB connections up to 5 times with exponential backoff on startup; check db logs if all retries fail |
 | DB connection refused | Ensure `mariadb-data/` is writable; `docker compose restart db` |
+| 500 error when adding/editing transactions | Fixed in v1.x — MariaDB/PyMySQL returns `Numeric` columns as `float`, which caused a `TypeError` when doing arithmetic with `Decimal` values. Fix: always wrap balances with `Decimal(str(...))` before calculations |
 
 ---
 
