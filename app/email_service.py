@@ -134,7 +134,7 @@ def build_email_html(user: User) -> str:
     footer1_html  = f'<p>{footer1}</p>' if footer1.strip() else ''
     footer2_html  = f'<p style="margin-top: 10px;">{footer2}</p>' if footer2.strip() else ''
 
-    html = f"""
+    email_body = f"""
     <!DOCTYPE html>
     <html>
     <head>
@@ -166,7 +166,7 @@ def build_email_html(user: User) -> str:
     </body>
     </html>
     """
-    return html
+    return email_body
 
 
 def build_admin_summary_email(users: list[User], include_emails: bool = False) -> str:

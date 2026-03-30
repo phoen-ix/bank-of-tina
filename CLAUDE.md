@@ -374,6 +374,7 @@ Both `.po` and `.mo` files are committed.
 - **Scheduler jobs need `force_locale()`** — wrap `_()` calls in `with force_locale(...)`.
 - **`FLASK_TESTING=1`** — skips DB init, scheduler start, and migration at import time.
 - **DB credentials are required** — `DB_USER` and `DB_PASSWORD` have no hardcoded defaults.
+- **`import html` shadowing** — `email_service.py` imports the stdlib `html` module for `html.escape()`. Never use `html` as a local variable name in functions that call `html.escape()`, or Python will treat the module reference as an unbound local.
 
 ---
 
