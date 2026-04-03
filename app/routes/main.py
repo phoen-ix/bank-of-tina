@@ -50,7 +50,11 @@ def health() -> tuple[Response, int]:
 
 @main_bp.route('/')
 def index() -> str:
-    users = db.session.execute(db.select(User).filter_by(is_active=True).order_by(User.name)).scalars().all()
+    admin_id = get_setting('site_admin_id')
+    q = db.select(User).filter_by(is_active=True)
+    if admin_id:
+        q = q.filter(User.id != int(admin_id))
+    users = db.session.execute(q.order_by(User.name)).scalars().all()
     count = int(get_setting('recent_transactions_count', '5'))
     recent = db.session.execute(db.select(Transaction).order_by(Transaction.date.desc()).limit(count)).scalars().all() if count else []
     show_email = get_setting('show_email_on_dashboard', '0') == '1'

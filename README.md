@@ -12,6 +12,7 @@ Eine selbst gehostete Webanwendung zur Verwaltung gemeinsamer Ausgaben und Salde
 - Teammitglieder mit Name und E-Mail hinzufügen
 - Echtzeit-Saldoverfolgung für jeden Benutzer
 - Benutzer deaktivieren (auf der Übersicht ausgeblendet, in den Einstellungen verwaltbar)
+- **Admin auf der Übersicht ausgeblendet** — der Seiten-Admin (z. B. Tina) fungiert als „Bank" und wird nicht in der Saldotabelle auf der Übersicht angezeigt, da ihr Saldo immer die Umkehrung aller anderen Salden ist. Sie nimmt weiterhin ganz normal an Transaktionen teil (Dropdowns, Suche, Statistiken usw.)
 - Übersicht zeigt Name und Saldo; E-Mail-Spalte optional (Einstellungen → Allgemein, standardmäßig aus)
 - Benutzerdetailseite zeigt paginierte Transaktionshistorie (20 pro Seite); Klick auf den Namen eines Benutzers auf der Übersicht öffnet sie
 - **E-Mail-Einstellungen pro Benutzer** — individuell ein-/ausschalten der wöchentlichen Saldo-E-Mail; Auswahl wie viel Transaktionshistorie einbezogen wird (`Letzte 3`, `Diese Woche`, `Dieser Monat` oder `Keine`)
@@ -412,6 +413,7 @@ A self-hosted web application for tracking shared expenses and balances within a
 - Add team members with name and email
 - Real-time balance tracking for every user
 - Deactivate users (hidden from dashboard, manageable from Settings)
+- **Admin hidden from dashboard** — the site admin (e.g. Tina) acts as the "bank" and is not shown in the dashboard balance table, since her balance is always the inverse of everyone else's combined balances. She still participates in transactions normally (dropdowns, search, analytics, etc.)
 - Dashboard shows Name and Balance; email column optional (Settings → General, default off)
 - User detail page shows paginated transaction history (20 per page); click a user's name on the dashboard to open it
 - **Per-user email preferences** — opt in/out of the weekly balance email individually; choose how much transaction history to include (`Last 3`, `This week`, `This month`, or `None`)

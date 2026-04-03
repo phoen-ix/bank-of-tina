@@ -253,6 +253,8 @@ Balances are maintained directly on `User.balance`. Every transaction mutates ba
 
 There is no derived-balance recalculation — the stored balance is the source of truth.
 
+**Admin hidden from dashboard** — The site admin (`site_admin_id`) is excluded from the dashboard balance table. The admin acts as the "bank" — her balance is always the negative sum of all other users, so displaying it is redundant. She still appears in all transaction dropdowns, search, analytics, and other views because she actively participates in transactions.
+
 ---
 
 ## APScheduler
