@@ -288,10 +288,11 @@ def send_all_emails() -> tuple[int, int, list[str]]:
     if get_setting('admin_summary_email', '0') == '1' and admin_id:
         admin = db.session.get(User, int(admin_id)) if admin_id.isdigit() else None
         if admin:
+            summary_users = [u for u in all_active_users if str(u.id) != admin_id]
             summary_subject = apply_template(get_tpl('tpl_admin_subject'),
                                              Date=now_local().strftime('%Y-%m-%d'),
-                                             UserCount=len(all_active_users))
-            summary_html = build_admin_summary_email(all_active_users, include_emails=get_setting('admin_summary_include_emails', '0') == '1')
+                                             UserCount=len(summary_users))
+            summary_html = build_admin_summary_email(summary_users, include_emails=get_setting('admin_summary_include_emails', '0') == '1')
             ok, err = send_single_email(admin.email, admin.name, summary_subject, summary_html)
             if debug:
                 if ok:

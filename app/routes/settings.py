@@ -514,7 +514,10 @@ def preview_email() -> str:
 
 @settings_bp.route('/settings/templates/preview/admin-summary')
 def preview_admin_summary() -> str:
+    admin_id = get_setting('site_admin_id')
     users = db.session.execute(db.select(User).filter_by(is_active=True).order_by(User.name)).scalars().all()
+    if admin_id:
+        users = [u for u in users if str(u.id) != admin_id]
     if not users:
         class _D:
             def __init__(self, n, e, b): self.name=n; self.email=e; self.balance=b
