@@ -178,3 +178,11 @@ def _restore_schedule(app: Flask) -> None:
         _add_common_job(app)
     if get_setting('backup_enabled', '0') == '1':
         _add_backup_job(app)
+
+
+def reschedule_all(app: Flask) -> None:
+    """Re-create every job from the current settings (after a timezone change or a restore)."""
+    for job_id in ('email_job', 'common_job', 'backup_job'):
+        if scheduler.get_job(job_id):
+            scheduler.remove_job(job_id)
+    _restore_schedule(app)

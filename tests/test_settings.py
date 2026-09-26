@@ -1,3 +1,4 @@
+import os
 from decimal import Decimal
 
 
@@ -215,14 +216,17 @@ def test_api_common_items_disabled(client, app):
         assert response.get_json() == []
 
 
-def test_backup_create(client, app, tmp_path):
-    """Creating a backup should fail gracefully in test (no mysqldump)."""
+def test_backup_create_reports_failure(client, app, backup_dir, monkeypatch):
+    """A failing dump is reported to the user and leaves no archive behind."""
+    import subprocess
     import backup_service
-    original = backup_service.BACKUP_DIR
-    backup_service.BACKUP_DIR = str(tmp_path)
-    try:
-        with app.app_context():
-            response = client.post('/settings/backup/create', follow_redirects=True)
-            assert response.status_code == 200
-    finally:
-        backup_service.BACKUP_DIR = original
+
+    def fake_run(cmd, **kwargs):
+        return subprocess.CompletedProcess(cmd, 2, stderr=b'Access denied')
+    monkeypatch.setattr(backup_service.subprocess, 'run', fake_run)
+
+    with app.app_context():
+        response = client.post('/settings/backup/create', follow_redirects=True)
+        assert response.status_code == 200
+        assert b'Access denied' in response.data
+        assert not [f for f in os.listdir(backup_dir) if f.endswith('.tar.gz')]

@@ -14,7 +14,8 @@ from flask_babel import gettext as _, format_date as babel_format_date
 from extensions import db, limiter
 from models import User, Transaction, ExpenseItem
 from helpers import (get_setting, get_tpl, parse_amount, fmt_amount, update_balance,
-                     save_receipt, delete_receipt_file, parse_submitted_date, get_app_tz, to_local)
+                     save_receipt, delete_receipt_file, parse_submitted_date, get_app_tz, to_local,
+                     redirect_back)
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,8 @@ def health() -> tuple[Response, int]:
         db.session.execute(db.text('SELECT 1'))
         checks['database'] = 'ok'
     except Exception as e:
-        checks['database'] = f'error: {e}'
+        logger.error('Health check: database error: %s', e)
+        checks['database'] = 'error'
 
     # Scheduler check
     from extensions import scheduler
@@ -141,7 +143,7 @@ def toggle_user_active(user_id: int) -> Response:
         flash(_('User %(name)s has been activated.', name=user.name), 'success')
     else:
         flash(_('User %(name)s has been deactivated.', name=user.name), 'success')
-    return redirect(request.referrer or url_for('settings_bp.settings'))
+    return redirect_back(url_for('settings_bp.settings'))
 
 
 @main_bp.route('/transaction/add', methods=['GET', 'POST'])
@@ -553,9 +555,3 @@ def delete_transaction(transaction_id: int) -> Response:
 
     flash(_('Transaction deleted.'), 'success')
     return redirect(url_for('main.view_transactions'))
-
-
-@main_bp.route('/api/users')
-def api_users() -> Response:
-    users = db.session.execute(db.select(User)).scalars().all()
-    return jsonify([{'id': u.id, 'name': u.name, 'balance': u.balance} for u in users])

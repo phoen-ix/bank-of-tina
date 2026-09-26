@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-03-07 16:56+0000\n"
+"POT-Creation-Date: 2026-09-26 15:24+0000\n"
 "PO-Revision-Date: 2026-03-07 16:54+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -18,52 +18,70 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: app/app.py:108
+#: app/app.py:106
 msgid "Too many requests. Please wait and try again."
 msgstr ""
 
-#: app/app.py:138
+#: app/app.py:136
 msgid "deposit"
 msgstr ""
 
-#: app/app.py:139
+#: app/app.py:137
 msgid "withdrawal"
 msgstr ""
 
-#: app/app.py:140
+#: app/app.py:138
 msgid "expense"
 msgstr ""
 
-#: app/backup_service.py:137
+#: app/backup_service.py:149
+msgid "The archive does not contain a database dump."
+msgstr ""
+
+#: app/backup_service.py:153
+#, python-format
+msgid "Could not create a safety backup of the current data: %(err)s"
+msgstr ""
+
+#: app/backup_service.py:162
+#, python-format
+msgid "Database restore failed: %(err)s"
+msgstr ""
+
+#: app/backup_service.py:202
+msgid "The uploaded file is not a backup archive."
+msgstr ""
+
+#: app/backup_service.py:247
 msgid "Backup completed successfully"
 msgstr ""
 
-#: app/backup_service.py:139
+#: app/backup_service.py:249
 msgid "File"
 msgstr ""
 
-#: app/backup_service.py:141
+#: app/backup_service.py:251
 msgid "Backups kept"
 msgstr ""
 
-#: app/backup_service.py:145
+#: app/backup_service.py:255
 msgid "Pruned"
 msgstr ""
 
-#: app/backup_service.py:146
+#: app/backup_service.py:256
 #, python-format
 msgid "%(count)d old backup(s) deleted"
 msgstr ""
 
-#: app/backup_service.py:150
+#: app/backup_service.py:260
 msgid "Backup failed"
 msgstr ""
 
-#: app/backup_service.py:152
+#: app/backup_service.py:262
 msgid "Error"
 msgstr ""
 
-#: app/backup_service.py:161
+#: app/backup_service.py:271
 msgid "Scheduled Backup Report"
 msgstr ""
 
@@ -153,282 +171,289 @@ msgstr ""
 msgid "Email sending is disabled in General settings."
 msgstr ""
 
-#: app/routes/main.py:68
+#: app/routes/main.py:74
 msgid "Name and email are required!"
 msgstr ""
 
-#: app/routes/main.py:72
+#: app/routes/main.py:78
 msgid "User already exists!"
 msgstr ""
 
-#: app/routes/main.py:86
+#: app/routes/main.py:92
 #, python-format
 msgid "User %(name)s added successfully!"
 msgstr ""
 
-#: app/routes/main.py:98
+#: app/routes/main.py:104
 msgid "All fields are required!"
 msgstr ""
 
-#: app/routes/main.py:103
+#: app/routes/main.py:109
 msgid "Another user with that name already exists!"
 msgstr ""
 
-#: app/routes/main.py:108
+#: app/routes/main.py:114
 msgid "Another user with that email already exists!"
 msgstr ""
 
-#: app/routes/main.py:114
+#: app/routes/main.py:120
 msgid "Invalid date format!"
 msgstr ""
 
-#: app/routes/main.py:126
+#: app/routes/main.py:132
 msgid "User updated successfully!"
 msgstr ""
 
-#: app/routes/main.py:137
+#: app/routes/main.py:143
 #, python-format
 msgid "User %(name)s has been activated."
 msgstr ""
 
-#: app/routes/main.py:139
+#: app/routes/main.py:145
 #, python-format
 msgid "User %(name)s has been deactivated."
 msgstr ""
 
-#: app/routes/main.py:173
+#: app/routes/main.py:179
 #, python-format
 msgid "Deposit of %(sym)s%(amount)s added successfully!"
 msgstr ""
 
-#: app/routes/main.py:191
+#: app/routes/main.py:197
 #, python-format
 msgid "Withdrawal of %(sym)s%(amount)s processed successfully!"
 msgstr ""
 
-#: app/routes/main.py:240
+#: app/routes/main.py:246
 msgid "Expense recorded successfully!"
 msgstr ""
 
-#: app/routes/main.py:242
+#: app/routes/main.py:248
 msgid "At least one item is required for an expense."
 msgstr ""
 
-#: app/routes/main.py:414 app/routes/main.py:415
+#: app/routes/main.py:420 app/routes/main.py:421
 msgid "Bank of Tina"
 msgstr ""
 
-#: app/routes/main.py:416
+#: app/routes/main.py:422
 msgid "Track shared expenses and balances"
 msgstr ""
 
-#: app/routes/main.py:466
+#: app/routes/main.py:472
 msgid "Could not parse date — keeping the original value."
 msgstr ""
 
-#: app/routes/main.py:527
+#: app/routes/main.py:533
 msgid "Transaction updated successfully!"
 msgstr ""
 
-#: app/routes/main.py:550
+#: app/routes/main.py:556
 msgid "Transaction deleted."
 msgstr ""
 
-#: app/routes/settings.py:139
+#: app/routes/settings.py:132
 msgid "Settings saved."
 msgstr ""
 
-#: app/routes/settings.py:147
+#: app/routes/settings.py:140
 #, python-format
 msgid "%(success)s email(s) sent, %(fail)s failed."
 msgstr ""
 
-#: app/routes/settings.py:150
+#: app/routes/settings.py:143
 #, python-format
 msgid "Debug: %(err)s"
 msgstr ""
 
-#: app/routes/settings.py:158
+#: app/routes/settings.py:151
 msgid "Email debug log cleared."
 msgstr ""
 
-#: app/routes/settings.py:179
+#: app/routes/settings.py:172
 msgid "Schedule saved and enabled."
 msgstr ""
 
-#: app/routes/settings.py:183
+#: app/routes/settings.py:176
 msgid "Schedule disabled."
 msgstr ""
 
-#: app/routes/settings.py:220
+#: app/routes/settings.py:210
 msgid "General settings saved."
 msgstr ""
 
-#: app/routes/settings.py:252
+#: app/routes/settings.py:242
 msgid "Item name is required."
 msgstr ""
 
-#: app/routes/settings.py:257
+#: app/routes/settings.py:247
 #, python-format
 msgid "\"%(name)s\" added to common items."
 msgstr ""
 
-#: app/routes/settings.py:267
+#: app/routes/settings.py:257
 #, python-format
 msgid "\"%(name)s\" removed from common items."
 msgstr ""
 
-#: app/routes/settings.py:275
+#: app/routes/settings.py:265
 msgid "Description is required."
 msgstr ""
 
-#: app/routes/settings.py:280
+#: app/routes/settings.py:270
 #, python-format
 msgid "\"%(value)s\" added to common descriptions."
 msgstr ""
 
-#: app/routes/settings.py:290
+#: app/routes/settings.py:280
 #, python-format
 msgid "\"%(value)s\" removed from common descriptions."
 msgstr ""
 
-#: app/routes/settings.py:299
+#: app/routes/settings.py:289
 msgid "Valid price is required."
 msgstr ""
 
-#: app/routes/settings.py:304
+#: app/routes/settings.py:294
 #, python-format
 msgid "%(sym)s%(amount)s added to common prices."
 msgstr ""
 
-#: app/routes/settings.py:314
+#: app/routes/settings.py:304
 #, python-format
 msgid "%(sym)s%(amount)s removed from common prices."
 msgstr ""
 
-#: app/routes/settings.py:323
+#: app/routes/settings.py:313
 msgid "Invalid blacklist entry."
 msgstr ""
 
-#: app/routes/settings.py:328
+#: app/routes/settings.py:318
 #, python-format
 msgid "\"%(value)s\" added to %(type)s blacklist."
 msgstr ""
 
-#: app/routes/settings.py:338
+#: app/routes/settings.py:328
 #, python-format
 msgid "\"%(value)s\" removed from %(type)s blacklist."
 msgstr ""
 
-#: app/routes/settings.py:346
+#: app/routes/settings.py:336
 msgid "Common autocomplete settings saved."
 msgstr ""
 
-#: app/routes/settings.py:390
+#: app/routes/settings.py:380
 msgid "Auto-collect schedule saved and enabled."
 msgstr ""
 
-#: app/routes/settings.py:394
+#: app/routes/settings.py:384
 msgid "Auto-collect schedule disabled."
 msgstr ""
 
-#: app/routes/settings.py:402
+#: app/routes/settings.py:392
 msgid "Auto-collect job ran successfully."
 msgstr ""
 
-#: app/routes/settings.py:410
+#: app/routes/settings.py:400
 msgid "Debug log cleared."
 msgstr ""
 
-#: app/routes/settings.py:433
+#: app/routes/settings.py:424
 msgid "Templates saved."
 msgstr ""
 
-#: app/routes/settings.py:443
+#: app/routes/settings.py:438
 msgid "Templates reset to defaults."
 msgstr ""
 
-#: app/routes/settings.py:456
+#: app/routes/settings.py:451
 msgid "Icon regenerated with current navbar color."
 msgstr ""
 
-#: app/routes/settings.py:460
+#: app/routes/settings.py:455
 msgid "Icon reset to default."
 msgstr ""
 
-#: app/routes/settings.py:465
+#: app/routes/settings.py:460
 msgid "No file selected."
 msgstr ""
 
-#: app/routes/settings.py:470
+#: app/routes/settings.py:465
 msgid "Only PNG or JPG files are accepted."
 msgstr ""
 
-#: app/routes/settings.py:485
+#: app/routes/settings.py:480
 msgid "Custom icon uploaded."
 msgstr ""
 
-#: app/routes/settings.py:487
+#: app/routes/settings.py:482
 msgid "Pillow is not installed — cannot process uploaded images."
 msgstr ""
 
-#: app/routes/settings.py:489
+#: app/routes/settings.py:484
 #, python-format
 msgid "Failed to process image: %(error)s"
 msgstr ""
 
-#: app/routes/settings.py:491
+#: app/routes/settings.py:486
 msgid "Unknown action."
 msgstr ""
 
-#: app/routes/settings.py:554
+#: app/routes/settings.py:552
 msgid "Backup schedule saved and enabled."
 msgstr ""
 
-#: app/routes/settings.py:558
+#: app/routes/settings.py:556
 msgid "Backup schedule disabled."
 msgstr ""
 
-#: app/routes/settings.py:568
+#: app/routes/settings.py:566
 #, python-format
 msgid "Backup created: %(result)s"
 msgstr ""
 
-#: app/routes/settings.py:570
+#: app/routes/settings.py:568
 #, python-format
 msgid "Backup failed: %(result)s"
 msgstr ""
 
-#: app/routes/settings.py:578
+#: app/routes/settings.py:576
 msgid "Backup debug log cleared."
 msgstr ""
 
-#: app/routes/settings.py:593 app/routes/settings.py:645
+#: app/routes/settings.py:590 app/routes/settings.py:645
 msgid "Invalid filename."
 msgstr ""
 
-#: app/routes/settings.py:598
+#: app/routes/settings.py:595
 #, python-format
 msgid "%(filename)s deleted."
 msgstr ""
 
-#: app/routes/settings.py:600 app/routes/settings.py:650
+#: app/routes/settings.py:597 app/routes/settings.py:649
 msgid "Backup file not found."
 msgstr ""
 
-#: app/routes/settings.py:690
-#, python-format
-msgid "Database restore failed: %(err)s"
+#: app/routes/settings.py:607
+msgid "Invalid upload ID"
 msgstr ""
 
-#: app/routes/settings.py:694
+#: app/routes/settings.py:612 app/routes/settings.py:614
+msgid "Invalid chunk parameters"
+msgstr ""
+
+#: app/routes/settings.py:616
+msgid "No chunk data"
+msgstr ""
+
+#: app/routes/settings.py:660
 #, python-format
 msgid ""
-"Restore from %(filename)s completed successfully. Check the .env file "
-"inside the backup if credentials changed."
+"Restore from %(filename)s completed successfully. The previous state was "
+"saved as %(safety)s."
 msgstr ""
 
-#: app/routes/settings.py:698
+#: app/routes/settings.py:664
 #, python-format
 msgid "Restore failed: %(error)s"
 msgstr ""
@@ -1865,4 +1890,10 @@ msgstr ""
 #: app/templates/user_detail.html:156
 msgid "Member since"
 msgstr ""
+
+#~ msgid ""
+#~ "Restore from %(filename)s completed "
+#~ "successfully. Check the .env file inside"
+#~ " the backup if credentials changed."
+#~ msgstr ""
 

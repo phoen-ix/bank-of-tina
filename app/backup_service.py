@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import tarfile
 import tempfile
+import time
 from datetime import UTC, datetime
 
 from flask import current_app
@@ -16,21 +17,42 @@ from flask_babel import gettext as _
 
 from extensions import db
 from models import BackupLog
-from helpers import get_setting, get_tpl, apply_template, now_local, fmt_amount
-from config import BACKUP_DIR
+from helpers import get_setting, get_tpl, apply_template, now_local
+from config import BACKUP_DIR, db_env
 
 logger = logging.getLogger(__name__)
 
-_db_user = os.environ.get('DB_USER', '')
-_db_pass = os.environ.get('DB_PASSWORD', '')
-_db_host = os.environ.get('DB_HOST', 'localhost')
-_db_port = os.environ.get('DB_PORT', '3306')
-_db_name = os.environ.get('DB_NAME', 'bank_of_tina')
+# Archive members restore extracts; everything else (e.g. the .env copy) is ignored.
+_RESTORABLE = ('dump.sql', 'receipts')
+# Upload chunks are 5 MB (settings.html); 400 chunks = 2 GB.
+MAX_UPLOAD_CHUNKS = 400
+_STALE_UPLOAD_SECONDS = 24 * 3600
+BACKUP_FILENAME_RE: re.Pattern[str] = re.compile(r'^bot_backup_[\d_-]+\.tar\.gz$')
 
 
 def _backup_log(level: str, message: str) -> None:
     db.session.add(BackupLog(level=level, message=message))
     db.session.commit()
+
+
+def _db_command(binary: str, *extra: str) -> tuple[list[str], dict[str, str]]:
+    """Build a mariadb/mariadb-dump command line. The password goes through the
+    environment (MYSQL_PWD) so it never shows up in the process list."""
+    cfg = db_env()
+    cmd = [binary, '-h', cfg['host'], '-P', cfg['port'], '-u', cfg['user'], *extra, cfg['name']]
+    env = {**os.environ, 'MYSQL_PWD': cfg['password']}
+    return cmd, env
+
+
+def _new_backup_path() -> tuple[str, str]:
+    """Return (filename, path) for a new archive; never reuses an existing name."""
+    ts = now_local().strftime('%Y_%m_%d_%H-%M-%S')
+    filename = f'bot_backup_{ts}.tar.gz'
+    n = 1
+    while os.path.exists(os.path.join(BACKUP_DIR, filename)):
+        filename = f'bot_backup_{ts}-{n}.tar.gz'
+        n += 1
+    return filename, os.path.join(BACKUP_DIR, filename)
 
 
 def run_backup() -> tuple[bool, str]:
@@ -41,25 +63,20 @@ def run_backup() -> tuple[bool, str]:
         if debug:
             _backup_log(level, msg)
 
-    ts = now_local().strftime('%Y_%m_%d_%H-%M-%S')
-    filename = f'bot_backup_{ts}.tar.gz'
-    dest = os.path.join(BACKUP_DIR, filename)
     os.makedirs(BACKUP_DIR, exist_ok=True)
+    filename, dest = _new_backup_path()
 
     try:
         with tempfile.TemporaryDirectory() as tmp:
             dump_path = os.path.join(tmp, 'dump.sql')
+            cmd, env = _db_command('mariadb-dump', '--single-transaction', '--add-drop-table')
             with open(dump_path, 'wb') as dump_file:
-                result = subprocess.run(
-                    ['mysqldump', '-h', _db_host, '-P', _db_port,
-                     f'-u{_db_user}', f'-p{_db_pass}',
-                     '--add-drop-table', _db_name],
-                    stdout=dump_file, stderr=subprocess.PIPE, timeout=300
-                )
+                result = subprocess.run(cmd, stdout=dump_file, stderr=subprocess.PIPE,
+                                        env=env, timeout=300)
             if result.returncode != 0:
                 err = result.stderr.decode(errors='replace')[:300]
-                log('ERROR', f'mysqldump failed: {err}')
-                return False, f'mysqldump failed: {err}'
+                log('ERROR', f'mariadb-dump failed: {err}')
+                return False, f'mariadb-dump failed: {err}'
             log('INFO', 'SQL dump created')
 
             receipts_dest = os.path.join(tmp, 'receipts')
@@ -70,15 +87,15 @@ def run_backup() -> tuple[bool, str]:
                 os.makedirs(receipts_dest)
             log('INFO', 'Receipts copied')
 
-            env_keys = ['DB_ROOT_PASSWORD', 'DB_NAME', 'DB_USER', 'DB_PASSWORD',
-                        'SECRET_KEY', 'SMTP_SERVER', 'SMTP_PORT', 'SMTP_USERNAME',
-                        'SMTP_PASSWORD', 'FROM_EMAIL', 'FROM_NAME']
+            env_keys = ['DB_ROOT_PASSWORD', 'DB_NAME', 'DB_USER', 'DB_PASSWORD', 'SECRET_KEY']
             env_lines = [f'{k}={os.environ.get(k, "")}' for k in env_keys if os.environ.get(k)]
             with open(os.path.join(tmp, '.env'), 'w') as f:
                 f.write('\n'.join(env_lines) + '\n')
             log('INFO', '.env reconstructed')
 
-            with tarfile.open(dest, 'w:gz') as tar:
+            # The archive holds credentials: create it owner-only from the start.
+            fd = os.open(dest, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            with os.fdopen(fd, 'wb') as raw, tarfile.open(fileobj=raw, mode='w:gz') as tar:
                 tar.add(dump_path, arcname='dump.sql')
                 tar.add(receipts_dest, arcname='receipts')
                 tar.add(os.path.join(tmp, '.env'), arcname='.env')
@@ -96,14 +113,107 @@ def run_backup() -> tuple[bool, str]:
         return False, err
 
 
+def _restorable(name: str) -> bool:
+    name = os.path.normpath(name)
+    return name in _RESTORABLE or name.startswith('receipts' + os.sep)
+
+
+def _replace_dir_contents(target: str, source: str) -> None:
+    """Empty `target` (a bind mount, so it can't be removed itself) and copy `source` into it."""
+    for item in os.listdir(target):
+        item_path = os.path.join(target, item)
+        if os.path.isdir(item_path) and not os.path.islink(item_path):
+            shutil.rmtree(item_path)
+        else:
+            os.remove(item_path)
+    shutil.copytree(source, target, dirs_exist_ok=True)
+
+
+def run_restore(filename: str) -> tuple[bool, str]:
+    """Restore database and receipts from BACKUP_DIR/filename.
+
+    Order matters: a safety backup of the current state is taken first, then
+    the database is restored, and only if that succeeded are the receipts
+    replaced. Returns (True, safety_backup_filename) or (False, error_msg).
+    """
+    path = os.path.join(BACKUP_DIR, filename)
+    with tempfile.TemporaryDirectory() as tmp:
+        with tarfile.open(path, 'r:gz') as tar:
+            members = [m for m in tar.getmembers() if _restorable(m.name)]
+            # filter='data' rejects links pointing outside, device files,
+            # absolute paths and '..' traversal.
+            tar.extractall(tmp, members=members, filter='data')
+
+        dump_path = os.path.join(tmp, 'dump.sql')
+        if not os.path.isfile(dump_path):
+            return False, _('The archive does not contain a database dump.')
+
+        ok, safety = run_backup()
+        if not ok:
+            return False, _('Could not create a safety backup of the current data: %(err)s', err=safety)
+
+        # --sandbox makes the client refuse shell escapes (\!) and other
+        # client-side commands embedded in a crafted dump.
+        cmd, env = _db_command('mariadb', '--sandbox')
+        with open(dump_path, 'rb') as f:
+            result = subprocess.run(cmd, stdin=f, stderr=subprocess.PIPE, env=env, timeout=300)
+        if result.returncode != 0:
+            err = result.stderr.decode(errors='replace')[:300]
+            return False, _('Database restore failed: %(err)s', err=err)
+
+        receipts_src = os.path.join(tmp, 'receipts')
+        if os.path.isdir(receipts_src):
+            _replace_dir_contents(current_app.config['UPLOAD_FOLDER'], receipts_src)
+
+    logger.info('Backup restored: %s (safety backup %s)', filename, safety)
+    return True, safety
+
+
+def sweep_stale_uploads() -> None:
+    """Remove chunk directories of uploads abandoned more than a day ago."""
+    tmp_root = os.path.join(BACKUP_DIR, '.tmp')
+    if not os.path.isdir(tmp_root):
+        return
+    cutoff = time.time() - _STALE_UPLOAD_SECONDS
+    for entry in os.listdir(tmp_root):
+        entry_path = os.path.join(tmp_root, entry)
+        try:
+            if os.path.getmtime(entry_path) < cutoff:
+                shutil.rmtree(entry_path, ignore_errors=True)
+        except OSError:
+            pass
+
+
+def assemble_upload(chunk_dir: str, total_chunks: int) -> tuple[bool, str]:
+    """Join uploaded chunks into a new backup archive.
+
+    Returns (True, filename) or (False, error_msg). The chunk directory is
+    always removed.
+    """
+    filename, dest = _new_backup_path()
+    try:
+        fd = os.open(dest, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(fd, 'wb') as out:
+            for i in range(total_chunks):
+                with open(os.path.join(chunk_dir, f'{i:05d}'), 'rb') as c:
+                    shutil.copyfileobj(c, out)
+        if not tarfile.is_tarfile(dest):
+            os.remove(dest)
+            return False, _('The uploaded file is not a backup archive.')
+        return True, filename
+    except OSError as e:
+        if os.path.exists(dest):
+            os.remove(dest)
+        return False, str(e)[:300]
+    finally:
+        shutil.rmtree(chunk_dir, ignore_errors=True)
+
+
 def _prune_old_backups(keep: int) -> None:
     """Delete oldest backups keeping only the most recent `keep` files."""
     if keep <= 0:
         return
-    files = sorted([
-        f for f in os.listdir(BACKUP_DIR)
-        if re.match(r'^bot_backup_[\d_-]+\.tar\.gz$', f)
-    ])
+    files = sorted(f for f in os.listdir(BACKUP_DIR) if BACKUP_FILENAME_RE.match(f))
     while len(files) > keep:
         os.remove(os.path.join(BACKUP_DIR, files.pop(0)))
 
@@ -113,7 +223,7 @@ def _list_backups() -> list[dict[str, str | int | datetime]]:
     backups: list[dict[str, str | int | datetime]] = []
     if os.path.exists(BACKUP_DIR):
         for f in sorted(os.listdir(BACKUP_DIR), reverse=True):
-            if re.match(r'^bot_backup_[\d_-]+\.tar\.gz$', f):
+            if BACKUP_FILENAME_RE.match(f):
                 fpath = os.path.join(BACKUP_DIR, f)
                 stat = os.stat(fpath)
                 backups.append({

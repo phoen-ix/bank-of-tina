@@ -12,11 +12,12 @@ from typing import Any
 from flask import Flask, Response, g
 from flask.json.provider import DefaultJSONProvider
 
-from flask import request, redirect, url_for, flash, jsonify
+from flask import request, url_for, flash, jsonify
 from flask_babel import gettext as _, format_date as babel_format_date
 from extensions import db, csrf, migrate, limiter, scheduler, babel
-from helpers import get_setting, get_tpl, hex_to_rgb, to_local
-from config import TEMPLATE_DEFAULTS
+from helpers import get_setting, get_tpl, hex_to_rgb, to_local, redirect_back
+from config import db_env
+from sqlalchemy.engine import URL
 
 
 def setup_logging() -> None:
@@ -58,17 +59,14 @@ app.config['SECRET_KEY'] = _secret
 
 _db_uri = os.environ.get('SQLALCHEMY_DATABASE_URI', '')
 if not _db_uri:
-    _db_user = os.environ.get('DB_USER', '')
-    _db_pass = os.environ.get('DB_PASSWORD', '')
-    if not _db_user or not _db_pass:
+    _db = db_env()
+    if not _db['user'] or not _db['password']:
         raise RuntimeError(
             'DB_USER and DB_PASSWORD must be set in your .env file '
             '(or set SQLALCHEMY_DATABASE_URI directly).'
         )
-    _db_host = os.environ.get('DB_HOST', 'localhost')
-    _db_port = os.environ.get('DB_PORT', '3306')
-    _db_name = os.environ.get('DB_NAME', 'bank_of_tina')
-    _db_uri = f'mysql+pymysql://{_db_user}:{_db_pass}@{_db_host}:{_db_port}/{_db_name}'
+    _db_uri = URL.create('mysql+pymysql', username=_db['user'], password=_db['password'],
+                         host=_db['host'], port=int(_db['port']), database=_db['name'])
 app.config['SQLALCHEMY_DATABASE_URI'] = _db_uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = '/uploads'
@@ -89,7 +87,7 @@ def get_locale() -> str:
 
 
 db.init_app(app)
-migrate.init_app(app, db)
+migrate.init_app(app, db, directory=os.path.join(app.root_path, 'migrations'))
 csrf.init_app(app)
 limiter.init_app(app)
 babel.init_app(app, locale_selector=get_locale)
@@ -106,7 +104,7 @@ def ratelimit_handler(e: Exception) -> tuple[Response, int] | Response:
     if request.is_json:
         return jsonify({'status': 'error', 'detail': str(e.description)}), 429
     flash(_('Too many requests. Please wait and try again.'), 'error')
-    return redirect(request.referrer or url_for('main.index'))
+    return redirect_back(url_for('main.index'))
 
 
 @app.template_filter('money')
@@ -163,8 +161,10 @@ def inject_theme() -> dict[str, str]:
 
 
 @app.after_request
-def set_csp_header(response: Response) -> Response:
-    """Set Content-Security-Policy header on HTML responses."""
+def set_security_headers(response: Response) -> Response:
+    """Set nosniff/referrer headers everywhere and the Content-Security-Policy on HTML responses."""
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['Referrer-Policy'] = 'same-origin'
     if 'text/html' in response.content_type:
         nonce = g.get('csp_nonce', '')
         response.headers['Content-Security-Policy'] = (
@@ -287,4 +287,4 @@ if os.environ.get('FLASK_TESTING') != '1':
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000)

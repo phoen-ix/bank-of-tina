@@ -99,20 +99,9 @@ def test_delete_transaction_reverses_balance(client, app):
         assert user.balance == Decimal('0')
 
 
-def test_api_users_json(client, app):
-    with app.app_context():
-        from extensions import db
-        from models import User
-        user = User(name='Eve', email='eve@example.com', balance=Decimal('42.00'))
-        db.session.add(user)
-        db.session.commit()
-
-        response = client.get('/api/users')
-        assert response.status_code == 200
-        data = response.get_json()
-        assert len(data) == 1
-        assert data[0]['name'] == 'Eve'
-        assert data[0]['balance'] == 42.0
+def test_api_users_removed(client, app):
+    """The unused /api/users endpoint leaked every balance and was removed."""
+    assert client.get('/api/users').status_code == 404
 
 
 def test_expense_with_items_json(client, app, make_user):

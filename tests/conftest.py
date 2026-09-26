@@ -95,3 +95,18 @@ def make_user(app):
         return user
 
     return _make
+
+
+@pytest.fixture
+def backup_dir(tmp_path, monkeypatch, app):
+    """Point backups and uploads at temporary directories."""
+    import backup_service
+    import routes.settings as settings_routes
+    backups = tmp_path / 'backups'
+    uploads = tmp_path / 'uploads'
+    backups.mkdir()
+    uploads.mkdir()
+    monkeypatch.setattr(backup_service, 'BACKUP_DIR', str(backups))
+    monkeypatch.setattr(settings_routes, 'BACKUP_DIR', str(backups))
+    monkeypatch.setitem(app.config, 'UPLOAD_FOLDER', str(uploads))
+    return backups

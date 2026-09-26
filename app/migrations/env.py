@@ -9,19 +9,17 @@ from alembic import context
 # access to the values within the .ini file in use.
 config = context.config
 
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
-fileConfig(config.config_file_name)
+# Interpret the config file for Python logging -- but only when nobody has
+# configured logging yet (e.g. a bare `alembic` run). Inside the app,
+# setup_logging() already ran; fileConfig() would replace its root handler and
+# disable every existing module logger for the rest of the process.
+if not logging.getLogger().handlers:
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 logger = logging.getLogger('alembic.env')
 
 
 def get_engine():
-    try:
-        # this works with Flask-SQLAlchemy<3 and Alchemical
-        return current_app.extensions['migrate'].db.get_engine()
-    except (TypeError, AttributeError):
-        # this works with Flask-SQLAlchemy>=3
-        return current_app.extensions['migrate'].db.engine
+    return current_app.extensions['migrate'].db.engine
 
 
 def get_engine_url():

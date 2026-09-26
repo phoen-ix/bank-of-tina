@@ -8,8 +8,10 @@ import zlib
 from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 
+from urllib.parse import urlsplit
+
 import pytz
-from flask import current_app, g
+from flask import Response, current_app, g, redirect, request
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
@@ -242,3 +244,13 @@ def to_local(dt: datetime | None) -> datetime | None:
     if dt.tzinfo is None:
         dt = pytz.utc.localize(dt)
     return dt.astimezone(get_app_tz())
+
+
+def redirect_back(default: str) -> Response:
+    """Redirect to the referring page when it is on this host, otherwise to `default`."""
+    ref = request.referrer
+    if ref:
+        parts = urlsplit(ref)
+        if parts.scheme in ('http', 'https') and parts.netloc == request.host:
+            return redirect(ref)
+    return redirect(default)

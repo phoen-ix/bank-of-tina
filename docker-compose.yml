@@ -4,10 +4,10 @@ services:
     container_name: bank-of-tina-db
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootchangeme}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Set DB_ROOT_PASSWORD in .env}
       MYSQL_DATABASE:      ${DB_NAME:-bank_of_tina}
       MYSQL_USER:          ${DB_USER:-tina}
-      MYSQL_PASSWORD:      ${DB_PASSWORD:-tina}
+      MYSQL_PASSWORD:      ${DB_PASSWORD:?Set DB_PASSWORD in .env}
       # Upgrade an existing data directory in place when the image moves to a newer major (dump first).
       MARIADB_AUTO_UPGRADE: "1"
     volumes:
@@ -23,33 +23,23 @@ services:
     build: .
     container_name: bank-of-tina
     ports:
-      - "5000:5000"
+      # Localhost only by default. The app has no login: expose it through an
+      # authenticating reverse proxy, or set BIND_ADDRESS=0.0.0.0 in .env to
+      # reach it directly from a trusted LAN.
+      - "${BIND_ADDRESS:-127.0.0.1}:5000:5000"
     volumes:
       - ./uploads:/uploads
       - ./backups:/backups
       - ./icons:/app/static/icons
     environment:
-      - FLASK_APP=app.py
-      - SECRET_KEY=${SECRET_KEY}
+      - SECRET_KEY=${SECRET_KEY:?Set SECRET_KEY in .env}
       - DB_HOST=db
       - DB_PORT=3306
       - DB_NAME=${DB_NAME:-bank_of_tina}
       - DB_USER=${DB_USER:-tina}
-      - DB_PASSWORD=${DB_PASSWORD:-tina}
-      - SMTP_SERVER=${SMTP_SERVER:-smtp.gmail.com}
-      - SMTP_PORT=${SMTP_PORT:-587}
-      - SMTP_USERNAME=${SMTP_USERNAME:-}
-      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
-      - FROM_EMAIL=${FROM_EMAIL:-}
-      - FROM_NAME=${FROM_NAME:-Bank of Tina}
+      - DB_PASSWORD=${DB_PASSWORD:?Set DB_PASSWORD in .env}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     depends_on:
       db:
         condition: service_healthy
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s

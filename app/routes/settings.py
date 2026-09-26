@@ -3,16 +3,13 @@ from __future__ import annotations
 import logging
 import os
 import re
-import shutil
-import subprocess
-import tarfile
-import tempfile
 import time
 from datetime import datetime
 from decimal import Decimal
 
 import pytz
-from flask import Blueprint, Response, render_template, request, redirect, url_for, flash, jsonify, abort, current_app
+from flask import (Blueprint, Response, render_template, request, redirect, url_for, flash, jsonify,
+                   abort, current_app, send_from_directory)
 from flask_babel import gettext as _
 
 from extensions import db, scheduler, limiter
@@ -22,21 +19,17 @@ from helpers import (get_setting, set_setting, get_tpl, parse_amount, fmt_amount
                      detect_theme, generate_and_save_icons, now_local)
 from config import THEMES, TEMPLATE_DEFAULTS, TEMPLATE_DEFAULTS_DE, BACKUP_DIR, DEFAULT_ICON_BG
 from email_service import send_all_emails, build_email_html, build_admin_summary_email
-from backup_service import run_backup, _list_backups, build_backup_status_email
+from backup_service import (run_backup, run_restore, assemble_upload, sweep_stale_uploads,
+                            _list_backups, build_backup_status_email,
+                            BACKUP_FILENAME_RE, MAX_UPLOAD_CHUNKS)
 from scheduler_jobs import (_add_email_job, _add_common_job, _add_backup_job,
-                            auto_collect_common)
+                            auto_collect_common, reschedule_all)
 
 logger = logging.getLogger(__name__)
 
 settings_bp = Blueprint('settings_bp', __name__)
 
-BACKUP_FILENAME_RE: re.Pattern[str] = re.compile(r'^bot_backup_[\d_-]+\.tar\.gz$')
-
-_db_user = os.environ.get('DB_USER', '')
-_db_pass = os.environ.get('DB_PASSWORD', '')
-_db_host = os.environ.get('DB_HOST', 'localhost')
-_db_port = os.environ.get('DB_PORT', '3306')
-_db_name = os.environ.get('DB_NAME', 'bank_of_tina')
+UPLOAD_ID_RE: re.Pattern[str] = re.compile(r'^[a-f0-9\-]{36}$')
 
 
 @settings_bp.route('/settings')
@@ -204,10 +197,7 @@ def settings_general() -> Response:
     timezone = request.form.get('timezone', 'UTC')
     if timezone in pytz.common_timezones:
         set_setting('timezone', timezone)
-        if get_setting('schedule_enabled') == '1':
-            _add_email_job(current_app._get_current_object())
-        if get_setting('common_auto_enabled', '0') == '1':
-            _add_common_job(current_app._get_current_object())
+        reschedule_all(current_app._get_current_object())
     admin_id = request.form.get('site_admin_id', '').strip()
     if admin_id == '' or (admin_id.isdigit() and db.session.get(User, int(admin_id))):
         set_setting('site_admin_id', admin_id)
@@ -589,7 +579,6 @@ def settings_backup_clear_log() -> Response:
 
 @settings_bp.route('/backups/download/<filename>')
 def backup_download(filename: str) -> Response:
-    from flask import send_from_directory
     if not BACKUP_FILENAME_RE.match(filename):
         abort(404)
     return send_from_directory(BACKUP_DIR, filename, as_attachment=True)
@@ -612,38 +601,41 @@ def backup_delete(filename: str) -> Response:
 @settings_bp.route('/backups/upload-chunk', methods=['POST'])
 def backup_upload_chunk() -> tuple[Response, int] | Response:
     upload_id   = request.form.get('uploadId', '')
-    chunk_index = request.form.get('chunkIndex', '')
-    total_chunks = request.form.get('totalChunks', '')
     chunk_file  = request.files.get('chunk')
 
-    if not re.match(r'^[a-f0-9\-]{36}$', upload_id):
-        return jsonify({'error': 'Invalid upload ID'}), 400
+    if not UPLOAD_ID_RE.match(upload_id):
+        return jsonify({'error': _('Invalid upload ID')}), 400
     try:
-        chunk_index  = int(chunk_index)
-        total_chunks = int(total_chunks)
+        chunk_index  = int(request.form.get('chunkIndex', ''))
+        total_chunks = int(request.form.get('totalChunks', ''))
     except (TypeError, ValueError):
-        return jsonify({'error': 'Invalid chunk parameters'}), 400
+        return jsonify({'error': _('Invalid chunk parameters')}), 400
+    if not 0 < total_chunks <= MAX_UPLOAD_CHUNKS or not 0 <= chunk_index < total_chunks:
+        return jsonify({'error': _('Invalid chunk parameters')}), 400
     if not chunk_file:
-        return jsonify({'error': 'No chunk data'}), 400
+        return jsonify({'error': _('No chunk data')}), 400
 
+    if chunk_index == 0:
+        sweep_stale_uploads()
     tmp_dir = os.path.join(BACKUP_DIR, '.tmp', upload_id)
     os.makedirs(tmp_dir, exist_ok=True)
     chunk_file.save(os.path.join(tmp_dir, f'{chunk_index:05d}'))
 
     received = len([f for f in os.listdir(tmp_dir) if f.isdigit()])
-    if received >= total_chunks:
-        ts = now_local().strftime('%Y_%m_%d_%H-%M-%S')
-        filename = f'bot_backup_{ts}.tar.gz'
-        dest = os.path.join(BACKUP_DIR, filename)
-        with open(dest, 'wb') as out:
-            for i in range(total_chunks):
-                chunk_path = os.path.join(tmp_dir, f'{i:05d}')
-                with open(chunk_path, 'rb') as c:
-                    out.write(c.read())
-        shutil.rmtree(tmp_dir, ignore_errors=True)
-        return jsonify({'done': True, 'filename': filename})
+    if received < total_chunks:
+        return jsonify({'done': False, 'received': received, 'total': total_chunks})
 
-    return jsonify({'done': False, 'received': received, 'total': total_chunks})
+    ok, result = assemble_upload(tmp_dir, total_chunks)
+    if not ok:
+        return jsonify({'error': result}), 400
+    logger.info('Backup uploaded: %s', result)
+    return jsonify({'done': True, 'filename': result})
+
+
+def _migrate_after_restore() -> None:
+    """Bring a restored (possibly older) schema up to the current migration head."""
+    from flask_migrate import upgrade
+    upgrade()
 
 
 @settings_bp.route('/backups/restore/<filename>', methods=['POST'])
@@ -653,54 +645,20 @@ def backup_restore(filename: str) -> Response:
         flash(_('Invalid filename.'), 'error')
         return redirect(url_for('settings_bp.settings'))
 
-    path = os.path.join(BACKUP_DIR, filename)
-    if not os.path.exists(path):
+    if not os.path.exists(os.path.join(BACKUP_DIR, filename)):
         flash(_('Backup file not found.'), 'error')
         return redirect(url_for('settings_bp.settings'))
 
     try:
-        with tempfile.TemporaryDirectory() as tmp:
-            with tarfile.open(path, 'r:gz') as tar:
-                def _safe_members(tar, dest):
-                    dest = os.path.realpath(dest)
-                    for m in tar.getmembers():
-                        if m.issym() or m.islnk():
-                            continue
-                        if m.name.startswith('/') or '..' in m.name:
-                            continue
-                        resolved = os.path.realpath(os.path.join(dest, m.name))
-                        if not resolved.startswith(dest + os.sep) and resolved != dest:
-                            continue
-                        yield m
-                tar.extractall(tmp, members=list(_safe_members(tar, tmp)))
-
-            receipts_src = os.path.join(tmp, 'receipts')
-            upload_folder = current_app.config['UPLOAD_FOLDER']
-            if os.path.exists(receipts_src):
-                for item in os.listdir(upload_folder):
-                    item_path = os.path.join(upload_folder, item)
-                    if os.path.isdir(item_path):
-                        shutil.rmtree(item_path)
-                    else:
-                        os.remove(item_path)
-                shutil.copytree(receipts_src, upload_folder, dirs_exist_ok=True)
-
-            dump_path = os.path.join(tmp, 'dump.sql')
-            if os.path.exists(dump_path):
-                with open(dump_path, 'rb') as f:
-                    result = subprocess.run(
-                        ['mysql', '-h', _db_host, '-P', _db_port,
-                         f'-u{_db_user}', f'-p{_db_pass}', _db_name],
-                        stdin=f, stderr=subprocess.PIPE, timeout=300
-                    )
-                if result.returncode != 0:
-                    err = result.stderr.decode(errors='replace')[:300]
-                    flash(_('Database restore failed: %(err)s', err=err), 'error')
-                    return redirect(url_for('settings_bp.settings'))
-
-        logger.info('Backup restored: %s', filename)
-        flash(_('Restore from %(filename)s completed successfully. Check the .env file inside the backup if credentials changed.', filename=filename), 'success')
-
+        ok, result = run_restore(filename)
+        if not ok:
+            flash(result, 'error')
+            return redirect(url_for('settings_bp.settings'))
+        db.session.remove()
+        _migrate_after_restore()
+        reschedule_all(current_app._get_current_object())
+        flash(_('Restore from %(filename)s completed successfully. The previous state was saved as %(safety)s.',
+                filename=filename, safety=result), 'success')
     except Exception as e:
         logger.error('Backup restore failed: %s', str(e)[:200])
         flash(_('Restore failed: %(error)s', error=str(e)[:200]), 'error')

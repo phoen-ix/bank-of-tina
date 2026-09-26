@@ -1,13 +1,15 @@
 # German translations for Bank of Tina.
 # Copyright (C) 2026 Bank of Tina
-# This file is distributed under the same license as the Bank of Tina project.
+# This file is distributed under the same license as the Bank of Tina
+# project.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: Bank of Tina 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-07 16:56+0000\n"
+"POT-Creation-Date: 2026-09-26 15:24+0000\n"
 "PO-Revision-Date: 2026-03-07 17:00+0000\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: de\n"
 "Language-Team: de\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
@@ -16,52 +18,72 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: app/app.py:108
+#: app/app.py:106
 msgid "Too many requests. Please wait and try again."
 msgstr "Zu viele Anfragen. Bitte warten und erneut versuchen."
 
-#: app/app.py:138
+#: app/app.py:136
 msgid "deposit"
 msgstr "Einzahlung"
 
-#: app/app.py:139
+#: app/app.py:137
 msgid "withdrawal"
 msgstr "Auszahlung"
 
-#: app/app.py:140
+#: app/app.py:138
 msgid "expense"
 msgstr "Ausgabe"
 
-#: app/backup_service.py:137
+#: app/backup_service.py:149
+msgid "The archive does not contain a database dump."
+msgstr "Das Archiv enthält keinen Datenbank-Dump."
+
+#: app/backup_service.py:153
+#, python-format
+msgid "Could not create a safety backup of the current data: %(err)s"
+msgstr ""
+"Sicherheits-Backup der aktuellen Daten konnte nicht erstellt werden: "
+"%(err)s"
+
+#: app/backup_service.py:162
+#, python-format
+msgid "Database restore failed: %(err)s"
+msgstr "Datenbankwiederherstellung fehlgeschlagen: %(err)s"
+
+#: app/backup_service.py:202
+msgid "The uploaded file is not a backup archive."
+msgstr "Die hochgeladene Datei ist kein Backup-Archiv."
+
+#: app/backup_service.py:247
 msgid "Backup completed successfully"
 msgstr "Backup erfolgreich erstellt"
 
-#: app/backup_service.py:139
+#: app/backup_service.py:249
 msgid "File"
 msgstr "Datei"
 
-#: app/backup_service.py:141
+#: app/backup_service.py:251
 msgid "Backups kept"
 msgstr "Aufbewahrte Backups"
 
-#: app/backup_service.py:145
+#: app/backup_service.py:255
 msgid "Pruned"
 msgstr "Bereinigt"
 
-#: app/backup_service.py:146
+#: app/backup_service.py:256
 #, python-format
 msgid "%(count)d old backup(s) deleted"
 msgstr "%(count)d alte(s) Backup(s) gelöscht"
 
-#: app/backup_service.py:150
+#: app/backup_service.py:260
 msgid "Backup failed"
 msgstr "Backup fehlgeschlagen"
 
-#: app/backup_service.py:152
+#: app/backup_service.py:262
 msgid "Error"
 msgstr "Fehler"
 
-#: app/backup_service.py:161
+#: app/backup_service.py:271
 msgid "Scheduled Backup Report"
 msgstr "Geplanter Backup-Bericht"
 
@@ -151,284 +173,295 @@ msgstr "SMTP-Zugangsdaten nicht konfiguriert"
 msgid "Email sending is disabled in General settings."
 msgstr "E-Mail-Versand ist in den allgemeinen Einstellungen deaktiviert."
 
-#: app/routes/main.py:68
+#: app/routes/main.py:74
 msgid "Name and email are required!"
 msgstr "Name und E-Mail sind erforderlich!"
 
-#: app/routes/main.py:72
+#: app/routes/main.py:78
 msgid "User already exists!"
 msgstr "Benutzer existiert bereits!"
 
-#: app/routes/main.py:86
+#: app/routes/main.py:92
 #, python-format
 msgid "User %(name)s added successfully!"
 msgstr "Benutzer %(name)s erfolgreich hinzugefügt!"
 
-#: app/routes/main.py:98
+#: app/routes/main.py:104
 msgid "All fields are required!"
 msgstr "Alle Felder sind erforderlich!"
 
-#: app/routes/main.py:103
+#: app/routes/main.py:109
 msgid "Another user with that name already exists!"
 msgstr "Ein anderer Benutzer mit diesem Namen existiert bereits!"
 
-#: app/routes/main.py:108
+#: app/routes/main.py:114
 msgid "Another user with that email already exists!"
 msgstr "Ein anderer Benutzer mit dieser E-Mail existiert bereits!"
 
-#: app/routes/main.py:114
+#: app/routes/main.py:120
 msgid "Invalid date format!"
 msgstr "Ungültiges Datumsformat!"
 
-#: app/routes/main.py:126
+#: app/routes/main.py:132
 msgid "User updated successfully!"
 msgstr "Benutzer erfolgreich aktualisiert!"
 
-#: app/routes/main.py:137
+#: app/routes/main.py:143
 #, python-format
 msgid "User %(name)s has been activated."
 msgstr "Benutzer %(name)s wurde aktiviert."
 
-#: app/routes/main.py:139
+#: app/routes/main.py:145
 #, python-format
 msgid "User %(name)s has been deactivated."
 msgstr "Benutzer %(name)s wurde deaktiviert."
 
-#: app/routes/main.py:173
+#: app/routes/main.py:179
 #, python-format
 msgid "Deposit of %(sym)s%(amount)s added successfully!"
 msgstr "Einzahlung von %(sym)s%(amount)s erfolgreich hinzugefügt!"
 
-#: app/routes/main.py:191
+#: app/routes/main.py:197
 #, python-format
 msgid "Withdrawal of %(sym)s%(amount)s processed successfully!"
 msgstr "Auszahlung von %(sym)s%(amount)s erfolgreich verarbeitet!"
 
-#: app/routes/main.py:240
+#: app/routes/main.py:246
 msgid "Expense recorded successfully!"
 msgstr "Ausgabe erfolgreich erfasst!"
 
-#: app/routes/main.py:242
+#: app/routes/main.py:248
 msgid "At least one item is required for an expense."
 msgstr "Mindestens ein Artikel ist für eine Ausgabe erforderlich."
 
-#: app/routes/main.py:414 app/routes/main.py:415
+#: app/routes/main.py:420 app/routes/main.py:421
 msgid "Bank of Tina"
 msgstr "Bank of Tina"
 
-#: app/routes/main.py:416
+#: app/routes/main.py:422
 msgid "Track shared expenses and balances"
 msgstr "Gemeinsame Ausgaben und Salden verwalten"
 
-#: app/routes/main.py:466
+#: app/routes/main.py:472
 msgid "Could not parse date — keeping the original value."
-msgstr "Datum konnte nicht verarbeitet werden — der ursprüngliche Wert wird beibehalten."
+msgstr ""
+"Datum konnte nicht verarbeitet werden — der ursprüngliche Wert wird "
+"beibehalten."
 
-#: app/routes/main.py:527
+#: app/routes/main.py:533
 msgid "Transaction updated successfully!"
 msgstr "Transaktion erfolgreich aktualisiert!"
 
-#: app/routes/main.py:550
+#: app/routes/main.py:556
 msgid "Transaction deleted."
 msgstr "Transaktion gelöscht."
 
-#: app/routes/settings.py:139
+#: app/routes/settings.py:132
 msgid "Settings saved."
 msgstr "Einstellungen gespeichert."
 
-#: app/routes/settings.py:147
+#: app/routes/settings.py:140
 #, python-format
 msgid "%(success)s email(s) sent, %(fail)s failed."
 msgstr "%(success)s E-Mail(s) gesendet, %(fail)s fehlgeschlagen."
 
-#: app/routes/settings.py:150
+#: app/routes/settings.py:143
 #, python-format
 msgid "Debug: %(err)s"
 msgstr "Debug: %(err)s"
 
-#: app/routes/settings.py:158
+#: app/routes/settings.py:151
 msgid "Email debug log cleared."
 msgstr "E-Mail-Debug-Log gelöscht."
 
-#: app/routes/settings.py:179
+#: app/routes/settings.py:172
 msgid "Schedule saved and enabled."
 msgstr "Zeitplan gespeichert und aktiviert."
 
-#: app/routes/settings.py:183
+#: app/routes/settings.py:176
 msgid "Schedule disabled."
 msgstr "Zeitplan deaktiviert."
 
-#: app/routes/settings.py:220
+#: app/routes/settings.py:210
 msgid "General settings saved."
 msgstr "Allgemeine Einstellungen gespeichert."
 
-#: app/routes/settings.py:252
+#: app/routes/settings.py:242
 msgid "Item name is required."
 msgstr "Artikelname ist erforderlich."
 
-#: app/routes/settings.py:257
+#: app/routes/settings.py:247
 #, python-format
 msgid "\"%(name)s\" added to common items."
 msgstr "\"%(name)s\" zu häufigen Artikeln hinzugefügt."
 
-#: app/routes/settings.py:267
+#: app/routes/settings.py:257
 #, python-format
 msgid "\"%(name)s\" removed from common items."
 msgstr "\"%(name)s\" aus häufigen Artikeln entfernt."
 
-#: app/routes/settings.py:275
+#: app/routes/settings.py:265
 msgid "Description is required."
 msgstr "Beschreibung ist erforderlich."
 
-#: app/routes/settings.py:280
+#: app/routes/settings.py:270
 #, python-format
 msgid "\"%(value)s\" added to common descriptions."
 msgstr "\"%(value)s\" zu häufigen Beschreibungen hinzugefügt."
 
-#: app/routes/settings.py:290
+#: app/routes/settings.py:280
 #, python-format
 msgid "\"%(value)s\" removed from common descriptions."
 msgstr "\"%(value)s\" aus häufigen Beschreibungen entfernt."
 
-#: app/routes/settings.py:299
+#: app/routes/settings.py:289
 msgid "Valid price is required."
 msgstr "Gültiger Preis ist erforderlich."
 
-#: app/routes/settings.py:304
+#: app/routes/settings.py:294
 #, python-format
 msgid "%(sym)s%(amount)s added to common prices."
 msgstr "%(sym)s%(amount)s zu häufigen Preisen hinzugefügt."
 
-#: app/routes/settings.py:314
+#: app/routes/settings.py:304
 #, python-format
 msgid "%(sym)s%(amount)s removed from common prices."
 msgstr "%(sym)s%(amount)s aus häufigen Preisen entfernt."
 
-#: app/routes/settings.py:323
+#: app/routes/settings.py:313
 msgid "Invalid blacklist entry."
 msgstr "Ungültiger Blacklist-Eintrag."
 
-#: app/routes/settings.py:328
+#: app/routes/settings.py:318
 #, python-format
 msgid "\"%(value)s\" added to %(type)s blacklist."
 msgstr "\"%(value)s\" zur %(type)s-Blacklist hinzugefügt."
 
-#: app/routes/settings.py:338
+#: app/routes/settings.py:328
 #, python-format
 msgid "\"%(value)s\" removed from %(type)s blacklist."
 msgstr "\"%(value)s\" aus der %(type)s-Blacklist entfernt."
 
-#: app/routes/settings.py:346
+#: app/routes/settings.py:336
 msgid "Common autocomplete settings saved."
 msgstr "Autovervollständigungs-Einstellungen gespeichert."
 
-#: app/routes/settings.py:390
+#: app/routes/settings.py:380
 msgid "Auto-collect schedule saved and enabled."
 msgstr "Auto-Sammlung-Zeitplan gespeichert und aktiviert."
 
-#: app/routes/settings.py:394
+#: app/routes/settings.py:384
 msgid "Auto-collect schedule disabled."
 msgstr "Auto-Sammlung-Zeitplan deaktiviert."
 
-#: app/routes/settings.py:402
+#: app/routes/settings.py:392
 msgid "Auto-collect job ran successfully."
 msgstr "Auto-Sammlung erfolgreich ausgeführt."
 
-#: app/routes/settings.py:410
+#: app/routes/settings.py:400
 msgid "Debug log cleared."
 msgstr "Debug-Log gelöscht."
 
-#: app/routes/settings.py:433
+#: app/routes/settings.py:424
 msgid "Templates saved."
 msgstr "Vorlagen gespeichert."
 
-#: app/routes/settings.py:443
+#: app/routes/settings.py:438
 msgid "Templates reset to defaults."
 msgstr "Vorlagen auf Standardwerte zurückgesetzt."
 
-#: app/routes/settings.py:456
+#: app/routes/settings.py:451
 msgid "Icon regenerated with current navbar color."
 msgstr "Icon mit aktueller Navigationsfarbe neu generiert."
 
-#: app/routes/settings.py:460
+#: app/routes/settings.py:455
 msgid "Icon reset to default."
 msgstr "Icon auf Standard zurückgesetzt."
 
-#: app/routes/settings.py:465
+#: app/routes/settings.py:460
 msgid "No file selected."
 msgstr "Keine Datei ausgewählt."
 
-#: app/routes/settings.py:470
+#: app/routes/settings.py:465
 msgid "Only PNG or JPG files are accepted."
 msgstr "Nur PNG- oder JPG-Dateien werden akzeptiert."
 
-#: app/routes/settings.py:485
+#: app/routes/settings.py:480
 msgid "Custom icon uploaded."
 msgstr "Benutzerdefiniertes Icon hochgeladen."
 
-#: app/routes/settings.py:487
+#: app/routes/settings.py:482
 msgid "Pillow is not installed — cannot process uploaded images."
-msgstr "Pillow ist nicht installiert — hochgeladene Bilder können nicht verarbeitet werden."
+msgstr ""
+"Pillow ist nicht installiert — hochgeladene Bilder können nicht "
+"verarbeitet werden."
 
-#: app/routes/settings.py:489
+#: app/routes/settings.py:484
 #, python-format
 msgid "Failed to process image: %(error)s"
 msgstr "Bildverarbeitung fehlgeschlagen: %(error)s"
 
-#: app/routes/settings.py:491
+#: app/routes/settings.py:486
 msgid "Unknown action."
 msgstr "Unbekannte Aktion."
 
-#: app/routes/settings.py:554
+#: app/routes/settings.py:552
 msgid "Backup schedule saved and enabled."
 msgstr "Backup-Zeitplan gespeichert und aktiviert."
 
-#: app/routes/settings.py:558
+#: app/routes/settings.py:556
 msgid "Backup schedule disabled."
 msgstr "Backup-Zeitplan deaktiviert."
 
-#: app/routes/settings.py:568
+#: app/routes/settings.py:566
 #, python-format
 msgid "Backup created: %(result)s"
 msgstr "Backup erstellt: %(result)s"
 
-#: app/routes/settings.py:570
+#: app/routes/settings.py:568
 #, python-format
 msgid "Backup failed: %(result)s"
 msgstr "Backup fehlgeschlagen: %(result)s"
 
-#: app/routes/settings.py:578
+#: app/routes/settings.py:576
 msgid "Backup debug log cleared."
 msgstr "Backup-Debug-Log gelöscht."
 
-#: app/routes/settings.py:593 app/routes/settings.py:645
+#: app/routes/settings.py:590 app/routes/settings.py:645
 msgid "Invalid filename."
 msgstr "Ungültiger Dateiname."
 
-#: app/routes/settings.py:598
+#: app/routes/settings.py:595
 #, python-format
 msgid "%(filename)s deleted."
 msgstr "%(filename)s gelöscht."
 
-#: app/routes/settings.py:600 app/routes/settings.py:650
+#: app/routes/settings.py:597 app/routes/settings.py:649
 msgid "Backup file not found."
 msgstr "Backup-Datei nicht gefunden."
 
-#: app/routes/settings.py:690
-#, python-format
-msgid "Database restore failed: %(err)s"
-msgstr "Datenbankwiederherstellung fehlgeschlagen: %(err)s"
+#: app/routes/settings.py:607
+msgid "Invalid upload ID"
+msgstr "Ungültige Upload-ID"
 
-#: app/routes/settings.py:694
+#: app/routes/settings.py:612 app/routes/settings.py:614
+msgid "Invalid chunk parameters"
+msgstr "Ungültige Chunk-Parameter"
+
+#: app/routes/settings.py:616
+msgid "No chunk data"
+msgstr "Keine Chunk-Daten"
+
+#: app/routes/settings.py:660
 #, python-format
 msgid ""
-"Restore from %(filename)s completed successfully. Check the .env file "
-"inside the backup if credentials changed."
+"Restore from %(filename)s completed successfully. The previous state was "
+"saved as %(safety)s."
 msgstr ""
-"Wiederherstellung von %(filename)s erfolgreich abgeschlossen. Prüfe die "
-".env-Datei im Backup, falls sich Zugangsdaten geändert haben."
+"Wiederherstellung von %(filename)s erfolgreich abgeschlossen. Der "
+"vorherige Stand wurde als %(safety)s gesichert."
 
-#: app/routes/settings.py:698
+#: app/routes/settings.py:664
 #, python-format
 msgid "Restore failed: %(error)s"
 msgstr "Wiederherstellung fehlgeschlagen: %(error)s"
@@ -765,7 +798,9 @@ msgstr "Ausgabenpositionen"
 
 #: app/templates/edit_transaction.html:88
 msgid "No items. Click \"Add Item\" to attach expense line items."
-msgstr "Keine Artikel. Klicke auf \"Artikel hinzufügen\" um Ausgabenpositionen hinzuzufügen."
+msgstr ""
+"Keine Artikel. Klicke auf \"Artikel hinzufügen\" um Ausgabenpositionen "
+"hinzuzufügen."
 
 #: app/templates/edit_transaction.html:91
 msgid "Items total:"
@@ -953,7 +988,9 @@ msgstr ""
 
 #: app/templates/settings.html:69
 msgid "Set to 0 to keep the current behaviour (no rows until you click Add Item)."
-msgstr "Auf 0 setzen für das aktuelle Verhalten (keine Zeilen bis \"Artikel hinzufügen\" geklickt wird)."
+msgstr ""
+"Auf 0 setzen für das aktuelle Verhalten (keine Zeilen bis \"Artikel "
+"hinzufügen\" geklickt wird)."
 
 #: app/templates/settings.html:74
 msgid "Recent transactions on dashboard"
@@ -1069,11 +1106,15 @@ msgstr "E-Mail-Versand aktivieren"
 
 #: app/templates/settings.html:245
 msgid "When off, both manual \"Send Now\" and the auto-schedule will do nothing."
-msgstr "Wenn deaktiviert, bewirken weder \"Jetzt senden\" noch der automatische Zeitplan etwas."
+msgstr ""
+"Wenn deaktiviert, bewirken weder \"Jetzt senden\" noch der automatische "
+"Zeitplan etwas."
 
 #: app/templates/settings.html:255
 msgid "Debug mode — log runs to DB and show errors in the UI"
-msgstr "Debug-Modus — Läufe in DB protokollieren und Fehler in der Oberfläche anzeigen"
+msgstr ""
+"Debug-Modus — Läufe in DB protokollieren und Fehler in der Oberfläche "
+"anzeigen"
 
 #: app/templates/settings.html:259
 msgid ""
@@ -1272,7 +1313,9 @@ msgstr "Artikelnamen"
 
 #: app/templates/settings.html:448
 msgid "These appear as autocomplete suggestions in expense item name fields."
-msgstr "Diese erscheinen als Autovervollständigungs-Vorschläge in Artikelnamen-Feldern."
+msgstr ""
+"Diese erscheinen als Autovervollständigungs-Vorschläge in Artikelnamen-"
+"Feldern."
 
 #: app/templates/settings.html:451
 msgid "New item name"
@@ -1373,7 +1416,9 @@ msgstr "Preise"
 
 #: app/templates/settings.html:576
 msgid "These appear as autocomplete suggestions in the expense item price fields."
-msgstr "Diese erscheinen als Autovervollständigungs-Vorschläge in Artikelpreis-Feldern."
+msgstr ""
+"Diese erscheinen als Autovervollständigungs-Vorschläge in Artikelpreis-"
+"Feldern."
 
 #: app/templates/settings.html:579
 #, python-format
@@ -1467,7 +1512,9 @@ msgstr "Das gesamte Debug-Log löschen?"
 
 #: app/templates/settings.html:793
 msgid "No log entries yet. Run auto-collect to generate log entries."
-msgstr "Noch keine Logeinträge. Auto-Sammlung ausführen, um Logeinträge zu erzeugen."
+msgstr ""
+"Noch keine Logeinträge. Auto-Sammlung ausführen, um Logeinträge zu "
+"erzeugen."
 
 #: app/templates/settings.html:808
 msgid "Backups"
@@ -1504,7 +1551,9 @@ msgstr "%(filename)s löschen?"
 
 #: app/templates/settings.html:862
 msgid "No backups yet. Click \"Create Backup Now\" to create your first one."
-msgstr "Noch keine Backups. Klicke auf \"Jetzt Backup erstellen\" für dein erstes Backup."
+msgstr ""
+"Noch keine Backups. Klicke auf \"Jetzt Backup erstellen\" für dein erstes"
+" Backup."
 
 #: app/templates/settings.html:873
 msgid "Upload Backup"
@@ -1565,10 +1614,6 @@ msgstr "Backups (ältere werden automatisch gelöscht)"
 #: app/templates/settings.html:998
 msgid "Backups run"
 msgstr "Backups laufen"
-
-#: app/templates/settings.html:1007
-msgid "Save Schedule"
-msgstr "Zeitplan speichern"
 
 #: app/templates/settings.html:1016
 msgid "Backup Debug Log"
@@ -1683,7 +1728,9 @@ msgstr "E-Mail-Adressen in der Zusammenfassungstabelle anzeigen"
 
 #: app/templates/settings.html:1216
 msgid "When off, only names and balances are shown. Default: off."
-msgstr "Wenn deaktiviert, werden nur Namen und Salden angezeigt. Standard: deaktiviert."
+msgstr ""
+"Wenn deaktiviert, werden nur Namen und Salden angezeigt. Standard: "
+"deaktiviert."
 
 #: app/templates/settings.html:1224
 msgid "Backup Status Email"
@@ -1719,7 +1766,9 @@ msgstr "Aus Design generieren"
 
 #: app/templates/settings.html:1281
 msgid "Uses current navbar color as background with the bank silhouette in white."
-msgstr "Verwendet die aktuelle Navigationsfarbe als Hintergrund mit der Bank-Silhouette in Weiß."
+msgstr ""
+"Verwendet die aktuelle Navigationsfarbe als Hintergrund mit der Bank-"
+"Silhouette in Weiß."
 
 #: app/templates/settings.html:1286
 msgid "Regenerate with Navbar Color"
@@ -1907,3 +1956,4 @@ msgstr "Zurück zur Übersicht"
 #: app/templates/user_detail.html:156
 msgid "Member since"
 msgstr "Mitglied seit"
+

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 ALLOWED_EXTENSIONS: set[str] = {'png', 'jpg', 'jpeg', 'pdf'}
 
 BACKUP_DIR: str = '/backups'
@@ -92,3 +94,14 @@ TEMPLATE_DEFAULTS_DE: dict[str, str] = {
 }
 
 DEFAULT_ICON_BG: str = '#7f8dbb'
+
+
+def db_env() -> dict[str, str]:
+    """Database connection settings from the environment (app, backup and restore share these)."""
+    return {
+        'user':     os.environ.get('DB_USER', ''),
+        'password': os.environ.get('DB_PASSWORD', ''),
+        'host':     os.environ.get('DB_HOST', 'localhost'),
+        'port':     os.environ.get('DB_PORT', '3306'),
+        'name':     os.environ.get('DB_NAME', 'bank_of_tina'),
+    }
