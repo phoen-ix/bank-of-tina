@@ -17,7 +17,7 @@ from flask_babel import gettext as _
 
 from extensions import db
 from models import BackupLog
-from helpers import get_setting, get_tpl, apply_template, now_local
+from helpers import get_setting, get_tpl, apply_template, now_local, prune_log
 from config import BACKUP_DIR, db_env
 
 logger = logging.getLogger(__name__)
@@ -32,6 +32,8 @@ BACKUP_FILENAME_RE: re.Pattern[str] = re.compile(r'^bot_backup_[\d_-]+\.tar\.gz$
 
 def _backup_log(level: str, message: str) -> None:
     db.session.add(BackupLog(level=level, message=message))
+    db.session.flush()
+    prune_log(BackupLog)
     db.session.commit()
 
 

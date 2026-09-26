@@ -13,7 +13,8 @@ from flask_babel import gettext as _
 
 from extensions import db
 from models import User, Transaction, EmailLog
-from helpers import get_setting, get_tpl, apply_template, fmt_amount, now_local, local_day_start_utc
+from helpers import (get_setting, get_tpl, apply_template, fmt_amount, now_local, local_day_start_utc,
+                     prune_log)
 
 logger = logging.getLogger(__name__)
 
@@ -298,12 +299,7 @@ def send_all_emails() -> tuple[int, int, list[str]]:
     if debug:
         db.session.add(EmailLog(level='INFO', recipient=None,
                                 message=f'Run complete: {success} sent, {fail} failed'))
-        db.session.commit()
-        oldest_kept = db.session.execute(
-            db.select(EmailLog).order_by(EmailLog.id.desc()).offset(500)
-        ).scalar()
-        if oldest_kept:
-            db.session.execute(db.delete(EmailLog).where(EmailLog.id <= oldest_kept.id))
+        prune_log(EmailLog)
         db.session.commit()
 
     logger.info('Email batch complete: %d sent, %d failed', success, fail)

@@ -127,22 +127,11 @@
                     <div class="mb-4">
                       <label class="form-label">{{ _('Currency symbol') }}</label>
                       <select class="form-select w-auto" name="currency_symbol">
-                        {% set currencies = [
-                            ('€', 'Euro — €'),
-                            ('$', 'US Dollar — $'),
-                            ('£', 'British Pound — £'),
-                            ('¥', 'Yen / Yuan — ¥'),
-                            ('Fr', 'Swiss Franc — Fr'),
-                            ('kr', 'Krone — kr'),
-                            ('₹', 'Indian Rupee — ₹'),
-                            ('A$', 'Australian Dollar — A$'),
-                            ('C$', 'Canadian Dollar — C$'),
-                            ('zł', 'Polish Złoty — zł'),
-                            ('R$', 'Brazilian Real — R$'),
-                            ('₪', 'Israeli Shekel — ₪'),
-                        ] %}
-                        {% for val, label in currencies %}
-                          <option value="{{ val }}" {% if cfg.currency_symbol == val %}selected{% endif %}>{{ label }}</option>
+                        {% if cfg.currency_symbol not in currencies|map('first') %}
+                          <option value="{{ cfg.currency_symbol }}" selected>{{ cfg.currency_symbol }}</option>
+                        {% endif %}
+                        {% for val, name in currencies %}
+                          <option value="{{ val }}" {% if cfg.currency_symbol == val %}selected{% endif %}>{{ name }} — {{ val }}</option>
                         {% endfor %}
                       </select>
                       <div class="form-text">{{ _('Symbol shown before all monetary amounts.') }}</div>
@@ -164,9 +153,10 @@
                         <label for="site_admin_id" class="form-label">{{ _('Site Admin') }}</label>
                         <select class="form-select" id="site_admin_id" name="site_admin_id" style="max-width: 300px">
                             <option value="">{{ _('— None —') }}</option>
-                            {% for user in all_users if user.is_active %}
+                            {# Keep a deactivated admin listed, or saving this form would silently clear it. #}
+                            {% for user in all_users if user.is_active or cfg.site_admin_id == user.id|string %}
                             <option value="{{ user.id }}" {% if cfg.site_admin_id == user.id|string %}selected{% endif %}>
-                                {{ user.name }} ({{ user.email }})
+                                {{ user.name }} ({{ user.email }}){% if not user.is_active %} — {{ _('inactive') }}{% endif %}
                             </option>
                             {% endfor %}
                         </select>

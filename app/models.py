@@ -3,7 +3,16 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from decimal import Decimal
 
+from sqlalchemy.orm import validates
+
 from extensions import db
+
+
+def _fit(model: db.Model, key: str, value: str | None) -> str | None:
+    """Clip a log string to its column length (MariaDB strict mode rejects longer values)."""
+    if value is None:
+        return None
+    return value[:type(model).__table__.c[key].type.length]
 
 
 class User(db.Model):
@@ -133,6 +142,10 @@ class AutoCollectLog(db.Model):
     category = db.Column(db.String(20), nullable=False)
     message = db.Column(db.String(500), nullable=False)
 
+    @validates('message')
+    def _fit_message(self, key: str, value: str) -> str | None:
+        return _fit(self, key, value)
+
 
 class EmailLog(db.Model):
     id: int
@@ -147,6 +160,10 @@ class EmailLog(db.Model):
     recipient = db.Column(db.String(200))
     message = db.Column(db.String(500), nullable=False)
 
+    @validates('recipient', 'message')
+    def _fit_text(self, key: str, value: str | None) -> str | None:
+        return _fit(self, key, value)
+
 
 class BackupLog(db.Model):
     id: int
@@ -158,3 +175,7 @@ class BackupLog(db.Model):
     ran_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC).replace(tzinfo=None))
     level = db.Column(db.String(10), nullable=False)
     message = db.Column(db.String(500), nullable=False)
+
+    @validates('message')
+    def _fit_message(self, key: str, value: str) -> str | None:
+        return _fit(self, key, value)

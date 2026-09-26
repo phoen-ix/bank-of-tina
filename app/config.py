@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import os
 
+from flask_babel import lazy_gettext
+
 ALLOWED_EXTENSIONS: set[str] = {'png', 'jpg', 'jpeg', 'pdf'}
 
 BACKUP_DIR: str = '/backups'
@@ -94,6 +96,27 @@ TEMPLATE_DEFAULTS_DE: dict[str, str] = {
 }
 
 DEFAULT_ICON_BG: str = '#7f8dbb'
+
+# (symbol, name) choices for the currency_symbol setting.
+CURRENCIES = [
+    ('€', lazy_gettext('Euro')),
+    ('$', lazy_gettext('US Dollar')),
+    ('£', lazy_gettext('British Pound')),
+    ('¥', lazy_gettext('Yen / Yuan')),
+    ('Fr', lazy_gettext('Swiss Franc')),
+    ('kr', lazy_gettext('Krone')),
+    ('₹', lazy_gettext('Indian Rupee')),
+    ('A$', lazy_gettext('Australian Dollar')),
+    ('C$', lazy_gettext('Canadian Dollar')),
+    ('zł', lazy_gettext('Polish Złoty')),
+    ('R$', lazy_gettext('Brazilian Real')),
+    ('₪', lazy_gettext('Israeli Shekel')),
+]
+
+# Values the schedule "day" dropdowns offer (APScheduler day_of_week).
+CRON_DAYS: set[str] = {'*', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'}
+
+LOG_KEEP: int = 500
 
 
 def db_env() -> dict[str, str]:

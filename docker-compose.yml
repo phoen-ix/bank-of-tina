@@ -39,6 +39,7 @@ services:
       - DB_USER=${DB_USER:-tina}
       - DB_PASSWORD=${DB_PASSWORD:?Set DB_PASSWORD in .env}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - BEHIND_PROXY=${BEHIND_PROXY:-0}
     depends_on:
       db:
         condition: service_healthy

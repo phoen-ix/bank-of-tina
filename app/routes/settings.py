@@ -16,8 +16,9 @@ from extensions import db, scheduler, limiter
 from models import (User, CommonItem, CommonDescription, CommonPrice, CommonBlacklist,
                     AutoCollectLog, EmailLog, BackupLog)
 from helpers import (get_setting, set_setting, delete_setting, get_tpl, parse_amount, fmt_amount,
-                     detect_theme, generate_and_save_icons, now_local)
-from config import THEMES, TEMPLATE_DEFAULTS, TEMPLATE_DEFAULTS_DE, BACKUP_DIR, DEFAULT_ICON_BG
+                     detect_theme, generate_and_save_icons, now_local, InputError)
+from config import (THEMES, TEMPLATE_DEFAULTS, TEMPLATE_DEFAULTS_DE, BACKUP_DIR, DEFAULT_ICON_BG,
+                    CURRENCIES, CRON_DAYS)
 from email_service import send_all_emails, build_email_html, build_admin_summary_email
 from backup_service import (run_backup, run_restore, assemble_upload, sweep_stale_uploads,
                             _list_backups, build_backup_status_email,
@@ -30,6 +31,12 @@ logger = logging.getLogger(__name__)
 settings_bp = Blueprint('settings_bp', __name__)
 
 UPLOAD_ID_RE: re.Pattern[str] = re.compile(r'^[a-f0-9\-]{36}$')
+
+
+def _cron_day(field: str, default: str) -> str:
+    """A schedule day from the form; unknown values would make APScheduler raise."""
+    day = request.form.get(field, default)
+    return day if day in CRON_DAYS else default
 
 
 @settings_bp.route('/settings')
@@ -110,13 +117,17 @@ def settings() -> str:
                            common_blacklist=common_blacklist, auto_collect_logs=auto_collect_logs,
                            email_logs=email_logs, backup_logs=backup_logs, backups=backups,
                            all_users=all_users, timezone_groups=timezone_groups,
-                           themes=THEMES, current_theme=detect_theme())
+                           themes=THEMES, current_theme=detect_theme(), currencies=CURRENCIES)
 
 
 @settings_bp.route('/settings/email', methods=['POST'])
 def settings_email() -> Response:
+    port = request.form.get('smtp_port', '587').strip()
+    if not (port.isdigit() and 0 < int(port) < 65536):
+        flash(_('SMTP port must be a number between 1 and 65535.'), 'error')
+        return redirect(url_for('settings_bp.settings'))
     set_setting('smtp_server',   request.form.get('smtp_server', '').strip())
-    set_setting('smtp_port',     request.form.get('smtp_port', '587').strip())
+    set_setting('smtp_port',     port)
     set_setting('smtp_username', request.form.get('smtp_username', '').strip())
     set_setting('from_email',    request.form.get('from_email', '').strip())
     set_setting('from_name',     request.form.get('from_name', '').strip())
@@ -155,7 +166,7 @@ def settings_email_clear_log() -> Response:
 @settings_bp.route('/settings/schedule', methods=['POST'])
 def settings_schedule() -> Response:
     enabled = '1' if request.form.get('schedule_enabled') else '0'
-    day    = request.form.get('schedule_day', 'mon')
+    day    = _cron_day('schedule_day', 'mon')
     try:
         hour   = str(max(0, min(23, int(request.form.get('schedule_hour',   '9')))))
         minute = str(max(0, min(59, int(request.form.get('schedule_minute', '0')))))
@@ -205,7 +216,9 @@ def settings_general() -> Response:
     if sep not in ('.', ','):
         sep = '.'
     set_setting('decimal_separator', sep)
-    set_setting('currency_symbol', request.form.get('currency_symbol', '\u20ac'))
+    currency = request.form.get('currency_symbol', '')
+    if currency in {sym for sym, _name in CURRENCIES}:
+        set_setting('currency_symbol', currency)
     set_setting('show_email_on_dashboard', '1' if request.form.get('show_email_on_dashboard') else '0')
     flash(_('General settings saved.'), 'success')
     return redirect(url_for('settings_bp.settings'))
@@ -284,8 +297,8 @@ def delete_common_description(item_id: int) -> Response:
 @settings_bp.route('/settings/common-prices/add', methods=['POST'])
 def add_common_price() -> Response:
     try:
-        value = parse_amount(request.form.get('value', ''))
-    except (ValueError, TypeError):
+        value = parse_amount(request.form.get('value', ''), positive=True)
+    except InputError:
         flash(_('Valid price is required.'), 'error')
         return redirect(url_for('settings_bp.settings'))
     if not db.session.execute(db.select(CommonPrice).filter_by(value=value)).scalar():
@@ -312,6 +325,13 @@ def add_common_blacklist() -> Response:
     if bl_type not in ('item', 'description', 'price') or not value:
         flash(_('Invalid blacklist entry.'), 'error')
         return redirect(url_for('settings_bp.settings'))
+    if bl_type == 'price':
+        # Stored like auto-collect compares it: '3,5' -> '3.50'.
+        try:
+            value = f'{parse_amount(value, positive=True):.2f}'
+        except InputError:
+            flash(_('Valid price is required.'), 'error')
+            return redirect(url_for('settings_bp.settings'))
     if not db.session.execute(db.select(CommonBlacklist).filter_by(type=bl_type, value=value)).scalar():
         db.session.add(CommonBlacklist(type=bl_type, value=value))
         db.session.commit()
@@ -341,7 +361,7 @@ def settings_common() -> Response:
 def settings_common_auto() -> Response:
     enabled = '1' if request.form.get('common_auto_enabled') else '0'
     debug   = '1' if request.form.get('common_auto_debug')   else '0'
-    day     = request.form.get('common_auto_day', '*')
+    day     = _cron_day('common_auto_day', '*')
     try:
         hour   = str(max(0, min(23, int(request.form.get('common_auto_hour',   '2')))))
         minute = str(max(0, min(59, int(request.form.get('common_auto_minute', '0')))))
@@ -537,7 +557,7 @@ def preview_backup() -> str:
 def settings_backup() -> Response:
     enabled = '1' if request.form.get('backup_enabled') else '0'
     debug   = '1' if request.form.get('backup_debug')   else '0'
-    day     = request.form.get('backup_day', '*')
+    day     = _cron_day('backup_day', '*')
     try:
         hour   = str(max(0, min(23, int(request.form.get('backup_hour',   '3')))))
         minute = str(max(0, min(59, int(request.form.get('backup_minute', '0')))))

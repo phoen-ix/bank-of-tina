@@ -13,4 +13,7 @@ db: SQLAlchemy = SQLAlchemy()
 csrf: CSRFProtect = CSRFProtect()
 migrate: Migrate = Migrate()
 limiter: Limiter = Limiter(key_func=get_remote_address, storage_uri="memory://", default_limits=[])
-scheduler: BackgroundScheduler = BackgroundScheduler(daemon=True)
+# A job that couldn't start on time (busy worker, restart) still runs within the
+# hour, and a backlog of missed runs collapses into one.
+scheduler: BackgroundScheduler = BackgroundScheduler(
+    daemon=True, job_defaults={'misfire_grace_time': 3600, 'coalesce': True})

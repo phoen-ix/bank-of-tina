@@ -19,7 +19,7 @@ from werkzeug.utils import secure_filename
 
 from extensions import db
 from models import Setting, Transaction, User
-from config import ALLOWED_EXTENSIONS, TEMPLATE_DEFAULTS, TEMPLATE_DEFAULTS_DE
+from config import ALLOWED_EXTENSIONS, TEMPLATE_DEFAULTS, TEMPLATE_DEFAULTS_DE, LOG_KEEP
 
 _CENT = Decimal('0.01')
 # Numeric(12, 2): ten digits before the decimal point.
@@ -124,6 +124,15 @@ def delete_setting(key: str, commit: bool = True) -> None:
         db.session.commit()
 
 
+def prune_log(model: type[db.Model], keep: int = LOG_KEEP) -> None:
+    """Delete all but the newest `keep` rows of a log table. Does not commit."""
+    oldest_kept = db.session.execute(
+        db.select(model.id).order_by(model.id.desc()).offset(keep - 1).limit(1)
+    ).scalar()
+    if oldest_kept is not None:
+        db.session.execute(db.delete(model).where(model.id < oldest_kept))
+
+
 def now_local() -> datetime:
     """Return the current datetime in the configured app timezone."""
     tz_name = get_setting('timezone', 'UTC')
@@ -162,10 +171,10 @@ def parse_amount(s: str | None, positive: bool = False) -> Decimal:
     Empty input is 0. Raises AmountError for anything else (including NaN,
     Infinity and exponents), and for values <= 0 when `positive` is set.
     """
-    if s is None:
-        return Decimal('0')
-    cleaned = str(s).strip().replace(' ', '').replace('\u00a0', '')
+    cleaned = '' if s is None else str(s).strip().replace(' ', '').replace('\u00a0', '')
     if not cleaned:
+        if positive:
+            raise AmountError(_('Amounts must be greater than zero.'))
         return Decimal('0')
     if ',' in cleaned and '.' in cleaned:
         if cleaned.rfind(',') > cleaned.rfind('.'):

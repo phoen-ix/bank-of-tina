@@ -47,6 +47,11 @@ class DecimalJSONProvider(DefaultJSONProvider):
 
 
 app = Flask(__name__)
+if os.environ.get('BEHIND_PROXY') == '1':
+    # Trust one reverse proxy's X-Forwarded-* headers so rate limits and
+    # redirects see the real client address and host.
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
 _secret = os.environ.get('SECRET_KEY', '')
 if not _secret or _secret == 'change-this-to-a-random-secret-key':
@@ -69,6 +74,8 @@ if not _db_uri:
                          host=_db['host'], port=int(_db['port']), database=_db['name'])
 app.config['SQLALCHEMY_DATABASE_URI'] = _db_uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# MariaDB drops idle connections after wait_timeout; test before reuse.
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_pre_ping': True, 'pool_recycle': 3600}
 app.config['UPLOAD_FOLDER'] = '/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
 

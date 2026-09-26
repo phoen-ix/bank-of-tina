@@ -60,7 +60,8 @@ def test_deposit_input_errors_do_not_500(client, app, make_user):
         for data in ({'user_id': ''}, {'user_id': 'x'}, {'user_id': '999'},
                      {'user_id': str(user.id), 'amount': 'NaN'},
                      {'user_id': str(user.id), 'amount': '-5'},
-                     {'user_id': str(user.id), 'amount': '1e9'}):
+                     {'user_id': str(user.id), 'amount': '1e9'},
+                     {'user_id': str(user.id), 'amount': ''}):
             response = client.post('/transaction/add', data={'transaction_type': 'deposit', 'amount': '5', **data})
             assert response.status_code == 302, data
         assert _balance(user.id) == Decimal('0')

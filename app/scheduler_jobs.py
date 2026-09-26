@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from decimal import Decimal
 
 import pytz
 from flask import Flask
@@ -11,7 +12,7 @@ from flask_babel import force_locale
 from extensions import db, scheduler
 from models import (User, Transaction, ExpenseItem, CommonItem, CommonDescription,
                     CommonPrice, CommonBlacklist, AutoCollectLog)
-from helpers import get_setting, get_tpl, apply_template, now_local
+from helpers import get_setting, get_tpl, apply_template, now_local, parse_amount, prune_log, InputError
 from email_service import send_all_emails, send_single_email
 from backup_service import run_backup, _prune_old_backups, _list_backups, build_backup_status_email
 
@@ -37,6 +38,14 @@ def _add_email_job(app: Flask) -> None:
     scheduler.add_job(job, 'cron', day_of_week=day, hour=hour, minute=minute,
                       timezone=tz, id='email_job', replace_existing=True)
     logger.info('Email job scheduled: day=%s hour=%s minute=%s tz=%s', day, hour, minute, tz_name)
+
+
+def _price_key(value: str) -> str:
+    """Normalize a stored price ('3,5', '3.50') to the '3.50' form used for comparison."""
+    try:
+        return f'{parse_amount(value):.2f}'
+    except InputError:
+        return value
 
 
 def auto_collect_common() -> None:
@@ -84,36 +93,31 @@ def auto_collect_common() -> None:
 
     if get_setting('common_prices_auto', '0') == '1':
         threshold = int(get_setting('common_prices_threshold', '5'))
-        blacklisted = {b.value for b in db.session.execute(db.select(CommonBlacklist).filter_by(type='price')).scalars().all()}
+        blacklisted = {_price_key(b.value) for b in db.session.execute(db.select(CommonBlacklist).filter_by(type='price')).scalars().all()}
+        sym = get_setting('currency_symbol', '\u20ac')
         rows = db.session.execute(db.select(ExpenseItem.price, func.count(ExpenseItem.id))
                           .group_by(ExpenseItem.price)
                           .having(func.count(ExpenseItem.id) >= threshold)).all()
         for price, _ in rows:
-            price_str = f"{price:.2f}"
+            price_str = f"{Decimal(str(price)):.2f}"
             if price_str in blacklisted:
                 if debug:
                     db.session.add(AutoCollectLog(level='SKIP', category='price',
-                                                  message=f'\u20ac{price_str} (blacklist)'))
+                                                  message=f'{sym}{price_str} (blacklist)'))
                 skip_count += 1
             elif not db.session.execute(db.select(CommonPrice).filter_by(value=price)).scalar():
                 db.session.add(CommonPrice(value=price))
                 if debug:
                     db.session.add(AutoCollectLog(level='ADDED', category='price',
-                                                  message=f'Added \u20ac{price_str}'))
+                                                  message=f'Added {sym}{price_str}'))
                 added_count += 1
 
     if debug:
         db.session.add(AutoCollectLog(level='INFO', category='system',
                                       message=f'Run complete: {added_count} added, {skip_count} skipped'))
+        db.session.flush()
+        prune_log(AutoCollectLog)
     db.session.commit()
-
-    if debug:
-        oldest_kept = db.session.execute(
-            db.select(AutoCollectLog).order_by(AutoCollectLog.id.desc()).offset(500)
-        ).scalar()
-        if oldest_kept:
-            db.session.execute(db.delete(AutoCollectLog).where(AutoCollectLog.id <= oldest_kept.id))
-        db.session.commit()
 
 
 def _add_common_job(app: Flask) -> None:
@@ -172,12 +176,16 @@ def _add_backup_job(app: Flask) -> None:
 
 
 def _restore_schedule(app: Flask) -> None:
-    if get_setting('schedule_enabled') == '1':
-        _add_email_job(app)
-    if get_setting('common_auto_enabled', '0') == '1':
-        _add_common_job(app)
-    if get_setting('backup_enabled', '0') == '1':
-        _add_backup_job(app)
+    """Add the enabled jobs. A job with broken settings is logged and skipped so it
+    cannot keep the app from starting."""
+    for enabled_key, add_job in (('schedule_enabled', _add_email_job),
+                                 ('common_auto_enabled', _add_common_job),
+                                 ('backup_enabled', _add_backup_job)):
+        if get_setting(enabled_key, '0') == '1':
+            try:
+                add_job(app)
+            except Exception:
+                logger.exception('Could not schedule %s', add_job.__name__)
 
 
 def reschedule_all(app: Flask) -> None:

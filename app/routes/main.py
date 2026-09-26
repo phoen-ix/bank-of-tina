@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 from collections import defaultdict
 from datetime import datetime, timedelta
 from decimal import Decimal
@@ -24,6 +25,8 @@ main_bp = Blueprint('main', __name__)
 
 VALID_EMAIL_TX: set[str] = {'none', 'last3', 'this_week', 'this_month'}
 DESCRIPTION_MAX = 500   # Transaction.description
+USER_FIELD_MAX = 100    # User.name / User.email
+EMAIL_RE = re.compile(r'[^@\s]+@[^@\s]+\.[^@\s]+')
 ITEM_NAME_MAX = 200     # ExpenseItem.item_name
 
 
@@ -119,19 +122,35 @@ def index() -> str:
                            show_email=show_email)
 
 
+def _user_form_error(name: str, email: str, user_id: int | None = None) -> str | None:
+    """Validation message for the add/edit user forms, or None when valid."""
+    if not name or not email:
+        return _('Name and email are required!')
+    if len(name) > USER_FIELD_MAX or len(email) > USER_FIELD_MAX:
+        return _('Name and email can be at most %(max)d characters.', max=USER_FIELD_MAX)
+    if not EMAIL_RE.fullmatch(email):
+        return _('Please enter a valid email address.')
+    others = db.select(User.id)
+    if user_id is not None:
+        others = others.where(User.id != user_id)
+    # Case-insensitive, like MariaDB's default collation on the unique indexes.
+    if db.session.execute(others.where(db.func.lower(User.name) == name.lower())).first():
+        return _('Another user with that name already exists!')
+    if db.session.execute(others.where(db.func.lower(User.email) == email.lower())).first():
+        return _('Another user with that email already exists!')
+    return None
+
+
 @main_bp.route('/user/add', methods=['POST'])
 @limiter.limit("10/minute")
 def add_user() -> Response:
-    name = request.form.get('name')
-    email = request.form.get('email')
+    name = request.form.get('name', '').strip()
+    email = request.form.get('email', '').strip()
 
-    if not name or not email:
-        flash(_('Name and email are required!'), 'error')
-        return redirect(url_for('settings_bp.settings'))
-
-    if db.session.execute(db.select(User).filter_by(name=name)).scalar():
-        flash(_('User already exists!'), 'error')
-        return redirect(url_for('settings_bp.settings'))
+    error = _user_form_error(name, email)
+    if error:
+        flash(error, 'error')
+        return redirect(url_for('settings_bp.settings', tab='users'))
 
     email_opt_in = request.form.get('email_opt_in') == '1'
     email_transactions = request.form.get('email_transactions', 'last3')
@@ -145,7 +164,7 @@ def add_user() -> Response:
     db.session.commit()
     logger.info('User created: id=%s name=%s', user.id, name)
     flash(_('User %(name)s added successfully!', name=name), 'success')
-    return redirect(url_for('settings_bp.settings'))
+    return redirect(url_for('settings_bp.settings', tab='users'))
 
 
 @main_bp.route('/user/<int:user_id>/edit', methods=['POST'])
@@ -155,18 +174,9 @@ def edit_user(user_id: int) -> Response:
     email = request.form.get('email', '').strip()
     created_at_str = request.form.get('created_at', '').strip()
 
-    if not name or not email or not created_at_str:
-        flash(_('All fields are required!'), 'error')
-        return redirect(url_for('main.user_detail', user_id=user_id))
-
-    existing = db.session.execute(db.select(User).where(User.name == name, User.id != user_id)).scalar()
-    if existing:
-        flash(_('Another user with that name already exists!'), 'error')
-        return redirect(url_for('main.user_detail', user_id=user_id))
-
-    existing_email = db.session.execute(db.select(User).where(User.email == email, User.id != user_id)).scalar()
-    if existing_email:
-        flash(_('Another user with that email already exists!'), 'error')
+    error = _user_form_error(name, email, user_id) or (None if created_at_str else _('All fields are required!'))
+    if error:
+        flash(error, 'error')
         return redirect(url_for('main.user_detail', user_id=user_id))
 
     try:
@@ -487,7 +497,9 @@ def pwa_manifest() -> Response:
 
 @main_bp.route('/transaction/<int:transaction_id>/edit', methods=['GET', 'POST'])
 def edit_transaction(transaction_id: int) -> str | Response:
-    trans = db.session.get(Transaction, transaction_id) or abort(404)
+    # Row lock on POST: a double-submitted edit must not reverse the old amount twice.
+    trans = db.session.get(Transaction, transaction_id,
+                           with_for_update=True if request.method == 'POST' else None) or abort(404)
     users = db.session.execute(db.select(User).order_by(User.name)).scalars().all()
 
     if request.method == 'GET':
@@ -552,7 +564,7 @@ def edit_transaction(transaction_id: int) -> str | Response:
 
 @main_bp.route('/transaction/<int:transaction_id>/delete', methods=['POST'])
 def delete_transaction(transaction_id: int) -> Response:
-    trans = db.session.get(Transaction, transaction_id) or abort(404)
+    trans = db.session.get(Transaction, transaction_id, with_for_update=True) or abort(404)
     receipt_path, back = trans.receipt_path, _month_url(trans.date)
 
     apply_balance_effect(trans, reverse=True)

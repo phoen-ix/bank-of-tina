@@ -40,5 +40,6 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 # Entrypoint fixes bind-mount ownership then drops to appuser
 ENTRYPOINT ["/entrypoint.sh"]
 
-# Run with gunicorn for production
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--timeout", "300", "app:app"]
+# Run with gunicorn for production. One process (APScheduler must exist once);
+# threads keep the app responsive while a backup or email run is in progress.
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--threads", "4", "--timeout", "300", "app:app"]
