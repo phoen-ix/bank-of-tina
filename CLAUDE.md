@@ -12,7 +12,7 @@ Self-hosted Flask/MariaDB web app for tracking shared expenses and balances with
 
 | Layer | Technology |
 |-------|-----------|
-| Backend | Python 3.11, Flask 3.0, Flask-SQLAlchemy 3.1, Flask-Babel 4.0 |
+| Backend | Python 3.14, Flask 3.1, Flask-SQLAlchemy 3.1, Flask-Babel 4.0 |
 | Database | MariaDB 12.3 (via PyMySQL) |
 | ORM | SQLAlchemy with Flask-Migrate (Alembic) for schema migrations |
 | Monetary types | `Decimal` / `db.Numeric(12, 2)` everywhere (no floats) |
