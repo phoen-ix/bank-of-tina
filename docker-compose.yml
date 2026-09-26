@@ -1,6 +1,6 @@
 services:
   db:
-    image: mariadb:11
+    image: mariadb:12.3
     container_name: bank-of-tina-db
     restart: unless-stopped
     environment:
@@ -8,6 +8,8 @@ services:
       MYSQL_DATABASE:      ${DB_NAME:-bank_of_tina}
       MYSQL_USER:          ${DB_USER:-tina}
       MYSQL_PASSWORD:      ${DB_PASSWORD:-tina}
+      # Upgrade an existing data directory in place when the image moves to a newer major (dump first).
+      MARIADB_AUTO_UPGRADE: "1"
     volumes:
       - ./mariadb-data:/var/lib/mysql
     healthcheck:

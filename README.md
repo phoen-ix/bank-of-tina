@@ -305,6 +305,9 @@ bank-of-tina/
 
 ## 🔧 Wartung
 
+### MariaDB-Upgrade
+Der `db`-Service setzt `MARIADB_AUTO_UPGRADE=1`: Beim ersten Start mit einer neueren Major-Version wird `mariadb-data/` automatisch aktualisiert. Vorher ein Backup erstellen (**Einstellungen** → **Backup** oder `docker compose exec db mariadb-dump ...`) — ein Major-Upgrade lässt sich nicht zurückrollen.
+
 ### Health-Check
 ```bash
 curl http://localhost:5000/health
@@ -653,6 +656,9 @@ That's it. SMTP credentials and the email schedule are configured from the **Set
 ---
 
 ## 🔧 Maintenance
+
+### MariaDB upgrades
+The `db` service sets `MARIADB_AUTO_UPGRADE=1`, so the container upgrades `mariadb-data/` in place on its first start with a newer major version. Take a backup first (**Settings** → **Backup**, or `docker compose exec db mariadb-dump ...`) — a major-version upgrade cannot be rolled back.
 
 ### Health check
 ```bash
