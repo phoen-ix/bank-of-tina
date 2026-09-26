@@ -2,22 +2,37 @@ from __future__ import annotations
 
 import os
 import re
+import secrets
 import struct
 import time
 import zlib
-from datetime import UTC, datetime
-from decimal import Decimal, InvalidOperation
+from datetime import UTC, date, datetime, timedelta
+from decimal import ROUND_HALF_UP, Decimal
 
 from urllib.parse import urlsplit
 
 import pytz
 from flask import Response, current_app, g, redirect, request
+from flask_babel import gettext as _
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
 from extensions import db
-from models import Setting, Transaction
-from config import ALLOWED_EXTENSIONS, TEMPLATE_DEFAULTS, TEMPLATE_DEFAULTS_DE, DEFAULT_ICON_BG
+from models import Setting, Transaction, User
+from config import ALLOWED_EXTENSIONS, TEMPLATE_DEFAULTS, TEMPLATE_DEFAULTS_DE
+
+_CENT = Decimal('0.01')
+# Numeric(12, 2): ten digits before the decimal point.
+_MAX_AMOUNT = Decimal('9999999999.99')
+_AMOUNT_RE = re.compile(r'[+-]?(\d+\.?\d*|\.\d+)')
+
+
+class InputError(ValueError):
+    """User input that cannot be accepted; str(e) is a message for the user."""
+
+
+class AmountError(InputError):
+    """An amount that is not a plain number with a finite value."""
 
 
 def allowed_file(filename: str) -> bool:
@@ -25,20 +40,25 @@ def allowed_file(filename: str) -> bool:
 
 
 def save_receipt(file: FileStorage | None, buyer_name: str) -> str | None:
-    """Save an uploaded receipt to UPLOAD_FOLDER/YYYY/MM/DD/BUYER_filename."""
+    """Save an uploaded receipt to UPLOAD_FOLDER/YYYY/MM/DD/Buyer_name_<token>.ext.
+
+    The random token keeps two uploads of e.g. "scan.pdf" on the same day from
+    overwriting each other. Callers validate the extension with allowed_file().
+    """
     if not file or not file.filename or not allowed_file(file.filename):
         return None
 
     safe_buyer = re.sub(r'[^\w]', '_', buyer_name)
     safe_buyer = re.sub(r'_+', '_', safe_buyer).strip('_') or 'unknown'
-    original = secure_filename(file.filename) or 'file'
+    stem, ext = file.filename.rsplit('.', 1)
+    stem = secure_filename(stem) or 'receipt'
 
     now = now_local()
     rel_dir = now.strftime('%Y/%m/%d')
     abs_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], rel_dir)
     os.makedirs(abs_dir, exist_ok=True)
 
-    filename = f"{safe_buyer}_{original}"
+    filename = f"{safe_buyer}_{stem}_{secrets.token_hex(3)}.{ext.lower()}"
     file.save(os.path.join(abs_dir, filename))
     return f"{rel_dir}/{filename}"
 
@@ -62,12 +82,25 @@ def delete_receipt_file(receipt_path: str | None, exclude_transaction_id: int) -
         pass
 
 
-def update_balance(user_id: int, amount: Decimal) -> None:
-    from models import User
-    user = db.session.get(User, user_id)
-    if user:
-        user.balance = Decimal(str(user.balance)) + amount
-        db.session.commit()
+def adjust_balance(user_id: int | None, delta: Decimal) -> None:
+    """Add `delta` to a user's balance with a single SQL UPDATE (no read-modify-write
+    race between concurrent requests). Does not commit."""
+    if user_id is None or not delta:
+        return
+    db.session.execute(
+        db.update(User).where(User.id == user_id)
+        .values(balance=User.balance + delta)
+        .execution_options(synchronize_session='fetch')
+    )
+
+
+def apply_balance_effect(trans: Transaction, reverse: bool = False) -> None:
+    """Apply (or undo) a transaction's effect: from_user pays `amount`, to_user receives it."""
+    amount = Decimal(str(trans.amount))
+    if reverse:
+        amount = -amount
+    adjust_balance(trans.from_user_id, -amount)
+    adjust_balance(trans.to_user_id, amount)
 
 
 def get_setting(key: str, default: str | None = None) -> str | None:
@@ -79,6 +112,14 @@ def set_setting(key: str, value: str, commit: bool = True) -> None:
     s = db.session.get(Setting, key) or Setting(key=key)
     s.value = value
     db.session.add(s)
+    if commit:
+        db.session.commit()
+
+
+def delete_setting(key: str, commit: bool = True) -> None:
+    s = db.session.get(Setting, key)
+    if s:
+        db.session.delete(s)
     if commit:
         db.session.commit()
 
@@ -113,14 +154,34 @@ def apply_template(text: str, **kwargs: str | int | None) -> str:
     return text
 
 
-def parse_amount(s: str | None) -> Decimal:
-    """Parse a user-supplied decimal string, accepting both '.' and ',' as separator."""
+def parse_amount(s: str | None, positive: bool = False) -> Decimal:
+    """Parse a user-supplied amount and round it to cents.
+
+    Accepts '.' or ',' as decimal separator; when both appear, the right-most
+    one is the decimal separator and the other groups thousands ('1.234,56').
+    Empty input is 0. Raises AmountError for anything else (including NaN,
+    Infinity and exponents), and for values <= 0 when `positive` is set.
+    """
     if s is None:
         return Decimal('0')
-    cleaned = str(s).strip().replace(',', '.')
+    cleaned = str(s).strip().replace(' ', '').replace('\u00a0', '')
     if not cleaned:
         return Decimal('0')
-    return Decimal(cleaned)
+    if ',' in cleaned and '.' in cleaned:
+        if cleaned.rfind(',') > cleaned.rfind('.'):
+            cleaned = cleaned.replace('.', '').replace(',', '.')
+        else:
+            cleaned = cleaned.replace(',', '')
+    else:
+        cleaned = cleaned.replace(',', '.')
+    if not _AMOUNT_RE.fullmatch(cleaned):
+        raise AmountError(_('"%(value)s" is not a valid amount.', value=s))
+    value = Decimal(cleaned).quantize(_CENT, rounding=ROUND_HALF_UP)
+    if abs(value) > _MAX_AMOUNT:
+        raise AmountError(_('"%(value)s" is too large.', value=s))
+    if positive and value <= 0:
+        raise AmountError(_('Amounts must be greater than zero.'))
+    return value
 
 
 def fmt_amount(value: Decimal | int | float) -> str:
@@ -211,19 +272,22 @@ def detect_theme() -> str:
     return 'custom'
 
 
-def parse_submitted_date(date_str: str) -> datetime:
-    """Parse a datetime-local string entered in the app timezone and return a naive UTC datetime."""
-    if not date_str:
-        return datetime.now(UTC).replace(tzinfo=None)
+def parse_local_datetime(date_str: str) -> datetime | None:
+    """Parse a datetime-local (or date) string entered in the app timezone into naive UTC.
+
+    Returns None when the string can't be parsed."""
     for fmt in ('%Y-%m-%dT%H:%M', '%Y-%m-%d'):
         try:
-            naive = datetime.strptime(date_str, fmt)
-            tz_name = get_setting('timezone', 'UTC')
-            tz = pytz.timezone(tz_name)
-            return tz.localize(naive).astimezone(pytz.UTC).replace(tzinfo=None)
-        except (ValueError, pytz.exceptions.UnknownTimeZoneError):
+            return local_to_utc(datetime.strptime(date_str, fmt))
+        except ValueError:
             continue
-    return datetime.now(UTC).replace(tzinfo=None)
+    return None
+
+
+def parse_submitted_date(date_str: str) -> datetime:
+    """Like parse_local_datetime(), but falls back to the current time."""
+    parsed = parse_local_datetime(date_str) if date_str else None
+    return parsed or datetime.now(UTC).replace(tzinfo=None)
 
 
 def get_app_tz() -> pytz.BaseTzInfo:
@@ -235,6 +299,27 @@ def get_app_tz() -> pytz.BaseTzInfo:
         except pytz.exceptions.UnknownTimeZoneError:
             g.app_tz = pytz.UTC
     return g.app_tz
+
+
+def local_to_utc(naive_local: datetime) -> datetime:
+    """Interpret a naive datetime in the app timezone and return it as naive UTC."""
+    return get_app_tz().localize(naive_local).astimezone(pytz.UTC).replace(tzinfo=None)
+
+
+def local_day_start_utc(d: date) -> datetime:
+    """Naive UTC instant at which local calendar day `d` begins."""
+    return local_to_utc(datetime.combine(d, datetime.min.time()))
+
+
+def local_days_utc(first: date, last: date) -> tuple[datetime, datetime]:
+    """Half-open UTC range [start, end) covering local days first..last inclusive."""
+    return local_day_start_utc(first), local_day_start_utc(last + timedelta(days=1))
+
+
+def local_month_utc(year: int, month: int) -> tuple[datetime, datetime]:
+    """Half-open UTC range [start, end) covering a local calendar month."""
+    nxt = date(year + 1, 1, 1) if month == 12 else date(year, month + 1, 1)
+    return local_day_start_utc(date(year, month, 1)), local_day_start_utc(nxt)
 
 
 def to_local(dt: datetime | None) -> datetime | None:

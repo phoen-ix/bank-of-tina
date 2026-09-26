@@ -42,6 +42,10 @@ def app():
         'UPLOAD_FOLDER': '/tmp/bot_test_uploads',
     })
     os.makedirs('/tmp/bot_test_uploads', exist_ok=True)
+    # Flask-Limiter reads RATELIMIT_ENABLED in init_app(), which already ran at
+    # import time; without this the suite trips the 30/minute limits.
+    from extensions import limiter
+    limiter.enabled = False
     with _app.app_context():
         _db.create_all()
     # Simulate MariaDB/PyMySQL: coerce all Numeric columns to float on load

@@ -3,18 +3,17 @@ from __future__ import annotations
 import html
 import logging
 import smtplib
-from datetime import datetime, timedelta
+from datetime import timedelta
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-import pytz
 from sqlalchemy.orm import joinedload
 
 from flask_babel import gettext as _
 
 from extensions import db
 from models import User, Transaction, EmailLog
-from helpers import get_setting, get_tpl, apply_template, fmt_amount, now_local
+from helpers import get_setting, get_tpl, apply_template, fmt_amount, now_local, local_day_start_utc
 
 logger = logging.getLogger(__name__)
 
@@ -36,18 +35,12 @@ def build_email_html(user: User) -> str:
         if tx_pref == 'last3':
             recent_transactions = db.session.execute(base_stmt.limit(3)).scalars().all()
         elif tx_pref == 'this_week':
-            local_tz = pytz.timezone(get_setting('timezone', 'UTC'))
-            now_lt = datetime.now(local_tz)
-            week_start = (now_lt - timedelta(days=now_lt.weekday())).replace(
-                            hour=0, minute=0, second=0, microsecond=0)
-            week_start_utc = week_start.astimezone(pytz.UTC).replace(tzinfo=None)
-            recent_transactions = db.session.execute(base_stmt.where(Transaction.date >= week_start_utc)).scalars().all()
+            today = now_local().date()
+            week_start = local_day_start_utc(today - timedelta(days=today.weekday()))
+            recent_transactions = db.session.execute(base_stmt.where(Transaction.date >= week_start)).scalars().all()
         elif tx_pref == 'this_month':
-            local_tz = pytz.timezone(get_setting('timezone', 'UTC'))
-            now_lt = datetime.now(local_tz)
-            month_start = now_lt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-            month_start_utc = month_start.astimezone(pytz.UTC).replace(tzinfo=None)
-            recent_transactions = db.session.execute(base_stmt.where(Transaction.date >= month_start_utc)).scalars().all()
+            month_start = local_day_start_utc(now_local().date().replace(day=1))
+            recent_transactions = db.session.execute(base_stmt.where(Transaction.date >= month_start)).scalars().all()
         else:
             recent_transactions = db.session.execute(base_stmt.limit(3)).scalars().all()
 

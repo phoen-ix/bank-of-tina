@@ -13,15 +13,70 @@ from flask_babel import gettext as _, format_date as babel_format_date
 
 from extensions import db, limiter
 from models import User, Transaction, ExpenseItem
-from helpers import (get_setting, get_tpl, parse_amount, fmt_amount, update_balance,
-                     save_receipt, delete_receipt_file, parse_submitted_date, get_app_tz, to_local,
-                     redirect_back)
+from helpers import (get_setting, get_tpl, parse_amount, fmt_amount, allowed_file,
+                     save_receipt, delete_receipt_file, parse_submitted_date, parse_local_datetime,
+                     to_local, now_local, local_days_utc, local_month_utc, apply_balance_effect,
+                     adjust_balance, redirect_back, InputError)
 
 logger = logging.getLogger(__name__)
 
 main_bp = Blueprint('main', __name__)
 
 VALID_EMAIL_TX: set[str] = {'none', 'last3', 'this_week', 'this_month'}
+DESCRIPTION_MAX = 500   # Transaction.description
+ITEM_NAME_MAX = 200     # ExpenseItem.item_name
+
+
+def _user_id_field(value: object, required: bool = True) -> int | None:
+    """Validate a submitted user id: must refer to an existing user."""
+    if value in (None, ''):
+        if required:
+            raise InputError(_('Please select a user.'))
+        return None
+    try:
+        user_id = int(value)
+    except (TypeError, ValueError):
+        raise InputError(_('Unknown user.')) from None
+    if not db.session.get(User, user_id):
+        raise InputError(_('Unknown user.'))
+    return user_id
+
+
+def _receipt_upload():
+    """The uploaded receipt, None if no file was chosen; rejects unsupported types."""
+    file = request.files.get('receipt')
+    if not file or not file.filename:
+        return None
+    if not allowed_file(file.filename):
+        raise InputError(_('Receipts must be JPG, PNG or PDF files.'))
+    return file
+
+
+def _parse_items(items_json: str, with_debtor: bool) -> list[dict]:
+    """Parse and validate the items_json field of the expense forms."""
+    try:
+        items = json.loads(items_json)
+    except ValueError:
+        raise InputError(_('The item list could not be read.')) from None
+    if not isinstance(items, list):
+        raise InputError(_('The item list could not be read.'))
+    parsed = []
+    for item in items:
+        if not isinstance(item, dict):
+            raise InputError(_('The item list could not be read.'))
+        name = str(item.get('name', '')).strip()[:ITEM_NAME_MAX]
+        if not name:
+            raise InputError(_('Every item needs a name.'))
+        entry = {'name': name, 'price': parse_amount(item.get('price'), positive=True)}
+        if with_debtor:
+            entry['debtor_id'] = _user_id_field(item.get('debtor_id'))
+        parsed.append(entry)
+    return parsed
+
+
+def _month_url(dt: datetime) -> str:
+    local = to_local(dt)
+    return url_for('main.view_transactions', year=local.year, month=local.month)
 
 
 @main_bp.route('/health')
@@ -152,69 +207,56 @@ def add_transaction() -> str | Response:
     if request.method == 'GET':
         users = db.session.execute(db.select(User).filter_by(is_active=True).order_by(User.name)).scalars().all()
         default_item_rows = int(get_setting('default_item_rows', '3'))
-        default_date = datetime.now(get_app_tz()).strftime('%Y-%m-%dT%H:%M')
+        default_date = now_local().strftime('%Y-%m-%dT%H:%M')
         return render_template('add_transaction.html', users=users,
                                default_item_rows=default_item_rows, default_date=default_date)
 
     transaction_type = request.form.get('transaction_type')
     submitted_date = parse_submitted_date(request.form.get('date', ''))
     notes = request.form.get('notes', '').strip() or None
+    description = request.form.get('description', '').strip()[:DESCRIPTION_MAX]
+    sym = get_setting('currency_symbol', '\u20ac')
 
-    if transaction_type == 'deposit':
-        user_id = int(request.form.get('user_id'))
-        amount = parse_amount(request.form.get('amount'))
-        description = request.form.get('description', 'Deposit')
+    try:
+        if transaction_type in ('deposit', 'withdrawal'):
+            user_id = _user_id_field(request.form.get('user_id'))
+            amount = parse_amount(request.form.get('amount'), positive=True)
+            transaction = Transaction(
+                description=description,
+                amount=amount,
+                transaction_type=transaction_type,
+                date=submitted_date,
+                notes=notes,
+            )
+            if transaction_type == 'deposit':
+                transaction.to_user_id = user_id
+                message = _('Deposit of %(sym)s%(amount)s added successfully!', sym=sym, amount=fmt_amount(amount))
+            else:
+                transaction.from_user_id = user_id
+                message = _('Withdrawal of %(sym)s%(amount)s processed successfully!', sym=sym, amount=fmt_amount(amount))
+            db.session.add(transaction)
+            apply_balance_effect(transaction)
+            db.session.commit()
+            logger.info('Transaction created: %s id=%s amount=%s', transaction_type, transaction.id, amount)
+            flash(message, 'success')
 
-        transaction = Transaction(
-            description=description,
-            amount=amount,
-            to_user_id=user_id,
-            transaction_type='deposit',
-            date=submitted_date,
-            notes=notes
-        )
-        db.session.add(transaction)
-        update_balance(user_id, amount)
-        logger.info('Transaction created: deposit id=%s amount=%s', transaction.id, amount)
-        flash(_('Deposit of %(sym)s%(amount)s added successfully!', sym=get_setting("currency_symbol", "\u20ac"), amount=fmt_amount(amount)), 'success')
+        elif transaction_type == 'expense':
+            buyer_id = _user_id_field(request.form.get('buyer_id'))
+            items = _parse_items(request.form.get('items_json') or '[]', with_debtor=True)
+            if not items:
+                raise InputError(_('At least one item is required for an expense.'))
+            receipt = _receipt_upload()
 
-    elif transaction_type == 'withdrawal':
-        user_id = int(request.form.get('user_id'))
-        amount = parse_amount(request.form.get('amount'))
-        description = request.form.get('description', 'Withdrawal')
-
-        transaction = Transaction(
-            description=description,
-            amount=amount,
-            from_user_id=user_id,
-            transaction_type='withdrawal',
-            date=submitted_date,
-            notes=notes
-        )
-        db.session.add(transaction)
-        update_balance(user_id, -amount)
-        logger.info('Transaction created: withdrawal id=%s amount=%s', transaction.id, amount)
-        flash(_('Withdrawal of %(sym)s%(amount)s processed successfully!', sym=get_setting("currency_symbol", "\u20ac"), amount=fmt_amount(amount)), 'success')
-
-    elif transaction_type == 'expense':
-        buyer_id = int(request.form.get('buyer_id'))
-        description = request.form.get('description', 'Expense')
-
-        buyer = db.session.get(User, buyer_id)
-        buyer_name = buyer.name if buyer else 'unknown'
-        receipt_path = save_receipt(request.files.get('receipt'), buyer_name)
-
-        items_data = request.form.get('items_json')
-        if items_data:
-            items = json.loads(items_data)
-
-            debts = {}
+            # The buyer's own items cost nobody anything; one transaction per debtor.
+            debts: dict[int, Decimal] = {}
             for item in items:
-                debtor_id = int(item['debtor_id'])
-                price = parse_amount(item['price'])
-                if debtor_id != buyer_id:
-                    debts[debtor_id] = debts.get(debtor_id, Decimal('0')) + price
+                if item['debtor_id'] != buyer_id:
+                    debts[item['debtor_id']] = debts.get(item['debtor_id'], Decimal('0')) + item['price']
+            if not debts:
+                raise InputError(_('Nobody owes anything: all items belong to the buyer.'))
 
+            buyer = db.session.get(User, buyer_id)
+            receipt_path = save_receipt(receipt, buyer.name)
             for debtor_id, total_amount in debts.items():
                 transaction = Transaction(
                     description=description,
@@ -224,42 +266,41 @@ def add_transaction() -> str | Response:
                     transaction_type='expense',
                     receipt_path=receipt_path,
                     date=submitted_date,
-                    notes=notes
+                    notes=notes,
                 )
                 db.session.add(transaction)
-
-                update_balance(debtor_id, -total_amount)
-                update_balance(buyer_id, total_amount)
-
                 for item in items:
-                    if int(item['debtor_id']) == debtor_id:
-                        expense_item = ExpenseItem(
-                            transaction=transaction,
-                            item_name=item['name'],
-                            price=parse_amount(item['price']),
-                            buyer_id=buyer_id
-                        )
-                        db.session.add(expense_item)
+                    if item['debtor_id'] == debtor_id:
+                        db.session.add(ExpenseItem(transaction=transaction, item_name=item['name'],
+                                                   price=item['price'], buyer_id=buyer_id))
+                adjust_balance(debtor_id, -total_amount)
+                adjust_balance(buyer_id, total_amount)
 
             db.session.commit()
-            logger.info('Transaction created: expense buyer_id=%s', buyer_id)
+            logger.info('Transaction created: expense buyer_id=%s debtors=%s', buyer_id, len(debts))
             flash(_('Expense recorded successfully!'), 'success')
+
         else:
-            flash(_('At least one item is required for an expense.'), 'error')
+            raise InputError(_('Unknown transaction type.'))
+
+    except InputError as e:
+        db.session.rollback()
+        flash(str(e), 'error')
+        return redirect(url_for('main.add_transaction'))
 
     return redirect(url_for('main.index'))
 
 
 @main_bp.route('/transactions')
 def view_transactions() -> str:
-    today = datetime.today()
-    year  = max(2000, min(2100, int(request.args.get('year',  today.year))))
-    month = max(1,    min(12,   int(request.args.get('month', today.month))))
+    today = now_local().date()
+    year  = max(2000, min(2100, request.args.get('year',  today.year,  type=int)))
+    month = max(1,    min(12,   request.args.get('month', today.month, type=int)))
 
-    _, last = cal_mod.monthrange(year, month)
+    start, end = local_month_utc(year, month)
     transactions = db.session.execute(db.select(Transaction).where(
-        Transaction.date >= datetime(year, month, 1),
-        Transaction.date <= datetime(year, month, last, 23, 59, 59),
+        Transaction.date >= start,
+        Transaction.date < end,
     ).order_by(Transaction.date.desc())).scalars().all()
 
     by_day = defaultdict(list)
@@ -272,11 +313,17 @@ def view_transactions() -> str:
     next_month = (month % 12) + 1
     next_year  = year + (1 if month == 12 else 0)
 
-    first = db.session.execute(db.select(Transaction).order_by(Transaction.date.asc())).scalar()
-    start_year = first.date.year if first else today.year
+    first_date = db.session.execute(db.select(db.func.min(Transaction.date))).scalar()
+    start_year = min(to_local(first_date).year, today.year) if first_date else today.year
     year_range = list(range(start_year, today.year + 1))
 
     localized_months = [babel_format_date(datetime(2000, m, 1), 'MMMM') for m in range(1, 13)]
+
+    # Deposits, withdrawals and expenses move money in different directions,
+    # so a single sum over all of them means nothing; total them per type.
+    tx_totals: dict[str, Decimal] = {}
+    for t in transactions:
+        tx_totals[t.transaction_type] = tx_totals.get(t.transaction_type, Decimal('0')) + Decimal(str(t.amount))
 
     return render_template('transactions.html',
         grouped=grouped,
@@ -287,7 +334,7 @@ def view_transactions() -> str:
         is_current_month=(year == today.year and month == today.month),
         year_range=year_range,
         tx_count=len(transactions),
-        tx_total=sum(t.amount for t in transactions),
+        tx_totals=sorted(tx_totals.items()),
         localized_months=localized_months,
     )
 
@@ -326,26 +373,28 @@ def search() -> str:
                 db.or_(Transaction.from_user_id == user_id,
                        Transaction.to_user_id   == user_id)
             )
+        # The form's dates are local calendar days; stored dates are UTC.
         if date_from:
             try:
-                stmt = stmt.where(Transaction.date >= datetime.strptime(date_from, '%Y-%m-%d'))
+                d = datetime.strptime(date_from, '%Y-%m-%d').date()
+                stmt = stmt.where(Transaction.date >= local_days_utc(d, d)[0])
             except ValueError:
                 pass
         if date_to:
             try:
-                dt = datetime.strptime(date_to, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
-                stmt = stmt.where(Transaction.date <= dt)
+                d = datetime.strptime(date_to, '%Y-%m-%d').date()
+                stmt = stmt.where(Transaction.date < local_days_utc(d, d)[1])
             except ValueError:
                 pass
         if amount_min:
             try:
                 stmt = stmt.where(Transaction.amount >= parse_amount(amount_min))
-            except (ValueError, TypeError):
+            except InputError:
                 pass
         if amount_max:
             try:
                 stmt = stmt.where(Transaction.amount <= parse_amount(amount_max))
-            except (ValueError, TypeError):
+            except InputError:
                 pass
         if has_receipt:
             stmt = stmt.where(Transaction.receipt_path.isnot(None),
@@ -444,114 +493,75 @@ def edit_transaction(transaction_id: int) -> str | Response:
     if request.method == 'GET':
         return render_template('edit_transaction.html', trans=trans, users=users)
 
-    old_amount = Decimal(str(trans.amount))
+    # Validate everything before touching balances or items.
+    try:
+        from_id = _user_id_field(request.form.get('from_user_id'), required=False)
+        to_id = _user_id_field(request.form.get('to_user_id'), required=False)
 
-    if trans.from_user_id:
-        old_from = db.session.get(User, trans.from_user_id)
-        if old_from:
-            old_from.balance = Decimal(str(old_from.balance)) + old_amount
-    if trans.to_user_id:
-        old_to = db.session.get(User, trans.to_user_id)
-        if old_to:
-            old_to.balance = Decimal(str(old_to.balance)) - old_amount
+        new_date = trans.date
+        date_str = request.form.get('date', '').strip()
+        if date_str:
+            new_date = parse_local_datetime(date_str)
+            if new_date is None:
+                raise InputError(_('Could not parse the date.'))
 
-    trans.description = request.form.get('description', '').strip()
+        # Blank items_json means the form script did not run: leave items alone.
+        # "[]" means the user removed every item.
+        items_json = request.form.get('items_json', '').strip()
+        new_items = _parse_items(items_json, with_debtor=False) if items_json else None
+        if new_items:
+            amount = sum((i['price'] for i in new_items), Decimal('0'))
+        else:
+            amount = parse_amount(request.form.get('amount'), positive=True)
+        receipt = _receipt_upload()
+    except InputError as e:
+        flash(str(e), 'error')
+        return redirect(url_for('main.edit_transaction', transaction_id=trans.id))
+
+    apply_balance_effect(trans, reverse=True)
+
+    trans.description = request.form.get('description', '').strip()[:DESCRIPTION_MAX]
     trans.notes = request.form.get('notes', '').strip() or None
+    trans.date = new_date
+    trans.from_user_id = from_id
+    trans.to_user_id = to_id
+    trans.amount = amount
 
-    date_str = request.form.get('date', '').strip()
-    if date_str:
-        date_parsed = False
-        for fmt in ('%Y-%m-%dT%H:%M', '%Y-%m-%d'):
-            try:
-                trans.date = datetime.strptime(date_str, fmt)
-                date_parsed = True
-                break
-            except ValueError:
-                continue
-        if not date_parsed:
-            flash(_('Could not parse date — keeping the original value.'), 'error')
+    if new_items is not None:
+        db.session.execute(db.delete(ExpenseItem).filter_by(transaction_id=trans.id))
+        for item in new_items:
+            db.session.add(ExpenseItem(transaction_id=trans.id, item_name=item['name'],
+                                       price=item['price'], buyer_id=trans.to_user_id))
 
-    from_id = request.form.get('from_user_id') or None
-    to_id   = request.form.get('to_user_id')   or None
-    trans.from_user_id = int(from_id) if from_id else None
-    trans.to_user_id   = int(to_id)   if to_id   else None
+    apply_balance_effect(trans)
 
-    db.session.execute(db.delete(ExpenseItem).filter_by(transaction_id=trans.id))
-    items_json_str = request.form.get('items_json', '').strip()
-    new_items_total = None
-    if items_json_str:
-        try:
-            items = json.loads(items_json_str)
-            if items:
-                total = Decimal('0')
-                for item in items:
-                    price = parse_amount(item['price'])
-                    db.session.add(ExpenseItem(
-                        transaction_id=trans.id,
-                        item_name=item['name'],
-                        price=price,
-                        buyer_id=trans.to_user_id,
-                    ))
-                    total += price
-                new_items_total = total
-        except (ValueError, KeyError):
-            pass
-
-    if new_items_total is not None:
-        trans.amount = new_items_total
-    else:
-        try:
-            trans.amount = parse_amount(request.form.get('amount', old_amount))
-        except (ValueError, TypeError):
-            trans.amount = old_amount
-
-    if trans.from_user_id:
-        new_from = db.session.get(User, trans.from_user_id)
-        if new_from:
-            new_from.balance = Decimal(str(new_from.balance)) - Decimal(str(trans.amount))
-    if trans.to_user_id:
-        new_to = db.session.get(User, trans.to_user_id)
-        if new_to:
-            new_to.balance = Decimal(str(new_to.balance)) + Decimal(str(trans.amount))
-
-    if request.form.get('remove_receipt'):
+    if request.form.get('remove_receipt') or receipt:
         delete_receipt_file(trans.receipt_path, trans.id)
         trans.receipt_path = None
-
-    new_file = request.files.get('receipt')
-    if new_file and new_file.filename:
-        if trans.receipt_path:
-            delete_receipt_file(trans.receipt_path, trans.id)
-        buyer = db.session.get(User, trans.from_user_id) if trans.from_user_id else None
-        buyer_name = buyer.name if buyer else 'unknown'
-        saved = save_receipt(new_file, buyer_name)
-        if saved:
-            trans.receipt_path = saved
+    if receipt:
+        # Receipts are named after whoever paid: the buyer (to_user) of an expense.
+        payer_id = trans.to_user_id if trans.transaction_type == 'expense' else (trans.from_user_id or trans.to_user_id)
+        payer = db.session.get(User, payer_id) if payer_id else None
+        trans.receipt_path = save_receipt(receipt, payer.name if payer else 'unknown')
 
     db.session.commit()
     logger.info('Transaction edited: id=%s type=%s amount=%s', trans.id, trans.transaction_type, trans.amount)
     flash(_('Transaction updated successfully!'), 'success')
-    return redirect(url_for('main.view_transactions'))
+    return redirect(_month_url(trans.date))
 
 
 @main_bp.route('/transaction/<int:transaction_id>/delete', methods=['POST'])
 def delete_transaction(transaction_id: int) -> Response:
     trans = db.session.get(Transaction, transaction_id) or abort(404)
+    receipt_path, back = trans.receipt_path, _month_url(trans.date)
 
-    if trans.from_user_id:
-        from_user = db.session.get(User, trans.from_user_id)
-        if from_user:
-            from_user.balance = Decimal(str(from_user.balance)) + Decimal(str(trans.amount))
-    if trans.to_user_id:
-        to_user = db.session.get(User, trans.to_user_id)
-        if to_user:
-            to_user.balance = Decimal(str(to_user.balance)) - Decimal(str(trans.amount))
-
-    delete_receipt_file(trans.receipt_path, trans.id)
+    apply_balance_effect(trans, reverse=True)
     db.session.execute(db.delete(ExpenseItem).filter_by(transaction_id=trans.id))
     db.session.delete(trans)
     db.session.commit()
+    # Only after the commit: the file may be shared with the other debtors' transactions.
+    delete_receipt_file(receipt_path, transaction_id)
     logger.info('Transaction deleted: id=%s type=%s amount=%s', transaction_id, trans.transaction_type, trans.amount)
 
     flash(_('Transaction deleted.'), 'success')
-    return redirect(url_for('main.view_transactions'))
+    return redirect(back)

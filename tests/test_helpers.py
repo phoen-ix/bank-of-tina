@@ -1,4 +1,4 @@
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 
 import pytest
 
@@ -55,9 +55,42 @@ def test_parse_amount_empty_string(app):
 
 def test_parse_amount_invalid_letters(app):
     with app.app_context():
-        from helpers import parse_amount
-        with pytest.raises(InvalidOperation):
+        from helpers import parse_amount, AmountError
+        with pytest.raises(AmountError):
             parse_amount('abc')
+        # Callers catch ValueError; decimal.InvalidOperation is not one.
+        assert issubclass(AmountError, ValueError)
+
+
+@pytest.mark.parametrize('raw', ['NaN', 'Infinity', '-inf', '1e5', '1.2.3', '12,34,56', '--1', '.'])
+def test_parse_amount_rejects_non_plain_numbers(app, raw):
+    with app.app_context():
+        from helpers import parse_amount, AmountError
+        with pytest.raises(AmountError):
+            parse_amount(raw)
+
+
+@pytest.mark.parametrize('raw, expected', [
+    ('1.005', '1.01'), ('2.004', '2.00'), ('7', '7.00'), ('.5', '0.50'),
+    ('1.234,56', '1234.56'), ('1,234.56', '1234.56'), ('1 234,5', '1234.50'),
+])
+def test_parse_amount_normalizes_to_cents(app, raw, expected):
+    with app.app_context():
+        from helpers import parse_amount
+        assert parse_amount(raw) == Decimal(expected)
+        assert parse_amount(raw).as_tuple().exponent == -2
+
+
+def test_parse_amount_positive_and_range(app):
+    with app.app_context():
+        from helpers import parse_amount, AmountError
+        with pytest.raises(AmountError):
+            parse_amount('0', positive=True)
+        with pytest.raises(AmountError):
+            parse_amount('-3', positive=True)
+        with pytest.raises(AmountError):
+            parse_amount('10000000000')
+        assert parse_amount('9999999999.99') == Decimal('9999999999.99')
 
 
 def test_fmt_amount_comma_separator(app):

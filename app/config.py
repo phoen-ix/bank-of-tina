@@ -7,11 +7,11 @@ ALLOWED_EXTENSIONS: set[str] = {'png', 'jpg', 'jpeg', 'pdf'}
 BACKUP_DIR: str = '/backups'
 
 THEMES: dict[str, dict[str, str]] = {
-    'default': {
+    'default': {  # must match the color entries of TEMPLATE_DEFAULTS
         'label': 'Default',
         'color_navbar': '#7f8dbb',
-        'color_email_grad_start': '#4e5d88',
-        'color_email_grad_end': '#a8b4d4',
+        'color_email_grad_start': '#7f8dbb',
+        'color_email_grad_end': '#ffffff',
         'color_balance_positive': '#5a9a7a',
         'color_balance_negative': '#c9534a',
     },

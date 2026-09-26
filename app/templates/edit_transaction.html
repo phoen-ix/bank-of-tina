@@ -44,7 +44,7 @@
                     <div class="mb-3">
                         <label for="date" class="form-label">{{ _('Date & Time') }}</label>
                         <input type="datetime-local" class="form-control" id="date" name="date"
-                               value="{{ trans.date.strftime('%Y-%m-%dT%H:%M') }}">
+                               value="{{ trans.date | localdt('%Y-%m-%dT%H:%M') }}">
                     </div>
 
                     <div class="mb-3">
@@ -123,7 +123,8 @@
                         <button type="submit" class="btn btn-primary">
                             <i class="bi bi-floppy"></i> {{ _('Save Changes') }}
                         </button>
-                        <a href="{{ url_for('main.view_transactions') }}" class="btn btn-outline-secondary">
+                        {% set local_date = trans.date | localdt('%Y-%m') %}
+                        <a href="{{ url_for('main.view_transactions', year=local_date[:4]|int, month=local_date[5:]|int) }}" class="btn btn-outline-secondary">
                             {{ _('Cancel') }}
                         </a>
                     </div>
@@ -227,7 +228,8 @@ document.getElementById('editForm').addEventListener('submit', function() {
             items.push({ name, price });
         }
     });
-    document.getElementById('items_json').value = items.length ? JSON.stringify(items) : '';
+    // Always send a list: "[]" tells the server every item was removed.
+    document.getElementById('items_json').value = JSON.stringify(items);
 });
 
 // Populate common items datalist

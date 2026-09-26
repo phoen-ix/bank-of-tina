@@ -15,7 +15,7 @@ from flask_babel import gettext as _
 from extensions import db, scheduler, limiter
 from models import (User, CommonItem, CommonDescription, CommonPrice, CommonBlacklist,
                     AutoCollectLog, EmailLog, BackupLog)
-from helpers import (get_setting, set_setting, get_tpl, parse_amount, fmt_amount,
+from helpers import (get_setting, set_setting, delete_setting, get_tpl, parse_amount, fmt_amount,
                      detect_theme, generate_and_save_icons, now_local)
 from config import THEMES, TEMPLATE_DEFAULTS, TEMPLATE_DEFAULTS_DE, BACKUP_DIR, DEFAULT_ICON_BG
 from email_service import send_all_emails, build_email_html, build_admin_summary_email
@@ -401,22 +401,34 @@ def settings_common_auto_clear_log() -> Response:
     return redirect(url_for('settings_bp.settings'))
 
 
+TEMPLATE_COLOR_KEYS = ['color_navbar', 'color_email_grad_start', 'color_email_grad_end',
+                       'color_balance_positive', 'color_balance_negative']
+TEMPLATE_TEXT_KEYS = ['tpl_email_subject', 'tpl_email_greeting', 'tpl_email_intro',
+                      'tpl_email_footer1', 'tpl_email_footer2',
+                      'tpl_admin_subject', 'tpl_admin_intro', 'tpl_admin_footer',
+                      'tpl_backup_subject', 'tpl_backup_footer']
+
+
+def _store_unless_default(key: str, value: str, default: str) -> None:
+    """Store a customized value; drop the row when it equals the default so that
+    get_tpl() keeps falling through to the (language-specific) default."""
+    if value == default:
+        delete_setting(key, commit=False)
+    else:
+        set_setting(key, value, commit=False)
+
+
 @settings_bp.route('/settings/templates', methods=['POST'])
 def settings_templates() -> Response:
-    color_keys = ['color_navbar', 'color_email_grad_start', 'color_email_grad_end',
-                  'color_balance_positive', 'color_balance_negative']
-    for key in color_keys:
-        val = request.form.get(key, '').strip()
-        if re.match(r'^#[0-9a-fA-F]{6}$', val):
-            set_setting(key, val, commit=False)
+    for key in TEMPLATE_COLOR_KEYS:
+        val = request.form.get(key, '').strip().lower()
+        if re.match(r'^#[0-9a-f]{6}$', val):
+            _store_unless_default(key, val, TEMPLATE_DEFAULTS[key])
 
     lang = get_setting('language', 'de')
-    text_keys = ['tpl_email_subject', 'tpl_email_greeting', 'tpl_email_intro',
-                 'tpl_email_footer1', 'tpl_email_footer2',
-                 'tpl_admin_subject', 'tpl_admin_intro', 'tpl_admin_footer',
-                 'tpl_backup_subject', 'tpl_backup_footer']
-    for key in text_keys:
-        set_setting(f'{key}_{lang}', request.form.get(key, '')[:500], commit=False)
+    defaults = TEMPLATE_DEFAULTS_DE if lang == 'de' else TEMPLATE_DEFAULTS
+    for key in TEMPLATE_TEXT_KEYS:
+        _store_unless_default(f'{key}_{lang}', request.form.get(key, '')[:500], defaults[key])
 
     set_setting('admin_summary_include_emails', '1' if request.form.get('admin_summary_include_emails') else '0', commit=False)
     db.session.commit()
@@ -428,12 +440,10 @@ def settings_templates() -> Response:
 @settings_bp.route('/settings/templates/reset', methods=['POST'])
 def settings_templates_reset() -> Response:
     lang = get_setting('language', 'de')
-    defaults = TEMPLATE_DEFAULTS_DE if lang == 'de' else TEMPLATE_DEFAULTS
-    for key, val in defaults.items():
-        if key.startswith('tpl_'):
-            set_setting(f'{key}_{lang}', val, commit=False)
-        else:
-            set_setting(key, val, commit=False)
+    for key in TEMPLATE_TEXT_KEYS:
+        delete_setting(f'{key}_{lang}', commit=False)
+    for key in TEMPLATE_COLOR_KEYS:
+        delete_setting(key, commit=False)
     db.session.commit()
     flash(_('Templates reset to defaults.'), 'success')
     return redirect(url_for('settings_bp.settings'))

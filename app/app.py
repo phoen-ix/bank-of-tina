@@ -207,61 +207,6 @@ if os.environ.get('FLASK_TESTING') != '1':
                     upgrade()
                     logger.info('Database migrations up to date')
 
-                # Migrate unsuffixed tpl_* keys to per-language keys.
-                # Only keep genuinely customized values; delete defaults so
-                # get_tpl() falls through to the language-appropriate defaults.
-                from helpers import set_setting as _set
-                from models import Setting
-                from config import TEMPLATE_DEFAULTS as _EN_DEFAULTS, TEMPLATE_DEFAULTS_DE as _DE_DEFAULTS
-                _tpl_keys = ['tpl_email_subject', 'tpl_email_greeting', 'tpl_email_intro',
-                             'tpl_email_footer1', 'tpl_email_footer2',
-                             'tpl_admin_subject', 'tpl_admin_intro', 'tpl_admin_footer',
-                             'tpl_backup_subject', 'tpl_backup_footer']
-                _has_old = any(db.session.get(Setting, k) for k in _tpl_keys)
-                _has_new = any(db.session.get(Setting, f'{k}_{l}')
-                               for k in _tpl_keys[:1] for l in ('de', 'en'))
-                if _has_old and not _has_new:
-                    _lang = get_setting('language', 'de')
-                    for _k in _tpl_keys:
-                        _old = db.session.get(Setting, _k)
-                        if _old:
-                            _is_default = (_old.value == _EN_DEFAULTS.get(_k, '')
-                                           or _old.value == _DE_DEFAULTS.get(_k, ''))
-                            if not _is_default:
-                                _set(f'{_k}_{_lang}', _old.value, commit=False)
-                            db.session.delete(_old)
-                    db.session.commit()
-                    logger.info('Migrated email templates to per-language keys (%s)', _lang)
-                # Clean up bad migration and redundant entries: remove suffixed
-                # keys whose value matches any default (wrong-language or own)
-                # so get_tpl() falls through to the correct defaults.
-                for _k in _tpl_keys:
-                    for _l in ('de', 'en'):
-                        _s = db.session.get(Setting, f'{_k}_{_l}')
-                        if _s and _s.value in (_EN_DEFAULTS.get(_k, ''),
-                                               _DE_DEFAULTS.get(_k, '')):
-                            db.session.delete(_s)
-                db.session.commit()
-
-                # Clean up color settings that match previous defaults so the
-                # current TEMPLATE_DEFAULTS values take effect.
-                _OLD_COLORS = {
-                    'color_navbar': ('#0d6efd',),
-                    'color_email_grad_start': ('#667eea', '#4e5d88'),
-                    'color_email_grad_end': ('#764ba2', '#e7b44e', '#a8b4d4'),
-                    'color_balance_positive': ('#28a745',),
-                    'color_balance_negative': ('#dc3545',),
-                }
-                _changed = False
-                for _ck, _old_vals in _OLD_COLORS.items():
-                    _s = db.session.get(Setting, _ck)
-                    if _s and _s.value in _old_vals:
-                        db.session.delete(_s)
-                        _changed = True
-                if _changed:
-                    db.session.commit()
-                    logger.info('Removed old default color settings')
-
                 icons_dir = os.path.join(app.root_path, 'static', 'icons')
                 if not os.path.exists(os.path.join(icons_dir, 'icon-192.png')) or not os.path.exists(os.path.join(icons_dir, 'icon-32.png')):
                     from config import DEFAULT_ICON_BG

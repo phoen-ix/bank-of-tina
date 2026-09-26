@@ -145,7 +145,10 @@
 
     {% if tx_count %}
     <div class="card-footer text-muted small">
-        {{ _('%(count)s transaction(s)', count=tx_count) }} &middot; {{ _('Total:') }} {{ currency_symbol }}{{ tx_total|money }}
+        {{ _('%(count)s transaction(s)', count=tx_count) }}
+        {% for tx_type, total in tx_totals %}
+            &middot; {{ tx_type|tx_type|capitalize }}: {{ currency_symbol }}{{ total|money }}
+        {% endfor %}
     </div>
     {% endif %}
 </div>

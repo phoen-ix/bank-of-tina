@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-26 15:24+0000\n"
+"POT-Creation-Date: 2026-09-26 15:29+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -84,170 +84,212 @@ msgstr ""
 msgid "Scheduled Backup Report"
 msgstr ""
 
-#: app/email_service.py:57
+#: app/email_service.py:50
 #, python-format
 msgid "You owe %(sym)s%(amount)s"
 msgstr ""
 
-#: app/email_service.py:60
+#: app/email_service.py:53
 #, python-format
 msgid "You are owed %(sym)s%(amount)s"
 msgstr ""
 
-#: app/email_service.py:63
+#: app/email_service.py:56
 msgid "Your balance is settled"
 msgstr ""
 
-#: app/email_service.py:101
+#: app/email_service.py:94
 msgid "No recent transactions"
 msgstr ""
 
-#: app/email_service.py:107 app/templates/index.html:49
+#: app/email_service.py:100 app/templates/index.html:49
 msgid "Recent Transactions"
 msgstr ""
 
-#: app/email_service.py:111 app/templates/search.html:100
+#: app/email_service.py:104 app/templates/search.html:100
 msgid "Date"
 msgstr ""
 
-#: app/email_service.py:112 app/templates/add_transaction.html:50
+#: app/email_service.py:105 app/templates/add_transaction.html:50
 #: app/templates/edit_transaction.html:24 app/templates/search.html:102
 #: app/templates/transactions.html:45
 msgid "Description"
 msgstr ""
 
-#: app/email_service.py:113
+#: app/email_service.py:106
 msgid "With"
 msgstr ""
 
-#: app/email_service.py:114 app/templates/add_transaction.html:110
+#: app/email_service.py:107 app/templates/add_transaction.html:110
 #: app/templates/add_transaction.html:152 app/templates/analytics.html:256
 #: app/templates/edit_transaction.html:36 app/templates/search.html:105
 #: app/templates/transactions.html:48
 msgid "Amount"
 msgstr ""
 
-#: app/email_service.py:147
+#: app/email_service.py:140
 msgid "Weekly Balance Update"
 msgstr ""
 
-#: app/email_service.py:155
+#: app/email_service.py:148
 msgid "Current Balance"
 msgstr ""
 
-#: app/email_service.py:198 app/templates/index.html:17
+#: app/email_service.py:191 app/templates/index.html:17
 #: app/templates/settings.html:20 app/templates/settings.html:1339
 #: app/templates/settings.html:1383 app/templates/settings.html:1434
 #: app/templates/user_detail.html:152
 msgid "Email"
 msgstr ""
 
-#: app/email_service.py:206
+#: app/email_service.py:199
 msgid "Admin Summary"
 msgstr ""
 
-#: app/email_service.py:210
+#: app/email_service.py:203
 msgid "All Active Users"
 msgstr ""
 
-#: app/email_service.py:214 app/templates/index.html:16
+#: app/email_service.py:207 app/templates/index.html:16
 #: app/templates/settings.html:1335 app/templates/settings.html:1382
 #: app/templates/settings.html:1433 app/templates/user_detail.html:148
 msgid "Name"
 msgstr ""
 
-#: app/email_service.py:216 app/templates/analytics.html:253
+#: app/email_service.py:209 app/templates/analytics.html:253
 #: app/templates/index.html:18 app/templates/settings.html:1384
 #: app/templates/settings.html:1435
 msgid "Balance"
 msgstr ""
 
-#: app/email_service.py:239
+#: app/email_service.py:232
 msgid "SMTP credentials not configured"
 msgstr ""
 
-#: app/email_service.py:262
+#: app/email_service.py:255
 msgid "Email sending is disabled in General settings."
 msgstr ""
 
-#: app/routes/main.py:74
+#: app/helpers.py:178
+#, python-format
+msgid "\"%(value)s\" is not a valid amount."
+msgstr ""
+
+#: app/helpers.py:181
+#, python-format
+msgid "\"%(value)s\" is too large."
+msgstr ""
+
+#: app/helpers.py:183
+msgid "Amounts must be greater than zero."
+msgstr ""
+
+#: app/routes/main.py:34
+msgid "Please select a user."
+msgstr ""
+
+#: app/routes/main.py:39 app/routes/main.py:41
+msgid "Unknown user."
+msgstr ""
+
+#: app/routes/main.py:51
+msgid "Receipts must be JPG, PNG or PDF files."
+msgstr ""
+
+#: app/routes/main.py:60 app/routes/main.py:62 app/routes/main.py:66
+msgid "The item list could not be read."
+msgstr ""
+
+#: app/routes/main.py:69
+msgid "Every item needs a name."
+msgstr ""
+
+#: app/routes/main.py:129
 msgid "Name and email are required!"
 msgstr ""
 
-#: app/routes/main.py:78
+#: app/routes/main.py:133
 msgid "User already exists!"
 msgstr ""
 
-#: app/routes/main.py:92
+#: app/routes/main.py:147
 #, python-format
 msgid "User %(name)s added successfully!"
 msgstr ""
 
-#: app/routes/main.py:104
+#: app/routes/main.py:159
 msgid "All fields are required!"
 msgstr ""
 
-#: app/routes/main.py:109
+#: app/routes/main.py:164
 msgid "Another user with that name already exists!"
 msgstr ""
 
-#: app/routes/main.py:114
+#: app/routes/main.py:169
 msgid "Another user with that email already exists!"
 msgstr ""
 
-#: app/routes/main.py:120
+#: app/routes/main.py:175
 msgid "Invalid date format!"
 msgstr ""
 
-#: app/routes/main.py:132
+#: app/routes/main.py:187
 msgid "User updated successfully!"
 msgstr ""
 
-#: app/routes/main.py:143
+#: app/routes/main.py:198
 #, python-format
 msgid "User %(name)s has been activated."
 msgstr ""
 
-#: app/routes/main.py:145
+#: app/routes/main.py:200
 #, python-format
 msgid "User %(name)s has been deactivated."
 msgstr ""
 
-#: app/routes/main.py:179
+#: app/routes/main.py:233
 #, python-format
 msgid "Deposit of %(sym)s%(amount)s added successfully!"
 msgstr ""
 
-#: app/routes/main.py:197
+#: app/routes/main.py:236
 #, python-format
 msgid "Withdrawal of %(sym)s%(amount)s processed successfully!"
 msgstr ""
 
-#: app/routes/main.py:246
-msgid "Expense recorded successfully!"
-msgstr ""
-
-#: app/routes/main.py:248
+#: app/routes/main.py:247
 msgid "At least one item is required for an expense."
 msgstr ""
 
-#: app/routes/main.py:420 app/routes/main.py:421
+#: app/routes/main.py:256
+msgid "Nobody owes anything: all items belong to the buyer."
+msgstr ""
+
+#: app/routes/main.py:281
+msgid "Expense recorded successfully!"
+msgstr ""
+
+#: app/routes/main.py:284
+msgid "Unknown transaction type."
+msgstr ""
+
+#: app/routes/main.py:469 app/routes/main.py:470
 msgid "Bank of Tina"
 msgstr ""
 
-#: app/routes/main.py:422
+#: app/routes/main.py:471
 msgid "Track shared expenses and balances"
 msgstr ""
 
-#: app/routes/main.py:472
-msgid "Could not parse date — keeping the original value."
+#: app/routes/main.py:506
+msgid "Could not parse the date."
 msgstr ""
 
-#: app/routes/main.py:533
+#: app/routes/main.py:549
 msgid "Transaction updated successfully!"
 msgstr ""
 
-#: app/routes/main.py:556
+#: app/routes/main.py:566
 msgid "Transaction deleted."
 msgstr ""
 
@@ -357,102 +399,102 @@ msgstr ""
 msgid "Debug log cleared."
 msgstr ""
 
-#: app/routes/settings.py:424
+#: app/routes/settings.py:436
 msgid "Templates saved."
 msgstr ""
 
-#: app/routes/settings.py:438
+#: app/routes/settings.py:448
 msgid "Templates reset to defaults."
 msgstr ""
 
-#: app/routes/settings.py:451
+#: app/routes/settings.py:461
 msgid "Icon regenerated with current navbar color."
 msgstr ""
 
-#: app/routes/settings.py:455
+#: app/routes/settings.py:465
 msgid "Icon reset to default."
 msgstr ""
 
-#: app/routes/settings.py:460
+#: app/routes/settings.py:470
 msgid "No file selected."
 msgstr ""
 
-#: app/routes/settings.py:465
+#: app/routes/settings.py:475
 msgid "Only PNG or JPG files are accepted."
 msgstr ""
 
-#: app/routes/settings.py:480
+#: app/routes/settings.py:490
 msgid "Custom icon uploaded."
 msgstr ""
 
-#: app/routes/settings.py:482
+#: app/routes/settings.py:492
 msgid "Pillow is not installed — cannot process uploaded images."
 msgstr ""
 
-#: app/routes/settings.py:484
+#: app/routes/settings.py:494
 #, python-format
 msgid "Failed to process image: %(error)s"
 msgstr ""
 
-#: app/routes/settings.py:486
+#: app/routes/settings.py:496
 msgid "Unknown action."
 msgstr ""
 
-#: app/routes/settings.py:552
+#: app/routes/settings.py:562
 msgid "Backup schedule saved and enabled."
 msgstr ""
 
-#: app/routes/settings.py:556
+#: app/routes/settings.py:566
 msgid "Backup schedule disabled."
 msgstr ""
 
-#: app/routes/settings.py:566
+#: app/routes/settings.py:576
 #, python-format
 msgid "Backup created: %(result)s"
 msgstr ""
 
-#: app/routes/settings.py:568
+#: app/routes/settings.py:578
 #, python-format
 msgid "Backup failed: %(result)s"
 msgstr ""
 
-#: app/routes/settings.py:576
+#: app/routes/settings.py:586
 msgid "Backup debug log cleared."
 msgstr ""
 
-#: app/routes/settings.py:590 app/routes/settings.py:645
+#: app/routes/settings.py:600 app/routes/settings.py:655
 msgid "Invalid filename."
 msgstr ""
 
-#: app/routes/settings.py:595
+#: app/routes/settings.py:605
 #, python-format
 msgid "%(filename)s deleted."
 msgstr ""
 
-#: app/routes/settings.py:597 app/routes/settings.py:649
+#: app/routes/settings.py:607 app/routes/settings.py:659
 msgid "Backup file not found."
 msgstr ""
 
-#: app/routes/settings.py:607
+#: app/routes/settings.py:617
 msgid "Invalid upload ID"
 msgstr ""
 
-#: app/routes/settings.py:612 app/routes/settings.py:614
+#: app/routes/settings.py:622 app/routes/settings.py:624
 msgid "Invalid chunk parameters"
 msgstr ""
 
-#: app/routes/settings.py:616
+#: app/routes/settings.py:626
 msgid "No chunk data"
 msgstr ""
 
-#: app/routes/settings.py:660
+#: app/routes/settings.py:670
 #, python-format
 msgid ""
 "Restore from %(filename)s completed successfully. The previous state was "
 "saved as %(safety)s."
 msgstr ""
 
-#: app/routes/settings.py:664
+#: app/routes/settings.py:674
 #, python-format
 msgid "Restore failed: %(error)s"
 msgstr ""
@@ -514,7 +556,7 @@ msgstr ""
 msgid "Click \"Add Item\" to add items from the receipt."
 msgstr ""
 
-#: app/templates/add_transaction.html:72 app/templates/transactions.html:148
+#: app/templates/add_transaction.html:72
 msgid "Total:"
 msgstr ""
 
@@ -576,7 +618,7 @@ msgid "Please add at least one item!"
 msgstr ""
 
 #: app/templates/add_transaction.html:189
-#: app/templates/edit_transaction.html:141
+#: app/templates/edit_transaction.html:142
 msgid "Item name"
 msgstr ""
 
@@ -813,7 +855,7 @@ msgstr ""
 msgid "Save Changes"
 msgstr ""
 
-#: app/templates/edit_transaction.html:127 app/templates/user_detail.html:181
+#: app/templates/edit_transaction.html:128 app/templates/user_detail.html:181
 msgid "Cancel"
 msgstr ""
 
