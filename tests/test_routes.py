@@ -340,11 +340,16 @@ def test_transactions_list_page(client, app, make_user):
         })
         response = client.get('/transactions')
         assert response.status_code == 200
+        assert b'ListTest' in response.data
 
 
-def test_add_transaction_get(client, app):
-    response = client.get('/transaction/add')
-    assert response.status_code == 200
+def test_add_transaction_get(client, app, make_user):
+    with app.app_context():
+        make_user(name='Picker')
+        make_user(name='Gone', is_active=False)
+        html = client.get('/transaction/add').data.decode()
+        assert '>Picker</option>' in html
+        assert '>Gone</option>' not in html
 
 
 def test_edit_transaction_receipt_removal(client, app, make_user):

@@ -52,7 +52,8 @@ def test_offline_page_is_translated_and_script_free(client, app):
 
 
 def test_service_worker_only_handles_navigations(client):
-    js = client.get('/sw.js').data.decode()
+    with client.get('/sw.js') as response:
+        js = response.data.decode()
     assert "e.request.mode !== 'navigate'" in js
     assert "'/offline'" in js
     assert '!response.ok' not in js

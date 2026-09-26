@@ -29,7 +29,7 @@ def test_send_single_email_no_smtp(app):
         from email_service import send_single_email
         ok, err = send_single_email('test@example.com', 'Test', 'Subject', '<p>body</p>')
         assert ok is False
-        assert 'SMTP' in err or 'credentials' in err.lower() or err is not None
+        assert err == 'SMTP credentials not configured'
 
 
 def test_build_backup_status_email(app):

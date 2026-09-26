@@ -30,15 +30,17 @@ def test_parse_amount_whitespace(app):
 def test_fmt_amount_default_separator(app):
     with app.app_context():
         from helpers import fmt_amount
-        result = fmt_amount(Decimal('12.50'))
-        assert result == '12.50' or result == '12,50'  # depends on db setting
+        from helpers import set_setting
+        assert fmt_amount(Decimal('12.50')) == '12.50'
+        set_setting('decimal_separator', ',')
+        assert fmt_amount(Decimal('12.5')) == '12,50'
 
 
 def test_fmt_amount_zero(app):
     with app.app_context():
         from helpers import fmt_amount
-        result = fmt_amount(Decimal('0'))
-        assert '0' in result and '00' in result
+        assert fmt_amount(Decimal('0')) == '0.00'
+        assert fmt_amount(Decimal('-3.1')) == '-3.10'
 
 
 def test_parse_amount_negative(app):

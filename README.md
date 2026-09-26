@@ -45,18 +45,18 @@ Eine selbst gehostete Webanwendung zur Verwaltung gemeinsamer Ausgaben und Salde
 - JPG-, PNG- oder PDF-Belege beim Erfassen einer Transaktion hochladen
 - Beleg bei bestehenden Transaktionen hochladen, ersetzen oder entfernen — die alte Datei wird automatisch von der Festplatte gelöscht
 - Dateien werden in einer organisierten Verzeichnisstruktur gespeichert:
-  `uploads/JJJJ/MM/TT/KäuferName_dateiname.ext`
-- Dateinamen werden vor dem Speichern bereinigt (Sonderzeichen entfernt)
+  `uploads/JJJJ/MM/TT/KäuferName_dateiname_a1b2c3.ext`
+- Dateinamen werden vor dem Speichern bereinigt (Sonderzeichen entfernt); ein Zufallssuffix verhindert, dass gleichnamige Uploads einander überschreiben
 
 ### Backup & Wiederherstellung
 - **Backup erstellen** auf Abruf oder nach einem wiederkehrenden Zeitplan (gleicher Tag/Uhrzeit-Wähler wie bei E-Mail und Auto-Sammlung)
 - Jedes Backup ist eine einzelne `bot_backup_JJJJ_MM_TT_HH-mm-ss.tar.gz` mit:
   - `dump.sql` — vollständiger MariaDB-Dump mit `DROP TABLE IF EXISTS` (auf Festplatte gestreamt, kein Speicherlimit)
   - `receipts/` — vollständige Kopie aller hochgeladenen Belegbilder
-  - `.env` — Zugangsdaten aus den Umgebungsvariablen des Containers rekonstruiert
+  - `.env` — `SECRET_KEY` und Datenbank-Zugangsdaten aus den Umgebungsvariablen des Containers (das Archiv ist nur für den Besitzer lesbar, `0600`)
 - **Herunterladen** jedes Backups direkt aus dem Browser
-- **Wiederherstellen** aus jedem aufgelisteten Backup mit einem Klick — Belege werden zuerst wiederhergestellt, damit die Datenbank nie berührt wird, wenn das Dateikopieren fehlschlägt
-- **Hochladen** eines Backups von einer anderen Instanz — große Dateien werden in 5-MB-Blöcken mit Fortschrittsbalken gesendet, es gibt kein effektives Größenlimit
+- **Wiederherstellen** aus jedem aufgelisteten Backup mit einem Klick — zuerst wird automatisch ein Sicherheits-Backup des aktuellen Stands erstellt, dann die Datenbank wiederhergestellt (mit `mariadb --sandbox`) und erst danach werden die Belege ersetzt; anschließend laufen die Migrationen und die Zeitpläne werden aus den wiederhergestellten Einstellungen neu geladen
+- **Hochladen** eines Backups von einer anderen Instanz — große Dateien werden in 5-MB-Blöcken mit Fortschrittsbalken gesendet (bis 2 GB); die Datei muss ein gültiges tar-Archiv sein
 - **Auto-Bereinigung** — konfigurieren, wie viele Backups behalten werden; ältere werden automatisch nach jedem geplanten Lauf gelöscht
 - **Backup-Status-E-Mail** — wenn ein Seiten-Admin konfiguriert ist, wird nach jedem *geplanten* Backup eine optionale E-Mail mit dem Ergebnis (Erfolg oder Fehler), Dateinamen, behaltenen Backups und Anzahl der bereinigten gesendet; manuelle Backups lösen diese E-Mail nie aus
 - **Debug-Log** — wenn der Debug-Modus an ist, wird jeder Backup-Schritt in die Datenbank geschrieben und in der Einstellungsoberfläche angezeigt
@@ -65,24 +65,25 @@ Eine selbst gehostete Webanwendung zur Verwaltung gemeinsamer Ausgaben und Salde
 - **Zwei Sprachen** — Deutsch und Englisch, umschaltbar über Einstellungen → Allgemein → Sprache
 - **Globale Einstellung** — die Sprache gilt app-weit (gespeichert in der Datenbank wie alle anderen Einstellungen)
 - **Vollständige Abdeckung** — alle UI-Elemente, Flash-Nachrichten, E-Mail-Vorlagen, Diagrammbeschriftungen und Transaktionstyp-Badges werden übersetzt
-- **Flask-Babel** — Standard-gettext `.po`/`.mo`-Dateien; ~427 übersetzte Zeichenketten
+- **Flask-Babel** — Standard-gettext `.po`/`.mo`-Dateien; ~500 übersetzte Zeichenketten
 - **Lokalisierte Datumsanzeige** — Monatsnamen und Tagesheader werden in der gewählten Sprache angezeigt
 - **Standardsprache** — Deutsch (`de`); kann jederzeit auf Englisch (`en`) umgestellt werden
 
 ### PWA — Zum Startbildschirm hinzufügen
 - **Web App Manifest** — dynamisch unter `/manifest.json` bereitgestellt; `theme_color` folgt der konfigurierten Navigationsfarbe
-- **Service Worker** — Network-First-Strategie; holt immer aktuelle Daten; zeigt eine eigenständige Offline-Seite wenn das Netzwerk nicht erreichbar ist oder der Server einen HTTP-Fehler zurückgibt (z.B. 503); bereitgestellt über `/sw.js` via Flask-Route für volle App-Scope-Kontrolle
+- **Service Worker** — behandelt nur Seitenaufrufe; holt immer aktuelle Daten und zeigt die übersetzte Offline-Seite (`/offline`) nur, wenn das Netzwerk nicht erreichbar ist — Serverantworten, auch Fehler, werden unverändert angezeigt; bereitgestellt über `/sw.js` via Flask-Route für volle App-Scope-Kontrolle (Service Worker brauchen HTTPS oder `localhost`)
 - **Icons** — 32×32, 192×192 und 512×512 PNG-Icons; auf dem Host via Bind-Mount (`./icons/`) persistiert, überleben Container-Rebuilds; beim ersten Start automatisch mit der Standard-Designfarbe generiert; `/favicon.ico`-Route liefert das 32px-Icon; verwaltbar über Einstellungen → Vorlagen → App-Icon:
   - **Aus Navigationsfarbe generieren** — Ein-Klick-Neugenerierung mit der aktuellen Designfarbe als Hintergrund (weiße Bank-Silhouette)
   - **Benutzerdefiniertes Icon hochladen** — beliebiges PNG oder JPG hochladen; automatisch auf 32×32, 192×192 und 512×512 skaliert
-  - **Auf Standard zurücksetzen** — stellt das originale Bootstrap-Blue-Icon wieder her
+  - **Auf Standard zurücksetzen** — stellt das Standard-Icon in der Standard-Designfarbe (`#7f8dbb`) wieder her
   - Cache-Busting stellt sicher, dass Browser und PWA neue Icons sofort übernehmen
 - **Android Chrome**: Drei-Punkt-Menü → „Zum Startbildschirm hinzufügen" (oder automatisches Installationsbanner)
 - **iOS Safari**: Teilen-Menü → „Zum Home-Bildschirm" → korrektes Icon, Name und Standalone-Start
 - Kein App Store erforderlich; keine nativen Build-Tools erforderlich
 
 ### Oberfläche
-- **Toast-Benachrichtigungen** — Erfolgs-/Fehlermeldungen erscheinen als Bootstrap-5-Toasts in der oberen rechten Ecke, verschwinden automatisch nach 4 Sekunden und stapeln sich bei mehreren gleichzeitigen Nachrichten; enthält einen globalen `showToast(message, type)` JS-Helper für programmatische Nutzung
+- **Toast-Benachrichtigungen** — Erfolgs-/Fehlermeldungen erscheinen als Bootstrap-5-Toasts in der oberen rechten Ecke, verschwinden automatisch nach 4 Sekunden und stapeln sich bei mehreren gleichzeitigen Nachrichten
+- **Kein doppeltes Absenden** — nach dem Absenden eines Formulars werden seine Buttons deaktiviert, ein Doppelklick erfasst nichts doppelt
 - **Skeleton-Loading** — die Diagrammseite zeigt pulsierende Skeleton-Platzhalter (horizontale Balken für Salden/Top-Artikel, vollbreite Rechtecke für Verlauf/Volumen) während die Daten geladen werden
 
 ### Vorlagen & Design
@@ -111,14 +112,16 @@ Die Einstellungsseite ist in sechs Tabs aufgeteilt:
 | Tab | Was konfiguriert wird |
 |-----|----------------------|
 | **Allgemein** | Standard-Artikelzeilen im Transaktionsformular; Anzahl letzter Transaktionen auf der Übersicht (0 blendet den Bereich aus); Zeitzone; **Sprache** (Deutsch/Englisch); **Dezimaltrennzeichen** (Punkt `1.99` oder Komma `1,99`); **Währungssymbol** (€, $, £, ¥ und mehr); E-Mail-Spalte auf der Übersicht ein-/ausblenden; Seiten-Admin |
-| **E-Mail** | SMTP-Zugangsdaten; E-Mail-Versand aktivieren/deaktivieren; Debug-Modus; Admin-Zusammenfassungs-E-Mail-Schalter; Saldo-E-Mails auf Abruf senden; wiederkehrenden Zeitplan einrichten |
+| **E-Mail** | SMTP-Zugangsdaten und **Verschlüsselung** (STARTTLS / SSL/TLS / keine); E-Mail-Versand aktivieren/deaktivieren; Debug-Modus; Admin-Zusammenfassungs-E-Mail-Schalter; Saldo-E-Mails auf Abruf senden; wiederkehrenden Zeitplan einrichten |
 | **Häufige** | Globaler Autovervollständigungsschalter; Artikelnamen, Beschreibungen und Preise manuell verwalten (jeweils mit eigener Blacklist); Auto-Sammlungs-Job konfigurieren und Debug-Log anzeigen |
 | **Backup** | Backups erstellen/herunterladen/löschen; aus jedem Backup oder einer hochgeladenen Datei wiederherstellen; automatischen Backup-Zeitplan mit Auto-Bereinigung konfigurieren; Backup-Status-E-Mail an Seiten-Admin; Debug-Log |
 | **Vorlagen** | Farbpalette + vordefinierte Designs; bearbeitbare Betreffs und Texte für alle drei E-Mail-Typen; Vorschau-Buttons; **App-Icon**-Karte — Icons aus Navigationsfarbe generieren, benutzerdefiniertes Icon hochladen oder auf Standard zurücksetzen |
 | **Benutzer** | Neue Benutzer hinzufügen (inkl. E-Mail-Opt-in und Transaktionsumfang); aktive und deaktivierte Benutzer in getrennten Listen (deaktivierte Liste ist ausgeblendet wenn leer); Benutzer deaktivieren oder reaktivieren |
 
 ### E-Mail-Benachrichtigungen
-- SMTP-Zugangsdaten werden sicher in der Datenbank gespeichert (konfiguriert über Einstellungen → E-Mail)
+- SMTP-Zugangsdaten werden in der Datenbank gespeichert (konfiguriert über Einstellungen → E-Mail)
+- **Verschlüsselung** — STARTTLS (meist Port 587), SSL/TLS (meist Port 465) oder keine; Server-Zertifikate werden immer geprüft; ein Versandlauf nutzt eine einzige SMTP-Verbindung
+- Fehlgeschlagene Sendungen werden immer im E-Mail-Log festgehalten (erfolgreiche nur im Debug-Modus)
 - **Jetzt senden**-Button um sofort allen aktiven Benutzern ihren aktuellen Saldo per E-Mail zu senden
 - **Automatischer Zeitplan** — Tag und Uhrzeit (24-Stunden-Format) wählen; der Zeitplan überlebt Container-Neustarts
 - **Opt-in pro Benutzer** — Benutzer können die wöchentliche E-Mail abbestellen; abgemeldete Benutzer werden bei jedem Versand übersprungen (manuell und geplant)
@@ -147,7 +150,7 @@ cp .env.example .env
 # Secret Key generieren mit:
 python3 -c "import secrets; print(secrets.token_hex(32))"
 ```
-Die `DB_*`-Standardwerte (`tina`/`tina`) sind für eine private Bereitstellung in Ordnung — für alles was ins Internet zeigt, ändern.
+Die Beispiel-Passwörter (`DB_PASSWORD`, `DB_ROOT_PASSWORD`) vor dem ersten Start ändern — `docker compose` verweigert den Start, wenn `SECRET_KEY` oder die Passwörter fehlen.
 
 ### 3. Anwendung starten
 ```bash
@@ -156,8 +159,12 @@ docker compose up -d
 
 ### 4. Weboberfläche öffnen
 ```
-http://dein-server-ip:5000
+http://localhost:5000
 ```
+
+Die App hat **keine Anmeldung**. Deshalb wird Port 5000 standardmäßig nur auf `127.0.0.1` veröffentlicht, also nur vom Docker-Host aus erreichbar. Für Zugriff von anderen Rechnern:
+- **Empfohlen:** einen Reverse-Proxy mit Authentifizierung (nginx, Caddy, …) davorschalten und `BEHIND_PROXY=1` in `.env` setzen, damit Rate-Limits die echten Client-Adressen sehen
+- **Nur im vertrauenswürdigen LAN:** `BIND_ADDRESS=0.0.0.0` in `.env` setzen und dann `http://dein-server-ip:5000` öffnen — jeder im Netzwerk kann alle Daten sehen und ändern, auch Backups (inkl. Zugangsdaten) herunterladen
 
 Das war's. SMTP-Zugangsdaten und der E-Mail-Zeitplan werden über die **Einstellungen**-Seite in der App konfiguriert — kein Neustart erforderlich.
 
@@ -240,11 +247,11 @@ bank-of-tina/
 ├── app/
 │   ├── app.py                    # Einstiegspunkt: Flask-App erstellen, Extensions initialisieren, Scheduler starten
 │   ├── extensions.py             # Gemeinsame Instanzen: db, csrf, migrate, limiter, scheduler, babel
-│   ├── config.py                 # Konstanten: THEMES, TEMPLATE_DEFAULTS, TEMPLATE_DEFAULTS_DE, ALLOWED_EXTENSIONS, BACKUP_DIR
+│   ├── config.py                 # Konstanten (THEMES, TEMPLATE_DEFAULTS[_DE], CURRENCIES, CRON_DAYS, BACKUP_DIR, …) und db_env()
 │   ├── models.py                 # Alle 11 SQLAlchemy-Modelle (vollständig typ-annotiert)
 │   ├── helpers.py                # Hilfsfunktionen: parse_amount, fmt_amount, save_receipt, etc.
 │   ├── email_service.py          # E-Mail-Erstellung und -Versand (Saldo, Admin-Zusammenfassung, Backup-Status)
-│   ├── backup_service.py         # Backup-Erstellung, Wiederherstellung, Bereinigung, Status-E-Mail
+│   ├── backup_service.py         # Backup, Wiederherstellung, Upload-Zusammenbau, Bereinigung, Status-E-Mail
 │   ├── scheduler_jobs.py         # APScheduler-Job-Einrichtung und -Wiederherstellung
 │   ├── translations/             # Gettext-Übersetzungsdateien (Babel)
 │   │   ├── de/LC_MESSAGES/       # Deutsche Übersetzungen (.po + .mo)
@@ -255,10 +262,10 @@ bank-of-tina/
 │   │   ├── main.py               # main_bp: Health, Übersicht, Benutzer, Transaktionen, Suche, Belege, PWA
 │   │   ├── settings.py           # settings_bp: alle Einstellungen, häufige Artikel, Backup, Vorlagen, Icons
 │   │   └── analytics.py          # analytics_bp: Diagrammseite + Datenendpunkt
-│   ├── templates/                # Jinja2-Vorlagen (alle mit {{ _('...') }} internationalisiert)
+│   ├── templates/                # Jinja2-Vorlagen (alle mit {{ _('...') }} internationalisiert; offline.html = Offline-Seite)
 │   └── static/
-│       ├── sw.js                 # Service Worker (Network-First, Offline-Fallback)
-│       ├── offline.html          # Eigenständige Offline-Fallback-Seite
+│       ├── sw.js                 # Service Worker (Offline-Seite nur bei Netzwerkausfall)
+│       ├── js/money.js           # Betragsparser der Ausgabenformulare (wie parse_amount im Backend)
 │       └── vendor/               # Selbst gehostete Frontend-Abhängigkeiten (kein CDN)
 ├── tests/
 │   ├── conftest.py               # pytest-Fixtures (SQLite in-memory, kein CSRF, make_user-Factory)
@@ -268,13 +275,17 @@ bank-of-tina/
 │   ├── test_settings.py          # Tests für Einstellungen-CRUD, häufige Artikel, Vorlagen, Zeitplan
 │   ├── test_analytics.py         # Tests für Diagrammseite und Datenendpunkt
 │   ├── test_health.py            # Tests für /health-Endpunkt
-│   ├── test_email_service.py     # Tests für E-Mail-Erstellung und -Versand
+│   ├── test_email_service.py     # Tests für E-Mail-Erstellung
+│   ├── test_email_sending.py     # SMTP-Versand: TLS-Modi, Zertifikatsprüfung, Header, Batch
+│   ├── test_backup.py            # Backup/Restore/Upload (subprocess gemockt)
+│   ├── test_money_time.py        # Salden, Beträge, Zeitzonen
+│   ├── test_validation.py        # Eingabeprüfung, Zeitpläne, Logs
+│   ├── test_frontend.py          # Gerenderte Seiten: Skript-Injection, Offline-Seite, Tabs
 │   └── test_i18n.py              # Tests für Internationalisierung (Sprachumschaltung, Übersetzungen)
 ├── docker/
-│   ├── requirements.txt          # Python-Abhängigkeiten
+│   ├── requirements.txt          # Python-Abhängigkeiten (Laufzeit)
+│   ├── requirements-dev.txt      # + Testabhängigkeiten
 │   └── entrypoint.sh             # Docker-Entrypoint: Bind-Mount-Rechte und Benutzer-Switch
-├── scripts/
-│   └── create_icons.py           # Einmaliges Stdlib-Icon-Generator-Skript
 ├── uploads/                      # Belege — als JJJJ/MM/TT/ organisiert (Bind-Mount)
 ├── backups/                      # Backup-Archive (Bind-Mount)
 ├── icons/                        # PWA-Icons (Bind-Mount; beim ersten Start automatisch generiert)
@@ -289,17 +300,18 @@ bank-of-tina/
 ## 🔒 Sicherheitshinweise
 
 - **Content Security Policy** — jede HTML-Antwort enthält einen Nonce-basierten CSP-Header (`script-src 'self' 'nonce-…'`; `style-src 'self' 'unsafe-inline'`; `frame-ancestors 'none'`; `object-src 'none'`). Alle Inline-Event-Handler wurden zu `addEventListener` / Event-Delegation konvertiert, sodass kein `'unsafe-inline'` für Skripte benötigt wird.
-- **HTML-Injection-Prävention** — alle benutzergesteuerten Werte (Namen, E-Mails, Beschreibungen, Fehlermeldungen) werden mit `html.escape()` escapt bevor sie in HTML-E-Mail-Vorlagen eingefügt werden
-- **XSS-sichere Toast-Benachrichtigungen** — der `showToast()` JS-Helper baut DOM-Knoten programmatisch mit `textContent`, niemals `innerHTML`
-- **Sichere Tar-Extraktion** — Backup-Wiederherstellung lehnt Symlinks, Hardlinks, absolute Pfade, `..`-Traversierung und alle Mitglieder ab, deren aufgelöster Pfad das Extraktionsverzeichnis verlässt
+- **Keine Anmeldung** — jeder, der Port 5000 erreicht, kann alles sehen und ändern, auch Backups herunterladen (sie enthalten `SECRET_KEY` und Datenbank-Passwörter) oder einspielen. Deshalb ist der Port standardmäßig nur auf `127.0.0.1` veröffentlicht; siehe Schnellstart
+- **HTML-Injection-Prävention** — alle benutzergesteuerten Werte (Namen, E-Mails, Beschreibungen, Währungssymbol, Fehlermeldungen) werden mit `html.escape()` escapt bevor sie in HTML-E-Mail-Vorlagen eingefügt werden
+- **Keine Benutzerdaten in JavaScript** — Namen und andere Werte werden nur als escapter HTML-Text gerendert (z.B. in `<template>`-Elementen) oder über `|tojson` übergeben
+- **Sichere Wiederherstellung** — nur `dump.sql` und `receipts/` werden entpackt, mit Pythons tar-Filter `data` (lehnt Links nach außen, Gerätedateien, absolute Pfade und `..` ab); der Dump wird mit `mariadb --sandbox` eingespielt, sodass ein manipuliertes Backup keine Shell-Befehle ausführen kann; das Datenbank-Passwort wird per Umgebungsvariable statt auf der Kommandozeile übergeben
 - **Sichere Suchabfragen** — SQL-Wildcards (`%`, `_`) in Benutzereingaben werden escapt bevor ILIKE-Muster erstellt werden
-- **SMTP-Timeout** — ausgehende E-Mail-Verbindungen verwenden ein 30-Sekunden-Timeout um endloses Hängen zu verhindern
+- **SMTP** — Server-Zertifikate werden immer geprüft; Verbindungen verwenden ein 30-Sekunden-Timeout
 - Einen starken, zufälligen `SECRET_KEY` in der `.env`-Datei setzen
 - Niemals die `.env`-Datei committen (sie ist in `.gitignore`)
-- Der Docker-Container startet als Root nur um Bind-Mount-Verzeichnisberechtigungen zu korrigieren, wechselt dann sofort zu einem Nicht-Root-Benutzer (`appuser`, UID 1000) via `gosu`
+- Der Docker-Container startet als Root nur um Bind-Mount-Verzeichnisberechtigungen zu korrigieren, wechselt dann sofort zu einem Nicht-Root-Benutzer (`appuser`, UID 1000) via `gosu`; der App-Code gehört Root, der Prozess kann nur in `uploads/`, `backups/` und die Icons schreiben
 - Pro-Route-Rate-Limiting ist auf schreibintensiven Endpunkten aktiviert
 - Für Gmail ein **App-Passwort** verwenden statt des Hauptkonto-Passworts
-- Netzwerkzugriff auf Port 5000 einschränken — hinter einem Reverse-Proxy (nginx, Caddy) mit Authentifizierung platzieren wenn die App ins Internet zeigt
+- Für Zugriff von anderen Rechnern einen Reverse-Proxy (nginx, Caddy) mit Authentifizierung davorschalten (`BEHIND_PROXY=1`)
 
 ---
 
@@ -329,9 +341,9 @@ docker compose logs -f db
 ### Backup & Wiederherstellung
 Den eingebauten **Einstellungen → Backup**-Tab für das Erstellen, Herunterladen, Hochladen und Wiederherstellen von Backups verwenden.
 
-Für einen manuellen reinen Datenbank-Dump:
+Für einen manuellen reinen Datenbank-Dump (die Variablen werden im `db`-Container aufgelöst):
 ```bash
-docker compose exec db mysqldump -u "$DB_USER" -p"$DB_PASSWORD" bank_of_tina > backup_$(date +%Y%m%d).sql
+docker compose exec db sh -c 'mariadb-dump -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"' > backup_$(date +%Y%m%d).sql
 ```
 
 ### Nach Code-Änderungen aktualisieren
@@ -354,7 +366,8 @@ docker compose up -d
 |---------|----------|
 | E-Mails werden nicht gesendet | Einstellungen → E-Mail prüfen; SMTP-Zugangsdaten verifizieren; Logs prüfen |
 | Beleg-Upload schlägt fehl | `chmod 755 uploads/` prüfen; verifizieren dass die Datei JPG/PNG/PDF ist |
-| Port 5000 belegt | Host-Port in `docker-compose.yml` ändern (`"8080:5000"`) |
+| Port 5000 belegt | Host-Port in `docker-compose.yml` ändern (`"${BIND_ADDRESS:-127.0.0.1}:8080:5000"`) |
+| App von anderen Rechnern nicht erreichbar | Port ist standardmäßig nur auf `127.0.0.1` veröffentlicht — Reverse-Proxy verwenden oder `BIND_ADDRESS=0.0.0.0` setzen (siehe Schnellstart) |
 | Web-Container startet nicht | `docker compose logs web` — die App wiederholt DB-Verbindungen bis zu 5 Mal mit exponentiellem Backoff beim Start; db-Logs prüfen wenn alle Versuche fehlschlagen |
 | DB-Verbindung abgelehnt | Sicherstellen dass `mariadb-data/` beschreibbar ist; `docker compose restart db` |
 | 500-Fehler beim Hinzufügen/Bearbeiten von Transaktionen | Wurde in v1.x behoben — MariaDB/PyMySQL liefert `Numeric`-Spalten als `float`, was bei Arithmetik mit `Decimal`-Werten einen `TypeError` verursachte. Lösung: Salden vor Berechnungen immer mit `Decimal(str(...))` umwandeln |
@@ -371,7 +384,7 @@ Eine eigene **Diagramme**-Seite (Navigationsleiste → Diagramme) mit einer geme
 | **Volumen** | Balken + Linie | Transaktionsanzahl (Balken, linke Achse) und Gesamtbetrag (Linie, rechte Achse) gruppiert nach Woche oder Monat |
 | **Top-Artikel** | Horizontaler Balken | Top 15 Ausgabenpositionen nach Gesamtbetrag oder Anzahl; zwischen beiden Modi umschalten |
 
-**Filterleiste** — Datumsbereich-Wähler, Schnellvorlagen (30 T / 90 T / 1 J / Alle Zeit), Mehrfachauswahl-Benutzer-Dropdown, Anwenden-Button.
+**Filterleiste** — Datumsbereich-Wähler, Schnellvorlagen (30 Tage / 90 Tage / 1 Jahr / Alle — ab der ersten Transaktion), Mehrfachauswahl-Benutzer-Dropdown, Anwenden-Button. Datumsbereiche beziehen sich auf Kalendertage in der eingestellten Zeitzone.
 
 **Drucken / PDF** — druckt nur den aktuell aktiven Tab, formatiert für A4 Querformat; Diagramm-Canvas wird vor der Browser-Erfassung auf Seitengröße skaliert. Browser-Druckdialog öffnen → Als PDF speichern.
 
@@ -382,10 +395,11 @@ Eine eigene **Diagramme**-Seite (Navigationsleiste → Diagramme) mit einer geme
 Tests verwenden eine SQLite-In-Memory-Datenbank und benötigen keine laufenden Dienste:
 
 ```bash
+pip install -r docker/requirements-dev.txt
 FLASK_TESTING=1 python -m pytest tests/ -v
 ```
 
-Die Testsuite umfasst 85 Tests in 8 Testmodulen: Hilfsfunktionen, Modelle, Routen, Einstellungen, Diagramme, Health-Check, E-Mail-Service und Internationalisierung. Alle Tests bestehen ohne Warnungen.
+Die Testsuite umfasst 172 Tests in 13 Testmodulen: Hilfsfunktionen, Modelle, Routen, Einstellungen, Diagramme, Health-Check, E-Mail-Erstellung und -Versand, Backup/Restore, Salden und Zeitzonen, Eingabeprüfung, gerenderte Seiten und Internationalisierung.
 
 ---
 
@@ -449,18 +463,18 @@ A self-hosted web application for tracking shared expenses and balances within a
 - Upload JPG, PNG, or PDF receipts when recording a transaction
 - Upload, replace, or remove a receipt on any existing transaction — the old file is deleted from disk automatically
 - Files are saved in an organised directory tree:
-  `uploads/YYYY/MM/DD/BuyerName_filename.ext`
-- Filenames are sanitised (special characters removed) before saving
+  `uploads/YYYY/MM/DD/BuyerName_filename_a1b2c3.ext`
+- Filenames are sanitised (special characters removed) before saving; a random suffix keeps same-named uploads from overwriting each other
 
 ### Backup & Restore
 - **Create backup** on demand or on a recurring schedule (same day/time picker as email and auto-collect)
 - Each backup is a single `bot_backup_YYYY_MM_DD_HH-mm-ss.tar.gz` containing:
   - `dump.sql` — full MariaDB dump with `DROP TABLE IF EXISTS` (streamed to disk, no memory limit)
   - `receipts/` — complete copy of all uploaded receipt images
-  - `.env` — credentials reconstructed from the container's environment variables
+  - `.env` — `SECRET_KEY` and database credentials from the container's environment variables (the archive is owner-readable only, `0600`)
 - **Download** any backup directly from the browser
-- **Restore** from any listed backup with one click — receipts are restored first so the database is never touched if the file copy fails
-- **Upload** a backup from another instance — large files are sent in 5 MB chunks with a progress bar, so there is no effective size limit
+- **Restore** from any listed backup with one click — a safety backup of the current state is created first, then the database is restored (with `mariadb --sandbox`), and only then are the receipts replaced; afterwards migrations run and the schedules are reloaded from the restored settings
+- **Upload** a backup from another instance — large files are sent in 5 MB chunks with a progress bar (up to 2 GB); the result must be a valid tar archive
 - **Auto-prune** — configure how many backups to keep; older ones are deleted automatically after each scheduled run
 - **Backup status email** — when a site admin is configured, an optional email is sent after each *scheduled* backup with the result (success or failure), filename, backups kept, and number pruned; manual backups never trigger this email
 - **Debug log** — when debug mode is on, every backup step is written to the database and shown in the Settings UI
@@ -469,24 +483,25 @@ A self-hosted web application for tracking shared expenses and balances within a
 - **Two languages** — German and English, switchable via Settings → General → Language
 - **Global setting** — language applies app-wide (stored in the database like all other settings)
 - **Full coverage** — all UI elements, flash messages, email templates, chart labels, and transaction type badges are translated
-- **Flask-Babel** — standard gettext `.po`/`.mo` files; ~427 translated strings
+- **Flask-Babel** — standard gettext `.po`/`.mo` files; ~500 translated strings
 - **Localized date display** — month names and day headers are shown in the selected language
 - **Default language** — German (`de`); can be switched to English (`en`) at any time
 
 ### PWA — Install to Home Screen
 - **Web App Manifest** — served dynamically at `/manifest.json`; `theme_color` tracks the configured navbar color
-- **Service worker** — network-first strategy; always fetches fresh data; shows a self-contained offline page when the network is down or the server returns an HTTP error (e.g. 503); served from `/sw.js` via a Flask route so it can control the entire app scope
+- **Service worker** — handles page navigations only; always fetches fresh data and shows the translated offline page (`/offline`) only when the network is down — server responses, errors included, are shown as-is; served from `/sw.js` via a Flask route so it can control the entire app scope (service workers need HTTPS or `localhost`)
 - **Icons** — 32×32, 192×192, and 512×512 PNG icons; persisted on the host via bind mount (`./icons/`) so they survive container rebuilds; auto-generated with the default theme color on first run; `/favicon.ico` route serves the 32px icon; manageable from Settings → Templates → App Icon:
   - **Regenerate from navbar color** — one-click regeneration using the current theme color as background (white bank silhouette)
   - **Upload custom icon** — upload any PNG or JPG; automatically resized to 32×32, 192×192, and 512×512
-  - **Reset to default** — restores the original Bootstrap blue icon
+  - **Reset to default** — restores the default icon in the default theme color (`#7f8dbb`)
   - Cache-busting ensures browsers and PWA pick up new icons immediately
 - **Android Chrome**: three-dot menu → "Add to home screen" (or automatic install banner)
 - **iOS Safari**: Share sheet → "Add to Home Screen" → correct icon, name, and standalone launch
 - No App Store required; no native build tools required
 
 ### UI
-- **Toast notifications** — success/error messages appear as Bootstrap 5 toasts in the top-right corner, auto-hide after 4 seconds, and stack when multiple messages fire simultaneously; includes a global `showToast(message, type)` JS helper for programmatic use
+- **Toast notifications** — success/error messages appear as Bootstrap 5 toasts in the top-right corner, auto-hide after 4 seconds, and stack when multiple messages fire simultaneously
+- **No double submits** — once a form is submitted its buttons are disabled, so a double click can't record anything twice
 - **Skeleton loading** — the Charts page shows pulsing skeleton placeholders (horizontal bars for Balances/Top Items, full-width rectangles for History/Volume) while data loads, replacing the previous spinner
 
 ### Templates & Theming
@@ -515,14 +530,16 @@ The Settings page is split into six tabs:
 | Tab | What you configure |
 |-----|--------------------|
 | **General** | Default number of blank item rows in the Add Transaction form; number of recent transactions shown on the dashboard (0 hides the section); timezone; **language** (German/English); **decimal separator** (period `1.99` or comma `1,99`) applied to all monetary display and input throughout the app; **currency symbol** (€, $, £, ¥, and more) shown before all monetary amounts throughout the UI, charts, and emails; toggle to show/hide the email column on the dashboard; site admin (used for admin summary emails) |
-| **Email** | SMTP credentials; enable/disable email sending; debug mode (logs runs to DB, surfaces SMTP errors in the UI); admin summary email toggle; send balance emails on demand; set a recurring auto-schedule |
+| **Email** | SMTP credentials and **encryption** (STARTTLS / SSL/TLS / none); enable/disable email sending; debug mode (logs runs to DB, surfaces SMTP errors in the UI); admin summary email toggle; send balance emails on demand; set a recurring auto-schedule |
 | **Common** | Global autocomplete toggle; manually manage item names, descriptions, and prices (each with its own blacklist); configure the auto-collect scheduled job and view its debug log |
 | **Backup** | Create/download/delete backups; restore from any backup or an uploaded file; configure an automatic backup schedule with auto-prune; backup status email to site admin (scheduled runs only); debug log |
 | **Templates** | Color palette + preset themes; editable subjects and body text for all three email types (balance, admin summary, backup status); preview buttons for each email; **App Icon** card — regenerate icons from navbar color, upload a custom icon, or reset to default |
 | **Users** | Add new users (including email opt-in and transaction scope preferences); active users and deactivated users are shown in separate lists (the deactivated list is hidden when empty); deactivate or reactivate any user |
 
 ### Email Notifications
-- SMTP credentials are stored securely in the database (configured via Settings → Email)
+- SMTP credentials are stored in the database (configured via Settings → Email)
+- **Encryption** — STARTTLS (usually port 587), SSL/TLS (usually port 465) or none; server certificates are always verified; one SMTP connection is used per send run
+- Failed sends are always recorded in the email log (successful ones only in debug mode)
 - **Send Now** button to immediately email all active users their current balance
 - **Auto-schedule** — pick a day and time (24 h clock); the schedule survives container restarts
 - **Per-user opt-in** — users can be set to opt out of the weekly email; opted-out users are skipped on every send (manual and scheduled)
@@ -551,7 +568,7 @@ Open `.env` and set a strong `SECRET_KEY` and your desired database credentials:
 # Generate a secret key with:
 python3 -c "import secrets; print(secrets.token_hex(32))"
 ```
-The `DB_*` defaults (`tina`/`tina`) are fine for a private deployment — change them for anything internet-facing.
+Change the example passwords (`DB_PASSWORD`, `DB_ROOT_PASSWORD`) before the first start — `docker compose` refuses to start when `SECRET_KEY` or the passwords are missing.
 
 ### 3. Start the application
 ```bash
@@ -560,8 +577,12 @@ docker compose up -d
 
 ### 4. Open the web interface
 ```
-http://your-server-ip:5000
+http://localhost:5000
 ```
+
+The app has **no login**. That's why port 5000 is published on `127.0.0.1` by default, i.e. reachable from the Docker host only. To use it from other machines:
+- **Recommended:** put an authenticating reverse proxy (nginx, Caddy, …) in front and set `BEHIND_PROXY=1` in `.env` so rate limits see the real client addresses
+- **Trusted LAN only:** set `BIND_ADDRESS=0.0.0.0` in `.env` and open `http://your-server-ip:5000` — everyone on the network can see and change all data, including downloading backups (which contain credentials)
 
 That's it. SMTP credentials and the email schedule are configured from the **Settings** page inside the app — no restart required.
 
@@ -640,17 +661,18 @@ That's it. SMTP credentials and the email schedule are configured from the **Set
 ## 🔒 Security Notes
 
 - **Content Security Policy** — every HTML response includes a nonce-based CSP header (`script-src 'self' 'nonce-…'`; `style-src 'self' 'unsafe-inline'`; `frame-ancestors 'none'`; `object-src 'none'`). All inline event handlers have been converted to `addEventListener` / event delegation so no `'unsafe-inline'` is needed for scripts.
-- **HTML injection prevention** — all user-controlled values (names, emails, descriptions, error messages) are escaped with `html.escape()` before insertion into HTML email templates
-- **XSS-safe toast notifications** — the `showToast()` JS helper builds DOM nodes programmatically with `textContent`, never `innerHTML`
-- **Safe tar extraction** — backup restore rejects symlinks, hardlinks, absolute paths, `..` traversal, and any member whose resolved path escapes the extraction directory
+- **No login** — anyone who can reach port 5000 can see and change everything, including downloading backups (they contain `SECRET_KEY` and the database passwords) or restoring one. That's why the port is published on `127.0.0.1` by default; see Quick Start
+- **HTML injection prevention** — all user-controlled values (names, emails, descriptions, currency symbol, error messages) are escaped with `html.escape()` before insertion into HTML email templates
+- **No user data in JavaScript** — names and other values are only rendered as escaped HTML text (e.g. inside `<template>` elements) or passed through `|tojson`
+- **Safe restore** — only `dump.sql` and `receipts/` are extracted, using Python's `data` tar filter (rejects links pointing outside, device files, absolute paths and `..`); the dump is loaded with `mariadb --sandbox`, so a crafted backup can't run shell commands; the database password is passed via the environment, not the command line
 - **Safe search queries** — SQL wildcards (`%`, `_`) in user search input are escaped before building ILIKE patterns
-- **SMTP timeout** — outbound email connections use a 30-second timeout to prevent indefinite hangs
+- **SMTP** — server certificates are always verified; connections use a 30-second timeout
 - Set a strong, random `SECRET_KEY` in your `.env` file
 - Never commit your `.env` file (it is in `.gitignore`)
-- The Docker container starts as root only to fix bind-mount directory ownership, then immediately drops to a non-root user (`appuser`, UID 1000) via `gosu`
+- The Docker container starts as root only to fix bind-mount directory ownership, then immediately drops to a non-root user (`appuser`, UID 1000) via `gosu`; the app code is owned by root, so the process can only write to `uploads/`, `backups/` and the icons
 - Per-route rate limiting is enabled on write-heavy endpoints (user add, transaction add, send-now, backup create/restore)
 - Use an **App Password** for Gmail rather than your main account password
-- Restrict network access to port 5000 — place behind a reverse proxy (nginx, Caddy) with authentication if the app is internet-facing
+- For access from other machines, put a reverse proxy (nginx, Caddy) with authentication in front (`BEHIND_PROXY=1`)
 - Back up the `mariadb-data/` directory regularly, or use the built-in **Backup** feature (Settings → Backup tab)
 
 ---
@@ -681,9 +703,9 @@ Set the `LOG_LEVEL` environment variable to control verbosity (`DEBUG`, `INFO`, 
 ### Backup & restore
 Use the built-in **Settings → Backup** tab for creating, downloading, uploading, and restoring backups.
 
-For a manual database-only dump:
+For a manual database-only dump (the variables are resolved inside the `db` container):
 ```bash
-docker compose exec db mysqldump -u "$DB_USER" -p"$DB_PASSWORD" bank_of_tina > backup_$(date +%Y%m%d).sql
+docker compose exec db sh -c 'mariadb-dump -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"' > backup_$(date +%Y%m%d).sql
 ```
 
 ### Update after code changes
@@ -706,7 +728,8 @@ docker compose up -d
 |---------|-------|
 | Emails not sending | Check Settings → Email; verify SMTP credentials; check logs |
 | Receipt upload fails | Check `chmod 755 uploads/`; verify file is JPG/PNG/PDF |
-| Port 5000 in use | Change the host port in `docker-compose.yml` (`"8080:5000"`) |
+| Port 5000 in use | Change the host port in `docker-compose.yml` (`"${BIND_ADDRESS:-127.0.0.1}:8080:5000"`) |
+| App not reachable from other machines | The port is published on `127.0.0.1` by default — use a reverse proxy or set `BIND_ADDRESS=0.0.0.0` (see Quick Start) |
 | Web container won't start | `docker compose logs web` — the app retries DB connections up to 5 times with exponential backoff on startup; check db logs if all retries fail |
 | DB connection refused | Ensure `mariadb-data/` is writable; `docker compose restart db` |
 | 500 error when adding/editing transactions | Fixed in v1.x — MariaDB/PyMySQL returns `Numeric` columns as `float`, which caused a `TypeError` when doing arithmetic with `Decimal` values. Fix: always wrap balances with `Decimal(str(...))` before calculations |
@@ -723,7 +746,7 @@ A dedicated **Charts** page (nav bar → Charts) with a shared filter bar and fo
 | **Volume** | Bar + line combo | Transaction count (bars, left axis) and total amount (line, right axis) grouped by week or month |
 | **Top Items** | Horizontal bar | Top 15 expense line items by total amount or count; toggle between the two modes |
 
-**Filter bar** — date range pickers, quick presets (30 d / 90 d / 1 yr / All time), multi-select user dropdown, Apply button.
+**Filter bar** — date range pickers, quick presets (30 days / 90 days / 1 year / All — from the first transaction), multi-select user dropdown, Apply button. Date ranges are calendar days in the configured timezone.
 
 **Print / PDF** — prints only the currently active tab, formatted for A4 landscape; chart canvas is resized to fill the page before the browser captures it. Open browser print dialog → Save as PDF.
 
@@ -734,10 +757,11 @@ A dedicated **Charts** page (nav bar → Charts) with a shared filter bar and fo
 Tests use an in-memory SQLite database and require no running services:
 
 ```bash
+pip install -r docker/requirements-dev.txt
 FLASK_TESTING=1 python -m pytest tests/ -v
 ```
 
-The test suite includes 85 tests across 8 test modules covering helpers, models, routes, settings, analytics, health check, email service, and internationalization. All tests pass with zero warnings.
+The test suite includes 172 tests across 13 test modules covering helpers, models, routes, settings, analytics, health check, email building and sending, backup/restore, balances and timezones, input validation, rendered pages, and internationalization.
 
 ---
 

@@ -6,10 +6,9 @@ import pytest
 
 @pytest.fixture
 def no_jobs(app):
-    """Remove scheduler jobs a test added to the global scheduler."""
+    """The global scheduler; clean_db removes the jobs a test added."""
     from extensions import scheduler
-    yield scheduler
-    scheduler.remove_all_jobs()
+    return scheduler
 
 
 def test_invalid_schedule_day_is_not_stored(client, app, no_jobs):

@@ -5,7 +5,9 @@ from decimal import Decimal
 def test_settings_page_loads(client, app):
     response = client.get('/settings')
     assert response.status_code == 200
-    assert b'Settings' in response.data or b'settings' in response.data
+    html = response.data.decode()
+    for tab in ('general', 'email', 'common-items', 'backup', 'templates', 'users'):
+        assert f'id="tab-{tab}"' in html
 
 
 def test_general_update(client, app):
@@ -94,6 +96,7 @@ def test_common_price_add_delete(client, app):
         response = client.post(f'/settings/common-prices/{item.id}/delete',
                                follow_redirects=True)
         assert response.status_code == 200
+        assert db.session.get(CommonPrice, item.id) is None
 
 
 def test_common_blacklist_add_delete(client, app):
@@ -112,6 +115,7 @@ def test_common_blacklist_add_delete(client, app):
         response = client.post(f'/settings/common-blacklist/{item.id}/delete',
                                follow_redirects=True)
         assert response.status_code == 200
+        assert db.session.get(CommonBlacklist, item.id) is None
 
 
 def test_template_color_update(client, app):
@@ -170,9 +174,12 @@ def test_schedule_update(client, app):
 
 def test_send_now(client, app):
     with app.app_context():
+        from helpers import set_setting
+        set_setting('email_enabled', '1')
         response = client.post('/settings/send-now', follow_redirects=True)
         assert response.status_code == 200
-        assert b'email' in response.data.lower()
+        # No SMTP configured and no users: nothing sent, nothing failed.
+        assert b'0 email(s) sent, 0 failed.' in response.data
 
 
 def test_common_toggle(client, app):

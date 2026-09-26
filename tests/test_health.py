@@ -9,12 +9,17 @@ def test_health_returns_ok(client, app):
     assert 'icons_writable' in data['checks']
 
 
-def test_health_json_format(client, app):
+def test_health_reports_db_error_without_details(client, app, monkeypatch):
+    from extensions import db
+
+    def broken(*args, **kwargs):
+        raise RuntimeError('Access denied for user tina@10.0.0.5')
+    monkeypatch.setattr(db.session, 'execute', broken)
     response = client.get('/health')
-    assert response.content_type.startswith('application/json')
+    assert response.status_code == 503
     data = response.get_json()
-    assert 'status' in data
-    assert 'checks' in data
+    assert data == {'status': 'error', 'checks': {**data['checks'], 'database': 'error'}}
+    assert b'tina' not in response.data
 
 
 def test_csp_header(client, app):

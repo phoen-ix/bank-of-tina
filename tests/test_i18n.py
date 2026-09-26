@@ -3,12 +3,15 @@ from helpers import set_setting, get_setting
 
 
 def test_language_setting_controls_locale(app, client, clean_db):
-    """Verify that changing language setting changes active locale."""
-    with app.app_context():
+    """The language setting decides which catalog gettext uses."""
+    from flask_babel import gettext, refresh
+    with app.test_request_context():
         set_setting('language', 'de')
-        assert get_setting('language') == 'de'
+        refresh()
+        assert gettext('Dashboard') != 'Dashboard'
         set_setting('language', 'en')
-        assert get_setting('language') == 'en'
+        refresh()
+        assert gettext('Dashboard') == 'Dashboard'
 
 
 def test_language_selector_on_settings_page(app, client, clean_db):

@@ -32,16 +32,14 @@ def _coerce_numeric_to_float(target, _context):
 
 
 @pytest.fixture(scope='session')
-def app():
+def app(tmp_path_factory):
     """Create application for testing."""
     _app.config.update({
         'TESTING': True,
         'WTF_CSRF_ENABLED': False,
-        'RATELIMIT_ENABLED': False,
         'SQLALCHEMY_DATABASE_URI': 'sqlite://',
-        'UPLOAD_FOLDER': '/tmp/bot_test_uploads',
+        'UPLOAD_FOLDER': str(tmp_path_factory.mktemp('uploads')),
     })
-    os.makedirs('/tmp/bot_test_uploads', exist_ok=True)
     # Flask-Limiter reads RATELIMIT_ENABLED in init_app(), which already ran at
     # import time; without this the suite trips the 30/minute limits.
     from extensions import limiter
@@ -55,7 +53,8 @@ def app():
 
 @pytest.fixture(autouse=True)
 def clean_db(app):
-    """Roll back all changes after each test."""
+    """Empty every table and drop scheduled jobs after each test."""
+    from extensions import scheduler
     from helpers import set_setting
     with app.app_context():
         _db.create_all()
@@ -65,6 +64,7 @@ def clean_db(app):
         for table in reversed(_db.metadata.sorted_tables):
             _db.session.execute(table.delete())
         _db.session.commit()
+    scheduler.remove_all_jobs()
 
 
 @pytest.fixture
