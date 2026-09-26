@@ -67,9 +67,9 @@
             <div class="col-auto">
                 <label class="form-label mb-1 small fw-semibold">{{ _('Quick range') }}</label>
                 <div class="btn-group btn-group-sm">
-                    <button class="btn btn-outline-secondary" data-preset="30">30 d</button>
-                    <button class="btn btn-outline-secondary" data-preset="90">90 d</button>
-                    <button class="btn btn-outline-secondary" data-preset="365">1 yr</button>
+                    <button class="btn btn-outline-secondary" data-preset="30">{{ _('30 days') }}</button>
+                    <button class="btn btn-outline-secondary" data-preset="90">{{ _('90 days') }}</button>
+                    <button class="btn btn-outline-secondary" data-preset="365">{{ _('1 year') }}</button>
                     <button class="btn btn-outline-secondary" data-preset="0">{{ _('All') }}</button>
                 </div>
             </div>
@@ -95,38 +95,40 @@
 </style>
 
 <!-- Chart tabs -->
-<ul class="nav nav-tabs mb-0" id="chartTabs">
-    <li class="nav-item">
-        <button class="nav-link active" data-bs-toggle="tab"
+<ul class="nav nav-tabs mb-0" id="chartTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" role="tab" aria-controls="tab-balances" data-bs-toggle="tab"
                 data-bs-target="#tab-balances" type="button">
-            <i class="bi bi-bar-chart-horizontal"></i> {{ _('Balances') }}
+            <i class="bi bi-bar-chart-steps"></i> {{ _('Balances') }}
         </button>
     </li>
-    <li class="nav-item">
-        <button class="nav-link" data-bs-toggle="tab"
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" role="tab" aria-controls="tab-history" data-bs-toggle="tab"
                 data-bs-target="#tab-history" type="button">
             <i class="bi bi-graph-up"></i> {{ _('History') }}
         </button>
     </li>
-    <li class="nav-item">
-        <button class="nav-link" data-bs-toggle="tab"
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" role="tab" aria-controls="tab-volume" data-bs-toggle="tab"
                 data-bs-target="#tab-volume" type="button">
             <i class="bi bi-calendar3"></i> {{ _('Volume') }}
         </button>
     </li>
-    <li class="nav-item">
-        <button class="nav-link" data-bs-toggle="tab"
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" role="tab" aria-controls="tab-items" data-bs-toggle="tab"
                 data-bs-target="#tab-items" type="button">
             <i class="bi bi-list-ol"></i> {{ _('Top Items') }}
         </button>
     </li>
 </ul>
 
+<div class="alert alert-danger" id="analytics-error" role="alert" hidden></div>
+
 <div class="tab-content border border-top-0 rounded-bottom p-3 bg-white mb-4"
      id="chartTabContent">
 
     <!-- Tab 1: Current Balances -->
-    <div class="tab-pane fade show active" id="tab-balances">
+    <div class="tab-pane fade show active" id="tab-balances" role="tabpanel">
         <p class="text-muted small mb-3">
             {{ _('Current balance for each user. Reflects all-time transactions — not limited to the selected date range.') }}
         </p>
@@ -146,7 +148,7 @@
     </div>
 
     <!-- Tab 2: Balance History -->
-    <div class="tab-pane fade" id="tab-history">
+    <div class="tab-pane fade" id="tab-history" role="tabpanel">
         <p class="text-muted small mb-3">
             {{ _("Each user's running balance sampled at regular intervals across the selected date range.") }}
         </p>
@@ -162,7 +164,7 @@
     </div>
 
     <!-- Tab 3: Transaction Volume -->
-    <div class="tab-pane fade" id="tab-volume">
+    <div class="tab-pane fade" id="tab-volume" role="tabpanel">
         <p class="text-muted small mb-3">
             {{ _('Number of transactions (bars, left axis) and total amount (line, right axis) grouped by week or month.') }}
         </p>
@@ -178,7 +180,7 @@
     </div>
 
     <!-- Tab 4: Top Expense Items -->
-    <div class="tab-pane fade" id="tab-items">
+    <div class="tab-pane fade" id="tab-items" role="tabpanel">
         <div class="skeleton-placeholder" id="skel-items">
             <div class="skeleton mb-2" style="height:24px;width:90%"></div>
             <div class="skeleton mb-2" style="height:24px;width:75%"></div>
@@ -243,9 +245,9 @@
 
 <script nonce="{{ csp_nonce }}">
 // Theme colours injected from Flask
-const CLR_POS  = '{{ theme_balance_positive }}';
-const CLR_NEG  = '{{ theme_balance_negative }}';
-const CLR_PRI  = '{{ theme_navbar }}';
+const CLR_POS  = {{ theme_balance_positive | tojson }};
+const CLR_NEG  = {{ theme_balance_negative | tojson }};
+const CLR_PRI  = {{ theme_navbar | tojson }};
 const DECIMAL_SEP = {{ decimal_sep | tojson }};
 const CURRENCY_SYM = {{ currency_symbol | tojson }};
 
@@ -260,6 +262,14 @@ const LBL_ALL_USERS = {{ _('All users')|tojson }};
 const LBL_NO_USERS = {{ _('No users')|tojson }};
 const LBL_OF = {{ _('of')|tojson }};
 const LBL_USERS = {{ _('users')|tojson }};
+const LBL_LOAD_FAILED = {{ _('Could not load the chart data:')|tojson }};
+const EMPTY_DATA = {
+    balances: [],
+    balance_history: { labels: [], datasets: {} },
+    transaction_volume: { labels: [], counts: [], amounts: [] },
+    top_items: { names: [], counts: [], totals: [] },
+    meta: { date_from: '', date_to: '', transaction_count: 0, user_count: 0 },
+};
 
 function fmtMoney(v) {
     return parseFloat(v).toFixed(2).replace('.', DECIMAL_SEP);
@@ -306,7 +316,7 @@ function setPreset(days) {
     const to  = new Date();
     document.getElementById('filter-to').value   = fmt(to);
     if (days === 0) {
-        document.getElementById('filter-from').value = '2000-01-01';
+        document.getElementById('filter-from').value = {{ all_from | tojson }};
     } else {
         const from = new Date(to);
         from.setDate(from.getDate() - days);
@@ -335,6 +345,17 @@ async function loadData() {
     if (to)   params.set('date_to',   to);
     if (uids) params.set('users',     uids);
 
+    const errorBox = document.getElementById('analytics-error');
+    errorBox.hidden = true;
+
+    // Nothing ticked means nothing to show (the server would treat it as "all").
+    if (!uids) {
+        _data = EMPTY_DATA;
+        _renderAll(_data);
+        document.querySelectorAll('.skeleton-placeholder').forEach(el => el.style.display = 'none');
+        return;
+    }
+
     // Show skeletons, hide chart canvases
     document.querySelectorAll('.skeleton-placeholder').forEach(el => el.style.display = '');
     ['wrap-balances','wrap-history','wrap-volume','wrap-items'].forEach(id => {
@@ -348,6 +369,8 @@ async function loadData() {
         _renderAll(_data);
     } catch (e) {
         console.error('Analytics fetch failed:', e);
+        errorBox.textContent = LBL_LOAD_FAILED + ' ' + e.message;
+        errorBox.hidden = false;
     } finally {
         // Hide skeletons
         document.querySelectorAll('.skeleton-placeholder').forEach(el => el.style.display = 'none');
@@ -363,7 +386,7 @@ function _renderAll(d) {
     // Update print header
     const m = d.meta;
     document.getElementById('print-meta').textContent =
-        `${m.date_from} → ${m.date_to}  ·  ${m.transaction_count} ${LBL_TRANSACTIONS.toLowerCase()}  ·  ${m.user_count} ${LBL_USERS}`;
+        `${m.date_from} → ${m.date_to}  ·  ${m.transaction_count} ${LBL_TRANSACTIONS}  ·  ${m.user_count} ${LBL_USERS}`;
 }
 
 // Chart 1: Current Balances
@@ -532,7 +555,7 @@ function _renderVolume(vol) {
                 tooltip: {
                     callbacks: {
                         label: ctx => ctx.datasetIndex === 0
-                            ? ` ${ctx.raw} ${LBL_TRANSACTIONS.toLowerCase()}`
+                            ? ` ${ctx.raw} ${LBL_TRANSACTIONS}`
                             : ` ${CURRENCY_SYM}${fmtMoney(ctx.raw)}`
                     }
                 }
@@ -576,7 +599,7 @@ function _renderItems(items) {
     const values = byAmt ? items.totals : items.counts;
     const label  = byAmt ? `${LBL_TOTAL_AMOUNT} (${CURRENCY_SYM})` : LBL_TIMES_ORDERED;
     const labels = items.names.map(n => n.length > 32 ? n.slice(0, 30) + '…' : n);
-    const colors = PALETTE.slice(0, values.length);
+    const colors = values.map((_, i) => PALETTE[i % PALETTE.length]);
 
     // Grow canvas height proportionally to number of items
     wrap.style.height = Math.max(250, items.names.length * 36 + 60) + 'px';
@@ -604,7 +627,7 @@ function _renderItems(items) {
                     callbacks: {
                         label: ctx => byAmt
                             ? ` ${CURRENCY_SYM}${fmtMoney(ctx.parsed.x)}  (${items.counts[ctx.dataIndex]}×)`
-                            : ` ${ctx.parsed.x}×  (${CURRENCY_SYM}${fmtMoney(items.totals[ctx.dataIndex])} ${LBL_TOTAL.toLowerCase()})`
+                            : ` ${ctx.parsed.x}×  (${CURRENCY_SYM}${fmtMoney(items.totals[ctx.dataIndex])} ${LBL_TOTAL})`
                     }
                 }
             },

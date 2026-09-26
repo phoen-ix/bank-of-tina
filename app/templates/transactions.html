@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% block title %}{{ _('Transactions') }} - Bank of Tina{% endblock %}
+
 {% block content %}
 <div class="card">
     <div class="card-header d-flex flex-wrap align-items-center gap-2">
@@ -8,26 +10,26 @@
 
         <!-- Prev / Next navigation -->
         <a href="{{ url_for('main.view_transactions', year=prev_year, month=prev_month) }}"
-           class="btn btn-sm btn-outline-secondary">
+           class="btn btn-sm btn-outline-secondary" aria-label="{{ _('Previous month') }}">
             &#9664;
         </a>
         <strong class="px-1">{{ month_name }} {{ year }}</strong>
         {% if is_current_month %}
-            <button class="btn btn-sm btn-outline-secondary" disabled aria-disabled="true">&#9654;</button>
+            <button class="btn btn-sm btn-outline-secondary" disabled aria-label="{{ _('Next month') }}">&#9654;</button>
         {% else %}
             <a href="{{ url_for('main.view_transactions', year=next_year, month=next_month) }}"
-               class="btn btn-sm btn-outline-secondary">
+               class="btn btn-sm btn-outline-secondary" aria-label="{{ _('Next month') }}">
                 &#9654;
             </a>
         {% endif %}
 
         <!-- Jump-to picker -->
-        <select id="jump-month" class="form-select form-select-sm w-auto">
+        <select id="jump-month" class="form-select form-select-sm w-auto" aria-label="{{ _('Month') }}">
             {% for i in range(1, 13) %}
             <option value="{{ i }}" {% if i == month %}selected{% endif %}>{{ localized_months[i-1] }}</option>
             {% endfor %}
         </select>
-        <select id="jump-year" class="form-select form-select-sm w-auto">
+        <select id="jump-year" class="form-select form-select-sm w-auto" aria-label="{{ _('Year') }}">
             {% for y in year_range %}
             <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
             {% endfor %}
@@ -103,13 +105,13 @@
                             </td>
                             <td class="text-end text-nowrap">
                                 <a href="{{ url_for('main.edit_transaction', transaction_id=trans.id) }}"
-                                   class="btn btn-sm btn-outline-primary">
+                                   class="btn btn-sm btn-outline-primary" aria-label="{{ _('Edit') }}">
                                     <i class="bi bi-pencil"></i>
                                 </a>
                                 <form method="POST" action="{{ url_for('main.delete_transaction', transaction_id=trans.id) }}"
                                       class="d-inline"
                                       data-confirm="{{ _('Delete this transaction? Balances will be reversed.') }}">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="{{ _('Delete') }}">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </form>
@@ -160,7 +162,7 @@
     function jump() {
         var m = document.getElementById('jump-month').value;
         var y = document.getElementById('jump-year').value;
-        window.location = '{{ url_for("main.view_transactions") }}?year=' + y + '&month=' + m;
+        window.location = {{ url_for("main.view_transactions")|tojson }} + '?year=' + y + '&month=' + m;
     }
     document.getElementById('jump-month').addEventListener('change', jump);
     document.getElementById('jump-year').addEventListener('change', jump);

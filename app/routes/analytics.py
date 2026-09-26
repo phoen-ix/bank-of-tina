@@ -5,6 +5,7 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 from flask import Blueprint, Response, render_template, request, jsonify
+from flask_babel import format_date
 
 from extensions import db
 from models import User, Transaction, ExpenseItem
@@ -19,8 +20,10 @@ def analytics() -> str:
     today     = now_local().date()
     def_from  = (today - timedelta(days=90)).strftime('%Y-%m-%d')
     def_to    = today.strftime('%Y-%m-%d')
+    first     = db.session.execute(db.select(db.func.min(Transaction.date))).scalar()
+    all_from  = to_local(first).strftime('%Y-%m-%d') if first else def_to
     return render_template('analytics.html', users=users,
-                           default_from=def_from, default_to=def_to)
+                           default_from=def_from, default_to=def_to, all_from=all_from)
 
 
 @analytics_bp.route('/analytics/data')
@@ -126,9 +129,9 @@ def analytics_data() -> Response:
 
     sorted_vol_keys = sorted(vol.keys())
     if delta_days <= 90:
-        vol_labels = [datetime.strptime(k, '%Y-%m-%d').strftime('%b %d') for k in sorted_vol_keys]
+        vol_labels = [format_date(datetime.strptime(k, '%Y-%m-%d'), 'd MMM') for k in sorted_vol_keys]
     else:
-        vol_labels = [datetime.strptime(k + '-01', '%Y-%m-%d').strftime('%b %Y') for k in sorted_vol_keys]
+        vol_labels = [format_date(datetime.strptime(k + '-01', '%Y-%m-%d'), 'MMM yyyy') for k in sorted_vol_keys]
 
     transaction_volume = {
         'labels':  vol_labels,

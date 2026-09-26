@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% block title %}{{ _('Dashboard') }} - Bank of Tina{% endblock %}
+
 {% block content %}
 <div class="row">
     <div class="col-md-8">
@@ -65,7 +67,7 @@
                                 {% if trans.to_user %}
                                     → <strong>{{ trans.to_user.name }}</strong>
                                 {% endif %}
-                                <span class="text-success ms-2"><strong>{{ currency_symbol }}{{ trans.amount|money }}</strong></span>
+                                <span class="ms-2 {{ {'deposit': 'text-success', 'withdrawal': 'text-danger'}.get(trans.transaction_type, '') }}"><strong>{{ currency_symbol }}{{ trans.amount|money }}</strong></span>
                             </p>
                             {% if trans.receipt_path %}
                                 <small>

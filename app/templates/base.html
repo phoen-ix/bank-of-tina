@@ -50,7 +50,8 @@
             <a class="navbar-brand" href="{{ url_for('main.index') }}">
                 <i class="bi bi-bank"></i> Bank of Tina
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="{{ _('Toggle navigation') }}">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
@@ -74,9 +75,9 @@
                 <form class="d-flex ms-3" action="{{ url_for('main.search') }}" method="GET">
                     <div class="input-group input-group-sm">
                         <input class="form-control" type="search" name="q"
-                               placeholder="{{ _('Search transactions…') }}"
+                               placeholder="{{ _('Search transactions…') }}" aria-label="{{ _('Search transactions…') }}"
                                value="{{ request.args.get('q', '') if request.endpoint == 'main.search' else '' }}">
-                        <button class="btn btn-outline-light" type="submit">
+                        <button class="btn btn-outline-light" type="submit" aria-label="{{ _('Search') }}">
                             <i class="bi bi-search"></i>
                         </button>
                     </div>
@@ -93,7 +94,7 @@
                     <div class="toast align-items-center text-bg-{{ 'success' if category == 'success' else 'danger' }} border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="4000">
                         <div class="d-flex">
                             <div class="toast-body">{{ message }}</div>
-                            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="{{ _('Close') }}"></button>
                         </div>
                     </div>
                 {% endfor %}
@@ -116,27 +117,6 @@
     document.querySelectorAll('#toastContainer .toast').forEach(function(el) {
         bootstrap.Toast.getOrCreateInstance(el).show();
     });
-    function showToast(message, type) {
-        var container = document.getElementById('toastContainer');
-        var div = document.createElement('div');
-        div.className = 'toast align-items-center text-bg-' + (type || 'success') + ' border-0';
-        div.setAttribute('role', 'alert');
-        div.setAttribute('data-bs-delay', '4000');
-        var flex = document.createElement('div');
-        flex.className = 'd-flex';
-        var body = document.createElement('div');
-        body.className = 'toast-body';
-        body.textContent = message;
-        var btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'btn-close btn-close-white me-2 m-auto';
-        btn.setAttribute('data-bs-dismiss', 'toast');
-        flex.appendChild(body);
-        flex.appendChild(btn);
-        div.appendChild(flex);
-        container.appendChild(div);
-        bootstrap.Toast.getOrCreateInstance(div).show();
-    }
     // Auto-inject CSRF token into all POST forms
     (function() {
         var token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -158,6 +138,27 @@
     document.addEventListener('submit', function(e) {
         if (e.target.dataset.confirm && !confirm(e.target.dataset.confirm)) e.preventDefault();
     }, true);
+    // Disable the submit buttons of a POST form once it is really being sent, so
+    // a double click can't record something twice. Deferred so the clicked
+    // button's name/value is still part of the submission.
+    document.addEventListener('submit', function(e) {
+        if (e.defaultPrevented || e.target.method.toLowerCase() !== 'post') return;
+        var buttons = e.target.querySelectorAll('button[type="submit"], button:not([type])');
+        setTimeout(function() {
+            buttons.forEach(function(b) {
+                if (!b.disabled) { b.disabled = true; b.dataset.submitLock = '1'; }
+            });
+        }, 0);
+    });
+    // Coming back via the browser's back button restores the page as it was left.
+    window.addEventListener('pageshow', function(e) {
+        if (e.persisted) {
+            document.querySelectorAll('[data-submit-lock]').forEach(function(b) {
+                b.disabled = false;
+                delete b.dataset.submitLock;
+            });
+        }
+    });
     </script>
     <script nonce="{{ csp_nonce }}">
     if ('serviceWorker' in navigator) {

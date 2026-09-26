@@ -16,14 +16,14 @@
                     <datalist id="commonItemsList"></datalist>
 
                     <div class="mb-3">
-                        <label class="form-label">{{ _('Type') }}</label>
-                        <input type="text" class="form-control" value="{{ trans.transaction_type|tx_type }}" disabled>
+                        <label for="tx_type" class="form-label">{{ _('Type') }}</label>
+                        <input type="text" class="form-control" id="tx_type" value="{{ trans.transaction_type|tx_type }}" disabled>
                     </div>
 
                     <div class="mb-3">
                         <label for="description" class="form-label">{{ _('Description') }}</label>
                         <input type="text" class="form-control" id="description" name="description"
-                               value="{{ trans.description }}">
+                               value="{{ trans.description }}" maxlength="500">
                     </div>
 
                     <div class="mb-3">
@@ -73,6 +73,7 @@
                         </select>
                     </div>
 
+                    {% if trans.transaction_type == 'expense' %}
                     <!-- Expense Items -->
                     <div class="mb-4">
                         <div class="card">
@@ -93,10 +94,11 @@
                             </div>
                         </div>
                     </div>
+                    {% endif %}
 
                     <!-- Receipt -->
                     <div class="mb-4">
-                        <label class="form-label">{{ _('Receipt / Attachment') }}</label>
+                        <div class="form-label">{{ _('Receipt / Attachment') }}</div>
                         {% if trans.receipt_path %}
                             <div class="d-flex align-items-center gap-3 mb-2">
                                 <a href="{{ url_for('main.view_receipt', filepath=trans.receipt_path) }}"
@@ -113,7 +115,7 @@
                             </div>
                         {% endif %}
                         <input type="file" class="form-control form-control-sm" name="receipt"
-                               accept=".jpg,.jpeg,.png,.pdf">
+                               accept=".jpg,.jpeg,.png,.pdf" aria-label="{{ _('Receipt / Attachment') }}">
                         <div class="form-text">
                             {% if trans.receipt_path %}{{ _('Uploading a new file replaces the current one.') }}{% else %}{{ _('JPG, PNG or PDF.') }}{% endif %}
                         </div>
@@ -133,128 +135,111 @@
         </div>
     </div>
 </div>
+
+<template id="itemRowTemplate">
+    <div class="row g-2 mb-2 item-row align-items-center">
+        <div class="col">
+            <input type="text" class="form-control form-control-sm item-name" placeholder="{{ _('Item name') }}"
+                   aria-label="{{ _('Item name') }}" list="commonItemsList" maxlength="200">
+        </div>
+        <div class="col-auto" style="width:130px">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text">{{ currency_symbol }}</span>
+                <input type="text" inputmode="decimal" class="form-control item-price"
+                       placeholder="0{{ decimal_sep }}00" aria-label="{{ _('Price') }}">
+            </div>
+        </div>
+        <div class="col-auto">
+            <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row" aria-label="{{ _('Remove item') }}">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    </div>
+</template>
 {% endblock %}
 
 {% block scripts %}
+<script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/money.js') }}"></script>
 <script nonce="{{ csp_nonce }}">
 const DECIMAL_SEP = {{ decimal_sep | tojson }};
-const CURRENCY_SYM = {{ currency_symbol | tojson }};
-const MSG_ITEM_NAME = {{ _('Item name')|tojson }};
-let rowCounter = 0;
-
-// Existing items from the server
-const initialItems = [
-    {% for item in trans.items %}
-    { name: {{ item.item_name | tojson }}, price: {{ item.price }} }{% if not loop.last %},{% endif %}
-    {% endfor %}
-];
-
-function normalizeDecimal(s) {
-    return DECIMAL_SEP === ',' ? String(s).replace(',', '.') : String(s);
-}
-
-function fmtPrice(val) {
-    const n = parseFloat(val);
-    return isNaN(n) ? '' : n.toFixed(2).replace('.', DECIMAL_SEP);
-}
-
-function escAttr(str) {
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/"/g, '&quot;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-}
+const MSG_BAD_PRICE = {{ _('Please enter a valid price.')|tojson }};
+const itemsBox = document.getElementById('itemsContainer');   // null unless an expense
+const amountInput = document.getElementById('amount');
+const originalAmount = amountInput.value;
 
 function addItemRow(name = '', price = '') {
-    rowCounter++;
-    const id = rowCounter;
-    const displayPrice = price !== '' ? fmtPrice(price) : '';
-    const row = document.createElement('div');
-    row.className = 'row g-2 mb-2 item-row align-items-center';
-    row.id = 'itemRow_' + id;
-    row.innerHTML =
-        '<div class="col">' +
-            '<input type="text" class="form-control form-control-sm item-name" placeholder="' + MSG_ITEM_NAME + '"' +
-            ' list="commonItemsList" value="' + escAttr(name) + '">' +
-        '</div>' +
-        '<div class="col-auto" style="width:130px">' +
-            '<div class="input-group input-group-sm">' +
-                '<span class="input-group-text">' + CURRENCY_SYM + '</span>' +
-                '<input type="text" inputmode="decimal" class="form-control item-price" placeholder="0' + DECIMAL_SEP + '00"' +
-                ' value="' + escAttr(displayPrice) + '">' +
-            '</div>' +
-        '</div>' +
-        '<div class="col-auto">' +
-            '<button type="button" class="btn btn-sm btn-outline-danger btn-remove-row" data-row-id="' + id + '">' +
-                '<i class="bi bi-trash"></i>' +
-            '</button>' +
-        '</div>';
-    document.getElementById('itemsContainer').appendChild(row);
-    document.getElementById('noItemsMsg').style.display = 'none';
+    const frag = document.getElementById('itemRowTemplate').content.cloneNode(true);
+    frag.querySelector('.item-name').value = name;
+    frag.querySelector('.item-price').value = price === '' ? '' : fmtCents(parseCents(price), DECIMAL_SEP);
+    itemsBox.appendChild(frag);
     syncTotal();
 }
 
-function removeItemRow(id) {
-    document.getElementById('itemRow_' + id).remove();
-    const hasRows = document.querySelectorAll('.item-row').length > 0;
-    document.getElementById('noItemsMsg').style.display = hasRows ? 'none' : '';
-    syncTotal();
-}
-
+// With items, the amount is their sum (the server recomputes it too), so the
+// field is read-only; without items it is editable and starts from the original.
 function syncTotal() {
+    const rows = itemsBox.querySelectorAll('.item-row');
     let total = 0;
-    document.querySelectorAll('.item-price').forEach(el => {
-        total += parseFloat(normalizeDecimal(el.value)) || 0;
+    rows.forEach(row => {
+        const input = row.querySelector('.item-price');
+        const cents = parseCents(input.value);
+        input.classList.toggle('is-invalid', Number.isNaN(cents));
+        if (cents > 0) total += cents;
     });
-    const totalFmt = total.toFixed(2).replace('.', DECIMAL_SEP);
+    const totalFmt = fmtCents(total, DECIMAL_SEP);
     document.getElementById('itemsTotal').textContent = totalFmt;
-
-    const hasItems = document.querySelectorAll('.item-row').length > 0;
-    if (hasItems) {
-        document.getElementById('amount').value = totalFmt;
-        document.getElementById('amountNote').style.display = '';
-    } else {
-        document.getElementById('amountNote').style.display = 'none';
-    }
+    document.getElementById('noItemsMsg').style.display = rows.length ? 'none' : '';
+    document.getElementById('amountNote').style.display = rows.length ? '' : 'none';
+    amountInput.readOnly = rows.length > 0;
+    amountInput.value = rows.length ? totalFmt : originalAmount;
 }
 
-document.getElementById('editForm').addEventListener('submit', function() {
+document.getElementById('editForm').addEventListener('submit', function(e) {
+    if (!itemsBox) return;   // not an expense: items_json stays blank, items untouched
     const items = [];
-    document.querySelectorAll('.item-row').forEach(row => {
-        const name  = row.querySelector('.item-name').value.trim();
-        const price = normalizeDecimal(row.querySelector('.item-price').value);
-        if (name && price) {
-            items.push({ name, price });
+    for (const row of itemsBox.querySelectorAll('.item-row')) {
+        const name = row.querySelector('.item-name').value.trim();
+        const raw = row.querySelector('.item-price').value.trim();
+        if (!name && !raw) continue;
+        const cents = parseCents(raw);
+        if (!name || !(cents > 0)) {
+            e.preventDefault();
+            alert(MSG_BAD_PRICE);
+            return;
         }
-    });
-    // Always send a list: "[]" tells the server every item was removed.
+        items.push({ name, price: fmtCents(cents, '.') });
+    }
+    // Always a list: "[]" tells the server every item was removed.
     document.getElementById('items_json').value = JSON.stringify(items);
 });
 
-// Populate common items datalist
-fetch('/api/common-items')
-    .then(r => r.json())
-    .then(items => {
-        const dl = document.getElementById('commonItemsList');
-        items.forEach(item => {
-            const opt = document.createElement('option');
-            opt.value = item.name;
-            dl.appendChild(opt);
-        });
+if (itemsBox) {
+    fetch('/api/common-items')
+        .then(r => r.json())
+        .then(items => {
+            const dl = document.getElementById('commonItemsList');
+            items.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.name;
+                dl.appendChild(opt);
+            });
+        })
+        .catch(() => {});
+
+    {% for item in trans.items %}
+    addItemRow({{ item.item_name | tojson }}, {{ item.price | string | tojson }});
+    {% endfor %}
+    syncTotal();
+
+    document.getElementById('btn-add-item-row').addEventListener('click', () => addItemRow());
+    itemsBox.addEventListener('input', syncTotal);
+    itemsBox.addEventListener('click', function(e) {
+        const btn = e.target.closest('.btn-remove-row');
+        if (btn) {
+            btn.closest('.item-row').remove();
+            syncTotal();
+        }
     });
-
-// Pre-populate with existing items
-initialItems.forEach(item => addItemRow(item.name, item.price));
-
-// Wire up Add Item button and delegate container events
-document.getElementById('btn-add-item-row').addEventListener('click', function() { addItemRow(); });
-document.getElementById('itemsContainer').addEventListener('input', function(e) {
-    if (e.target.classList.contains('item-price')) syncTotal();
-});
-document.getElementById('itemsContainer').addEventListener('click', function(e) {
-    var btn = e.target.closest('.btn-remove-row');
-    if (btn) removeItemRow(parseInt(btn.dataset.rowId, 10));
-});
+}
 </script>
 {% endblock %}

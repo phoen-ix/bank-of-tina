@@ -7,39 +7,45 @@
     <h2><i class="bi bi-gear"></i> {{ _('Settings') }}</h2>
 </div>
 
-<ul class="nav nav-tabs mb-4" id="settingsTabs">
-    <li class="nav-item">
-        <button class="nav-link" id="tab-btn-general"
+<ul class="nav nav-tabs mb-4" id="settingsTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="tab-btn-general" role="tab" aria-controls="tab-general"
+                aria-selected="true"
                 data-bs-toggle="tab" data-bs-target="#tab-general" type="button">
             <i class="bi bi-sliders"></i> {{ _('General') }}
         </button>
     </li>
-    <li class="nav-item">
-        <button class="nav-link" id="tab-btn-email"
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-btn-email" role="tab" aria-controls="tab-email"
+                aria-selected="false"
                 data-bs-toggle="tab" data-bs-target="#tab-email" type="button">
             <i class="bi bi-envelope"></i> {{ _('Email') }}
         </button>
     </li>
-    <li class="nav-item">
-        <button class="nav-link" id="tab-btn-common-items"
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-btn-common-items" role="tab" aria-controls="tab-common-items"
+                aria-selected="false"
                 data-bs-toggle="tab" data-bs-target="#tab-common-items" type="button">
             <i class="bi bi-bookmark-star"></i> {{ _('Common') }}
         </button>
     </li>
-    <li class="nav-item">
-        <button class="nav-link" id="tab-btn-backup"
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-btn-backup" role="tab" aria-controls="tab-backup"
+                aria-selected="false"
                 data-bs-toggle="tab" data-bs-target="#tab-backup" type="button">
             <i class="bi bi-archive"></i> {{ _('Backup') }}
         </button>
     </li>
-    <li class="nav-item">
-        <button class="nav-link" id="tab-btn-templates"
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-btn-templates" role="tab" aria-controls="tab-templates"
+                aria-selected="false"
                 data-bs-toggle="tab" data-bs-target="#tab-templates" type="button">
             <i class="bi bi-palette"></i> {{ _('Templates') }}
         </button>
     </li>
-    <li class="nav-item">
-        <button class="nav-link" id="tab-btn-users"
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-btn-users" role="tab" aria-controls="tab-users"
+                aria-selected="false"
                 data-bs-toggle="tab" data-bs-target="#tab-users" type="button">
             <i class="bi bi-people"></i> {{ _('Users') }}
             {% if all_users %}
@@ -52,7 +58,7 @@
 <div class="tab-content">
 
     <!-- ── General tab ── -->
-    <div class="tab-pane fade" id="tab-general">
+    <div class="tab-pane fade show active" id="tab-general" role="tabpanel" aria-labelledby="tab-btn-general">
         <div class="card">
             <div class="card-header">
                 <i class="bi bi-sliders"></i> {{ _('General') }}
@@ -174,7 +180,7 @@
     </div><!-- /tab-general -->
 
     <!-- ── Email tab ── -->
-    <div class="tab-pane fade" id="tab-email">
+    <div class="tab-pane fade" id="tab-email" role="tabpanel" aria-labelledby="tab-btn-email">
         <div class="row g-4">
 
             <!-- Left: credentials -->
@@ -339,7 +345,7 @@
                                 </div>
 
                                 <div class="mb-4">
-                                    <label class="form-label">{{ _('Time') }} <span class="text-muted">(24 h)</span></label>
+                                    <label class="form-label">{{ _('Time') }} <span class="text-muted">({{ _('24-hour') }})</span></label>
                                     <div class="d-flex align-items-center gap-2">
                                         <select class="form-select w-auto" name="schedule_hour">
                                             {% for h in range(24) %}
@@ -398,7 +404,7 @@
             </div>
             <div class="card-body">
                 {% if email_logs %}
-                <pre class="bg-dark text-light p-3 rounded small mb-0" style="max-height: 400px; overflow-y: auto; font-size: 0.78rem;">{% for log in email_logs %}{{ log.sent_at.strftime('%Y-%m-%d %H:%M') }} [{{ log.level|upper }}] {% if log.recipient %}{{ '%-40s'|format(log.recipient) }} {% endif %}{{ log.message }}
+                <pre class="bg-dark text-light p-3 rounded small mb-0" style="max-height: 400px; overflow-y: auto; font-size: 0.78rem;">{% for log in email_logs %}{{ log.sent_at | localdt }} [{{ log.level|upper }}] {% if log.recipient %}{{ '%-40s'|format(log.recipient) }} {% endif %}{{ log.message }}
 {% endfor %}</pre>
                 {% else %}
                 <p class="text-muted small mb-0">{{ _('No log entries yet. Send emails to generate log entries.') }}</p>
@@ -410,7 +416,7 @@
     </div><!-- /tab-email -->
 
     <!-- ── Common tab ── -->
-    <div class="tab-pane fade" id="tab-common-items">
+    <div class="tab-pane fade" id="tab-common-items" role="tabpanel" aria-labelledby="tab-btn-common-items">
 
         <!-- Card 1 — Global toggle -->
         <div class="card mb-4">
@@ -786,7 +792,7 @@
                     </form>
                 </div>
                 {% if auto_collect_logs %}
-                <pre class="bg-dark text-light p-3 rounded small" style="max-height: 400px; overflow-y: auto; font-size: 0.78rem;">{% for log in auto_collect_logs %}{{ log.ran_at.strftime('%Y-%m-%d %H:%M') }} [{{ log.level|upper }}] {{ '%-12s'|format(log.category) }} {{ log.message }}
+                <pre class="bg-dark text-light p-3 rounded small" style="max-height: 400px; overflow-y: auto; font-size: 0.78rem;">{% for log in auto_collect_logs %}{{ log.ran_at | localdt }} [{{ log.level|upper }}] {{ '%-12s'|format(log.category) }} {{ log.message }}
 {% endfor %}</pre>
                 {% else %}
                 <p class="text-muted small">{{ _('No log entries yet. Run auto-collect to generate log entries.') }}</p>
@@ -799,7 +805,7 @@
     </div><!-- /tab-common-items -->
 
     <!-- ── Backup tab ── -->
-    <div class="tab-pane fade" id="tab-backup">
+    <div class="tab-pane fade" id="tab-backup" role="tabpanel" aria-labelledby="tab-btn-backup">
 
         <!-- Card 1 — Backups list + Create Now -->
         <div class="card mb-4">
@@ -832,7 +838,7 @@
                                     {% if mb >= 1 %}{{ '%.1f'|format(mb) }} MB
                                     {% else %}{{ '%.0f'|format(b.size / 1024) }} KB{% endif %}
                                 </td>
-                                <td class="text-muted small">{{ b.modified.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td class="text-muted small">{{ b.modified | localdt }}</td>
                                 <td class="text-end">
                                     <div class="d-flex gap-2 justify-content-end">
                                         <a href="{{ url_for('settings_bp.backup_download', filename=b.filename) }}"
@@ -846,7 +852,8 @@
                                         <form method="POST" action="{{ url_for('settings_bp.backup_delete', filename=b.filename) }}"
                                               class="d-inline">
                                             <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                    data-confirm="{{ _('Delete %(filename)s?', filename=b.filename) }}">
+                                                    data-confirm="{{ _('Delete %(filename)s?', filename=b.filename) }}"
+                                                    aria-label="{{ _('Delete') }}">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </form>
@@ -1022,7 +1029,7 @@
             </div>
             <div class="card-body">
                 {% if backup_logs %}
-                <pre class="bg-dark text-light p-3 rounded small mb-0" style="max-height: 400px; overflow-y: auto; font-size: 0.78rem;">{% for log in backup_logs %}{{ log.ran_at.strftime('%Y-%m-%d %H:%M') }} [{{ log.level|upper }}] {{ log.message }}
+                <pre class="bg-dark text-light p-3 rounded small mb-0" style="max-height: 400px; overflow-y: auto; font-size: 0.78rem;">{% for log in backup_logs %}{{ log.ran_at | localdt }} [{{ log.level|upper }}] {{ log.message }}
 {% endfor %}</pre>
                 {% else %}
                 <p class="text-muted small mb-0">{{ _('No log entries yet.') }}</p>
@@ -1034,7 +1041,7 @@
     </div><!-- /tab-backup -->
 
     <!-- ── Templates tab ── -->
-    <div class="tab-pane fade" id="tab-templates">
+    <div class="tab-pane fade" id="tab-templates" role="tabpanel" aria-labelledby="tab-btn-templates">
         <form method="POST" action="{{ url_for('settings_bp.settings_templates') }}">
 
             <!-- Colors / Theme -->
@@ -1048,8 +1055,10 @@
                         <label class="form-label">{{ _('Preset theme') }}</label>
                         <select class="form-select" id="theme_preset" style="max-width: 220px">
                             <option value="custom" {% if current_theme == 'custom' %}selected{% endif %}>{{ _('— Custom —') }}</option>
+                            {% set theme_names = {'default': _('Default'), 'classic': _('Classic'), 'ocean': _('Ocean'),
+                                                  'forest': _('Forest'), 'sunset': _('Sunset'), 'slate': _('Slate')} %}
                             {% for key, theme in themes.items() %}
-                            <option value="{{ key }}" {% if current_theme == key %}selected{% endif %}>{{ theme.label }}</option>
+                            <option value="{{ key }}" {% if current_theme == key %}selected{% endif %}>{{ theme_names.get(key, theme.label) }}</option>
                             {% endfor %}
                         </select>
                         <div class="form-text">{{ _('Selecting a preset fills all color pickers below. Changing any picker switches to Custom.') }}</div>
@@ -1059,65 +1068,60 @@
                         <div class="col-sm-6 col-lg-4">
                             <label for="color_navbar" class="form-label">{{ _('Navbar color') }}</label>
                             <div class="input-group" style="max-width: 240px">
-                                <input type="color" class="form-control form-control-color"
+                                <input type="color" class="form-control form-control-color color-picker"
                                        id="color_navbar" name="color_navbar"
-                                       value="{{ cfg.color_navbar }}"
-                                       class="color-picker">
+                                       value="{{ cfg.color_navbar }}">
                                 <input type="text" class="form-control font-monospace hex-input"
                                        id="color_navbar_hex" value="{{ cfg.color_navbar }}"
-                                       maxlength="7" style="max-width: 90px"
+                                       maxlength="7" style="max-width: 90px" aria-label="{{ _('Hex value') }}"
                                        data-picker="color_navbar">
                             </div>
                         </div>
                         <div class="col-sm-6 col-lg-4">
                             <label for="color_email_grad_start" class="form-label">{{ _('Email gradient start') }}</label>
                             <div class="input-group" style="max-width: 240px">
-                                <input type="color" class="form-control form-control-color"
+                                <input type="color" class="form-control form-control-color color-picker"
                                        id="color_email_grad_start" name="color_email_grad_start"
-                                       value="{{ cfg.color_email_grad_start }}"
-                                       class="color-picker">
+                                       value="{{ cfg.color_email_grad_start }}">
                                 <input type="text" class="form-control font-monospace hex-input"
                                        id="color_email_grad_start_hex" value="{{ cfg.color_email_grad_start }}"
-                                       maxlength="7" style="max-width: 90px"
+                                       maxlength="7" style="max-width: 90px" aria-label="{{ _('Hex value') }}"
                                        data-picker="color_email_grad_start">
                             </div>
                         </div>
                         <div class="col-sm-6 col-lg-4">
                             <label for="color_email_grad_end" class="form-label">{{ _('Email gradient end') }}</label>
                             <div class="input-group" style="max-width: 240px">
-                                <input type="color" class="form-control form-control-color"
+                                <input type="color" class="form-control form-control-color color-picker"
                                        id="color_email_grad_end" name="color_email_grad_end"
-                                       value="{{ cfg.color_email_grad_end }}"
-                                       class="color-picker">
+                                       value="{{ cfg.color_email_grad_end }}">
                                 <input type="text" class="form-control font-monospace hex-input"
                                        id="color_email_grad_end_hex" value="{{ cfg.color_email_grad_end }}"
-                                       maxlength="7" style="max-width: 90px"
+                                       maxlength="7" style="max-width: 90px" aria-label="{{ _('Hex value') }}"
                                        data-picker="color_email_grad_end">
                             </div>
                         </div>
                         <div class="col-sm-6 col-lg-4">
                             <label for="color_balance_positive" class="form-label">{{ _('Positive balance color') }}</label>
                             <div class="input-group" style="max-width: 240px">
-                                <input type="color" class="form-control form-control-color"
+                                <input type="color" class="form-control form-control-color color-picker"
                                        id="color_balance_positive" name="color_balance_positive"
-                                       value="{{ cfg.color_balance_positive }}"
-                                       class="color-picker">
+                                       value="{{ cfg.color_balance_positive }}">
                                 <input type="text" class="form-control font-monospace hex-input"
                                        id="color_balance_positive_hex" value="{{ cfg.color_balance_positive }}"
-                                       maxlength="7" style="max-width: 90px"
+                                       maxlength="7" style="max-width: 90px" aria-label="{{ _('Hex value') }}"
                                        data-picker="color_balance_positive">
                             </div>
                         </div>
                         <div class="col-sm-6 col-lg-4">
                             <label for="color_balance_negative" class="form-label">{{ _('Negative balance color') }}</label>
                             <div class="input-group" style="max-width: 240px">
-                                <input type="color" class="form-control form-control-color"
+                                <input type="color" class="form-control form-control-color color-picker"
                                        id="color_balance_negative" name="color_balance_negative"
-                                       value="{{ cfg.color_balance_negative }}"
-                                       class="color-picker">
+                                       value="{{ cfg.color_balance_negative }}">
                                 <input type="text" class="form-control font-monospace hex-input"
                                        id="color_balance_negative_hex" value="{{ cfg.color_balance_negative }}"
-                                       maxlength="7" style="max-width: 90px"
+                                       maxlength="7" style="max-width: 90px" aria-label="{{ _('Hex value') }}"
                                        data-picker="color_balance_negative">
                             </div>
                         </div>
@@ -1142,32 +1146,32 @@
                         <label for="tpl_email_subject" class="form-label">{{ _('Subject') }}</label>
                         <input type="text" class="form-control" id="tpl_email_subject"
                                name="tpl_email_subject" value="{{ cfg.tpl_email_subject }}"
-                               placeholder="Bank of Tina - Weekly Balance Update ([Date])">
+                               placeholder="{{ tpl_defaults.tpl_email_subject }}">
                     </div>
                     <div class="mb-3">
                         <label for="tpl_email_greeting" class="form-label">{{ _('Greeting') }}</label>
                         <input type="text" class="form-control" id="tpl_email_greeting"
                                name="tpl_email_greeting" value="{{ cfg.tpl_email_greeting }}"
-                               placeholder="Hi [Name],">
+                               placeholder="{{ tpl_defaults.tpl_email_greeting }}">
                         <div class="form-text">{{ _('First line of the email body.') }}</div>
                     </div>
                     <div class="mb-3">
                         <label for="tpl_email_intro" class="form-label">{{ _('Intro line') }}</label>
                         <input type="text" class="form-control" id="tpl_email_intro"
                                name="tpl_email_intro" value="{{ cfg.tpl_email_intro }}"
-                               placeholder="Here's your weekly update from the Bank of Tina:">
+                               placeholder="{{ tpl_defaults.tpl_email_intro }}">
                     </div>
                     <div class="mb-3">
                         <label for="tpl_email_footer1" class="form-label">{{ _('Footer line 1') }}</label>
                         <input type="text" class="form-control" id="tpl_email_footer1"
                                name="tpl_email_footer1" value="{{ cfg.tpl_email_footer1 }}"
-                               placeholder="This is an automated weekly update from the Bank of Tina system.">
+                               placeholder="{{ tpl_defaults.tpl_email_footer1 }}">
                     </div>
                     <div class="mb-3">
                         <label for="tpl_email_footer2" class="form-label">{{ _('Footer line 2') }}</label>
                         <input type="text" class="form-control" id="tpl_email_footer2"
                                name="tpl_email_footer2" value="{{ cfg.tpl_email_footer2 }}"
-                               placeholder="Making office lunches easier! 🥗">
+                               placeholder="{{ tpl_defaults.tpl_email_footer2 }}">
                     </div>
                 </div>
             </div>
@@ -1189,19 +1193,19 @@
                         <label for="tpl_admin_subject" class="form-label">{{ _('Subject') }}</label>
                         <input type="text" class="form-control" id="tpl_admin_subject"
                                name="tpl_admin_subject" value="{{ cfg.tpl_admin_subject }}"
-                               placeholder="Bank of Tina - Admin Summary ([Date])">
+                               placeholder="{{ tpl_defaults.tpl_admin_subject }}">
                     </div>
                     <div class="mb-3">
                         <label for="tpl_admin_intro" class="form-label">{{ _('Intro line') }}</label>
                         <input type="text" class="form-control" id="tpl_admin_intro"
                                name="tpl_admin_intro" value="{{ cfg.tpl_admin_intro }}"
-                               placeholder="(optional intro above the table)">
+                               placeholder="{{ _('(optional intro above the table)') }}">
                     </div>
                     <div class="mb-3">
                         <label for="tpl_admin_footer" class="form-label">{{ _('Footer') }}</label>
                         <input type="text" class="form-control" id="tpl_admin_footer"
                                name="tpl_admin_footer" value="{{ cfg.tpl_admin_footer }}"
-                               placeholder="This is an automated admin summary from the Bank of Tina system.">
+                               placeholder="{{ tpl_defaults.tpl_admin_footer }}">
                     </div>
                     <div class="mb-3">
                         <div class="form-check form-switch">
@@ -1234,13 +1238,13 @@
                         <label for="tpl_backup_subject" class="form-label">{{ _('Subject') }}</label>
                         <input type="text" class="form-control" id="tpl_backup_subject"
                                name="tpl_backup_subject" value="{{ cfg.tpl_backup_subject }}"
-                               placeholder="Bank of Tina - Backup [BackupStatus] ([Date])">
+                               placeholder="{{ tpl_defaults.tpl_backup_subject }}">
                     </div>
                     <div class="mb-3">
                         <label for="tpl_backup_footer" class="form-label">{{ _('Footer') }}</label>
                         <input type="text" class="form-control" id="tpl_backup_footer"
                                name="tpl_backup_footer" value="{{ cfg.tpl_backup_footer }}"
-                               placeholder="This is an automated backup report from the Bank of Tina system.">
+                               placeholder="{{ tpl_defaults.tpl_backup_footer }}">
                     </div>
                 </div>
             </div>
@@ -1321,7 +1325,7 @@
     </div><!-- /tab-templates -->
 
     <!-- ── Users tab ── -->
-    <div class="tab-pane fade" id="tab-users">
+    <div class="tab-pane fade" id="tab-users" role="tabpanel" aria-labelledby="tab-btn-users">
 
         <!-- Add User -->
         <div class="card mb-4">
@@ -1472,104 +1476,116 @@
 
 {% block scripts %}
 <script nonce="{{ csp_nonce }}">
-function toggleScheduleFields(checkbox) {
-    document.getElementById('schedule_fields').style.display = checkbox.checked ? '' : 'none';
-}
-
-function toggleCommonAutoFields(checkbox) {
-    document.getElementById('common_auto_fields').style.display = checkbox.checked ? '' : 'none';
-}
-
-function toggleBackupFields(checkbox) {
-    document.getElementById('backup_schedule_fields').style.display = checkbox.checked ? '' : 'none';
-}
+const MSG = {
+    restoreConfirm: {{ (_("Restore from this backup?") ~ "\n\n" ~ _("This will overwrite the current database and all receipt images. A backup of the current state is created first."))|tojson }},
+    selectFile:     {{ _("Please select a file first.")|tojson }},
+    emptyFile:      {{ _("The selected file is empty.")|tojson }},
+    tooLarge:       {{ _("The file is too large (max 2 GB).")|tojson }},
+    uploading:      {{ _("Uploading…")|tojson }},
+    uploadDone:     {{ _("Upload complete:")|tojson }},
+    uploadError:    {{ _("Upload error:")|tojson }},
+    resetConfirm:   {{ _("Reset all templates and colors to defaults?")|tojson }},
+};
 
 function confirmRestore(filename) {
-    if (!confirm('{{ _("Restore from this backup?") }}\n\n{{ _("This will overwrite the current database and all receipt images. This cannot be undone.") }}')) return;
+    if (!confirm(MSG.restoreConfirm)) return;
     const form = document.getElementById('restoreForm');
     form.action = '/backups/restore/' + encodeURIComponent(filename);
     form.submit();
 }
 
+// crypto.randomUUID() only exists on HTTPS/localhost; getRandomValues() works everywhere.
+function newUploadId() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    const b = crypto.getRandomValues(new Uint8Array(16));
+    b[6] = (b[6] & 0x0f) | 0x40;
+    b[8] = (b[8] & 0x3f) | 0x80;
+    const h = Array.from(b, x => x.toString(16).padStart(2, '0')).join('');
+    return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
+
 function startChunkedUpload() {
-    const fileInput = document.getElementById('backupFileInput');
-    const file = fileInput.files[0];
-    if (!file) { alert('{{ _("Please select a file first.") }}'); return; }
+    const file = document.getElementById('backupFileInput').files[0];
+    if (!file) { alert(MSG.selectFile); return; }
+    if (!file.size) { alert(MSG.emptyFile); return; }
 
-    const CHUNK_SIZE = 5 * 1024 * 1024; // 5 MB
+    const CHUNK_SIZE = 5 * 1024 * 1024;   // 5 MB; the server accepts at most 400 chunks
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-    const uploadId = crypto.randomUUID();
+    if (totalChunks > 400) { alert(MSG.tooLarge); return; }
+    const uploadId = newUploadId();
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-    const btn       = document.getElementById('uploadBtn');
-    const progress  = document.getElementById('uploadProgress');
-    const bar       = document.getElementById('uploadProgressBar');
-    const status    = document.getElementById('uploadStatus');
+    const btn      = document.getElementById('uploadBtn');
+    const progress = document.getElementById('uploadProgress');
+    const bar      = document.getElementById('uploadProgressBar');
+    const status   = document.getElementById('uploadStatus');
 
     btn.disabled = true;
     progress.style.display = '';
+    bar.classList.add('progress-bar-animated');
+    bar.classList.remove('bg-danger');
 
-    let chunkIndex = 0;
+    function fail(message) {
+        status.textContent = MSG.uploadError + ' ' + message;
+        bar.classList.remove('progress-bar-animated');
+        bar.classList.add('bg-danger');
+        btn.disabled = false;
+    }
 
-    function uploadNext() {
-        if (chunkIndex >= totalChunks) return;
-
+    function uploadNext(chunkIndex) {
         const start = chunkIndex * CHUNK_SIZE;
-        const end   = Math.min(start + CHUNK_SIZE, file.size);
-        const chunk = file.slice(start, end);
-
         const fd = new FormData();
         fd.append('uploadId',    uploadId);
         fd.append('chunkIndex',  chunkIndex);
         fd.append('totalChunks', totalChunks);
-        fd.append('chunk',       chunk);
+        fd.append('chunk',       file.slice(start, Math.min(start + CHUNK_SIZE, file.size)));
 
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         fetch('/backups/upload-chunk', { method: 'POST', body: fd, headers: {'X-CSRFToken': csrfToken} })
-            .then(r => r.json())
+            .then(r => r.json().catch(() => ({})).then(data => {
+                if (!r.ok || data.error) throw new Error(data.error || ('HTTP ' + r.status));
+                return data;
+            }))
             .then(data => {
-                chunkIndex++;
-                const pct = Math.round((chunkIndex / totalChunks) * 100);
+                const pct = Math.round(((chunkIndex + 1) / totalChunks) * 100);
                 bar.style.width = pct + '%';
                 bar.textContent = pct + '%';
-                status.textContent = `{{ _('Uploading…') }} ${chunkIndex} / ${totalChunks}`;
-
+                status.textContent = `${MSG.uploading} ${chunkIndex + 1} / ${totalChunks}`;
                 if (data.done) {
                     bar.classList.remove('progress-bar-animated');
-                    status.textContent = '{{ _("Upload complete:") }} ' + data.filename;
-                    btn.disabled = false;
+                    status.textContent = MSG.uploadDone + ' ' + data.filename;
                     setTimeout(() => location.reload(), 1200);
+                } else if (chunkIndex + 1 < totalChunks) {
+                    uploadNext(chunkIndex + 1);
                 } else {
-                    uploadNext();
+                    fail('incomplete upload');
                 }
             })
-            .catch(err => {
-                status.textContent = '{{ _("Upload error:") }} ' + err;
-                btn.disabled = false;
-            });
+            .catch(err => fail(err.message));
     }
 
-    uploadNext();
+    uploadNext(0);
 }
 
 // Persist active tab across redirects (e.g. after saving common items)
 const STORAGE_KEY = 'settingsActiveTab';
-const defaultTab  = '#tab-general';
+const TAB_BUTTONS = Array.from(document.querySelectorAll('#settingsTabs [data-bs-toggle="tab"]'));
 
 function activateTab(targetId) {
-    const btn = document.querySelector(`[data-bs-target="${targetId}"]`);
+    // Only known tabs: the value comes from the URL or sessionStorage.
+    const btn = TAB_BUTTONS.find(b => b.dataset.bsTarget === targetId);
     if (btn) bootstrap.Tab.getOrCreateInstance(btn).show();
 }
 
 // Save tab choice whenever the user switches
-document.querySelectorAll('[data-bs-toggle="tab"]').forEach(btn => {
+TAB_BUTTONS.forEach(btn => {
     btn.addEventListener('shown.bs.tab', e => {
         sessionStorage.setItem(STORAGE_KEY, e.target.dataset.bsTarget);
     });
 });
 
-// Restore on load — honour ?tab= URL param first, then sessionStorage, then default
+// Restore on load — honour ?tab= URL param first, then sessionStorage (General is active by default)
 const urlTab = new URLSearchParams(window.location.search).get('tab');
-activateTab(urlTab ? '#tab-' + urlTab : (sessionStorage.getItem(STORAGE_KEY) || defaultTab));
+activateTab(urlTab ? '#tab-' + urlTab : sessionStorage.getItem(STORAGE_KEY));
 
 // ── Templates: theme preset / color picker logic ───────────────────────────
 
@@ -1637,9 +1653,13 @@ document.getElementById('theme_preset').addEventListener('change', function() {
     applyThemePreset(this.value);
 });
 
-// Color pickers → set custom theme on change
+// Color pickers → mirror into the hex box and switch the preset to "Custom"
 document.querySelectorAll('.color-picker').forEach(function(picker) {
-    picker.addEventListener('change', setCustomTheme);
+    picker.addEventListener('input', function() {
+        const hex = document.getElementById(picker.id + '_hex');
+        if (hex) hex.value = picker.value;
+        setCustomTheme();
+    });
 });
 
 // Hex text inputs → sync to color picker
@@ -1651,7 +1671,7 @@ document.querySelectorAll('.hex-input').forEach(function(input) {
 
 // Reset templates button — confirm and submit the hidden form
 document.getElementById('btn-reset-templates').addEventListener('click', function() {
-    if (confirm('{{ _("Reset all templates and colors to defaults?") }}')) {
+    if (confirm(MSG.resetConfirm)) {
         document.getElementById('reset-templates-form').submit();
     }
 });

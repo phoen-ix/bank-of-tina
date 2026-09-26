@@ -472,6 +472,12 @@ def service_worker() -> Response:
     )
 
 
+@main_bp.route('/offline')
+def offline() -> str:
+    """Fallback page the service worker caches and shows when the network is down."""
+    return render_template('offline.html')
+
+
 @main_bp.route('/manifest.json')
 def pwa_manifest() -> Response:
     color = get_tpl('color_navbar')

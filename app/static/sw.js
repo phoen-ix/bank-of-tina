@@ -1,5 +1,5 @@
-const CACHE = 'bot-v2';
-const OFFLINE = '/static/offline.html';
+const CACHE = 'bot-v3';
+const OFFLINE = '/offline';
 
 self.addEventListener('install', e => {
     e.waitUntil(
@@ -19,20 +19,13 @@ self.addEventListener('activate', e => {
     );
 });
 
+// Only page navigations are handled, and only a network failure shows the
+// offline page -- server responses (404, 500, redirects) pass through as-is.
 self.addEventListener('fetch', e => {
-    if (e.request.method !== 'GET') return;
+    if (e.request.method !== 'GET' || e.request.mode !== 'navigate') return;
     e.respondWith(
-        fetch(e.request)
-            .then(response => {
-                if (!response.ok && e.request.mode === 'navigate') {
-                    return caches.match(OFFLINE) || response;
-                }
-                return response;
-            })
-            .catch(() => {
-                if (e.request.mode === 'navigate') {
-                    return caches.match(OFFLINE);
-                }
-            })
+        fetch(e.request).catch(() =>
+            caches.match(OFFLINE).then(r => r || Response.error())
+        )
     );
 });

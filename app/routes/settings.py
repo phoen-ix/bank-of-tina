@@ -118,7 +118,8 @@ def settings() -> str:
                            common_blacklist=common_blacklist, auto_collect_logs=auto_collect_logs,
                            email_logs=email_logs, backup_logs=backup_logs, backups=backups,
                            all_users=all_users, timezone_groups=timezone_groups,
-                           themes=THEMES, current_theme=detect_theme(), currencies=CURRENCIES)
+                           themes=THEMES, current_theme=detect_theme(), currencies=CURRENCIES,
+                           tpl_defaults=TEMPLATE_DEFAULTS_DE if cfg['language'] == 'de' else TEMPLATE_DEFAULTS)
 
 
 @settings_bp.route('/settings/email', methods=['POST'])

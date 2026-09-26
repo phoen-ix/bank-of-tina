@@ -30,18 +30,17 @@
             <div class="collapse mt-3" id="advancedFilters">
                 <div class="row g-3">
                     <div class="col-sm-6 col-md-3">
-                        <label class="form-label small fw-semibold">{{ _('Type') }}</label>
-                        <select class="form-select form-select-sm" name="type">
+                        <label for="f-type" class="form-label small fw-semibold">{{ _('Type') }}</label>
+                        <select class="form-select form-select-sm" id="f-type" name="type">
                             <option value="" {% if not tx_type %}selected{% endif %}>{{ _('All types') }}</option>
                             <option value="expense"    {% if tx_type == 'expense'    %}selected{% endif %}>{{ _('Expense') }}</option>
-                            <option value="transfer"   {% if tx_type == 'transfer'   %}selected{% endif %}>{{ _('Transfer') }}</option>
                             <option value="deposit"    {% if tx_type == 'deposit'    %}selected{% endif %}>{{ _('Deposit') }}</option>
                             <option value="withdrawal" {% if tx_type == 'withdrawal' %}selected{% endif %}>{{ _('Withdrawal') }}</option>
                         </select>
                     </div>
                     <div class="col-sm-6 col-md-3">
-                        <label class="form-label small fw-semibold">{{ _('User') }}</label>
-                        <select class="form-select form-select-sm" name="user">
+                        <label for="f-user" class="form-label small fw-semibold">{{ _('User') }}</label>
+                        <select class="form-select form-select-sm" id="f-user" name="user">
                             <option value="" {% if not user_id %}selected{% endif %}>{{ _('All users') }}</option>
                             {% for u in all_users %}
                             <option value="{{ u.id }}" {% if user_id == u.id %}selected{% endif %}>{{ u.name }}</option>
@@ -49,21 +48,21 @@
                         </select>
                     </div>
                     <div class="col-sm-6 col-md-3">
-                        <label class="form-label small fw-semibold">{{ _('From date') }}</label>
-                        <input type="date" class="form-control form-control-sm" name="date_from" value="{{ date_from }}">
+                        <label for="f-date-from" class="form-label small fw-semibold">{{ _('From date') }}</label>
+                        <input type="date" class="form-control form-control-sm" id="f-date-from" name="date_from" value="{{ date_from }}">
                     </div>
                     <div class="col-sm-6 col-md-3">
-                        <label class="form-label small fw-semibold">{{ _('To date') }}</label>
-                        <input type="date" class="form-control form-control-sm" name="date_to" value="{{ date_to }}">
+                        <label for="f-date-to" class="form-label small fw-semibold">{{ _('To date') }}</label>
+                        <input type="date" class="form-control form-control-sm" id="f-date-to" name="date_to" value="{{ date_to }}">
                     </div>
                     <div class="col-sm-6 col-md-3">
-                        <label class="form-label small fw-semibold">{{ _('Min amount') }} ({{ currency_symbol }})</label>
-                        <input type="text" inputmode="decimal" class="form-control form-control-sm"
+                        <label for="f-amount-min" class="form-label small fw-semibold">{{ _('Min amount') }} ({{ currency_symbol }})</label>
+                        <input type="text" inputmode="decimal" class="form-control form-control-sm" id="f-amount-min"
                                name="amount_min" value="{{ amount_min }}" placeholder="0{{ decimal_sep }}00">
                     </div>
                     <div class="col-sm-6 col-md-3">
-                        <label class="form-label small fw-semibold">{{ _('Max amount') }} ({{ currency_symbol }})</label>
-                        <input type="text" inputmode="decimal" class="form-control form-control-sm"
+                        <label for="f-amount-max" class="form-label small fw-semibold">{{ _('Max amount') }} ({{ currency_symbol }})</label>
+                        <input type="text" inputmode="decimal" class="form-control form-control-sm" id="f-amount-max"
                                name="amount_max" value="{{ amount_max }}" placeholder="—">
                     </div>
                     <div class="col-sm-6 col-md-3 d-flex align-items-end">
@@ -151,13 +150,13 @@
                             </td>
                             <td class="text-end text-nowrap">
                                 <a href="{{ url_for('main.edit_transaction', transaction_id=trans.id) }}"
-                                   class="btn btn-sm btn-outline-primary">
+                                   class="btn btn-sm btn-outline-primary" aria-label="{{ _('Edit') }}">
                                     <i class="bi bi-pencil"></i>
                                 </a>
                                 <form method="POST" action="{{ url_for('main.delete_transaction', transaction_id=trans.id) }}"
                                       class="d-inline"
                                       data-confirm="{{ _('Delete this transaction? Balances will be reversed.') }}">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="{{ _('Delete') }}">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </form>
