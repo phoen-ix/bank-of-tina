@@ -60,7 +60,7 @@ def auto_collect_common() -> None:
         rows = db.session.execute(db.select(ExpenseItem.item_name, func.count(ExpenseItem.id))
                           .group_by(ExpenseItem.item_name)
                           .having(func.count(ExpenseItem.id) >= threshold)).all()
-        for name, _ in rows:
+        for name, _count in rows:
             if name.lower() in blacklisted:
                 if debug:
                     db.session.add(AutoCollectLog(level='SKIP', category='item',
@@ -79,7 +79,7 @@ def auto_collect_common() -> None:
         rows = db.session.execute(db.select(Transaction.description, func.count(Transaction.id))
                           .group_by(Transaction.description)
                           .having(func.count(Transaction.id) >= threshold)).all()
-        for desc, _ in rows:
+        for desc, _count in rows:
             if desc.lower() in blacklisted:
                 if debug:
                     db.session.add(AutoCollectLog(level='SKIP', category='description',
@@ -99,7 +99,7 @@ def auto_collect_common() -> None:
         rows = db.session.execute(db.select(ExpenseItem.price, func.count(ExpenseItem.id))
                           .group_by(ExpenseItem.price)
                           .having(func.count(ExpenseItem.id) >= threshold)).all()
-        for price, _ in rows:
+        for price, _count in rows:
             price_str = f"{Decimal(str(price)):.2f}"
             if price_str in blacklisted:
                 if debug:
