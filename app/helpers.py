@@ -265,7 +265,6 @@ def generate_and_save_icons(bg_hex: str) -> str:
             f.write(make_icon_png(size, bg_rgb))
     version = str(int(time.time()))
     set_setting('icon_version', version)
-    set_setting('icon_mode', 'generated')
     return version
 
 

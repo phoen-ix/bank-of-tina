@@ -3,7 +3,7 @@ FROM python:3.14.7-slim-trixie
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies (mariadb-client for mysqldump/mysql in backup/restore,
+# Install system dependencies (mariadb-client for mariadb-dump/mariadb in backup/restore,
 # gosu for dropping privileges in the entrypoint)
 RUN apt-get update && apt-get install -y --no-install-recommends mariadb-client curl gosu && rm -rf /var/lib/apt/lists/*
 
@@ -18,14 +18,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# Create necessary directories
-RUN mkdir -p /uploads /database /backups /app/static/icons
-
-# Copy application code (changes frequently — last)
+# Copy application code (changes frequently — last). It stays owned by root so
+# the running app can't modify itself; bytecode is compiled here for the same reason.
 COPY app/ .
-
-# Fix ownership after COPY
-RUN chown -R appuser:appuser /app /uploads /backups /database
+RUN python -m compileall -q . \
+ && mkdir -p /uploads /backups /app/static/icons \
+ && chown appuser:appuser /uploads /backups /app/static/icons
 
 # Expose port
 EXPOSE 5000

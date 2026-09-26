@@ -5,10 +5,9 @@ import logging
 import os
 import re
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime
 from decimal import Decimal
 
-import calendar as cal_mod
 from flask import Blueprint, Response, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, current_app, abort
 from flask_babel import gettext as _, format_date as babel_format_date
 

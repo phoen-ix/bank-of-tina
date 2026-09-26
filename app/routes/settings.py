@@ -4,7 +4,6 @@ import logging
 import os
 import re
 import time
-from datetime import datetime
 from decimal import Decimal
 
 import pytz
@@ -510,9 +509,7 @@ def settings_icon() -> Response:
                 resized = img.resize((size, size), Image.LANCZOS)
                 path = os.path.join(icons_dir, f'icon-{size}.png')
                 resized.save(path, 'PNG')
-            version = str(int(time.time()))
-            set_setting('icon_version', version)
-            set_setting('icon_mode', 'custom')
+            set_setting('icon_version', str(int(time.time())))
             flash(_('Custom icon uploaded.'), 'success')
         except ImportError:
             flash(_('Pillow is not installed \u2014 cannot process uploaded images.'), 'danger')
@@ -528,14 +525,10 @@ def settings_icon() -> Response:
 def preview_email() -> str:
     user = db.session.execute(db.select(User).filter_by(is_active=True).order_by(User.name)).scalar()
     if not user:
-        class _Dummy:
-            name = 'Jane Doe'; email = 'jane@example.com'; balance = Decimal('12.50'); id = 0
-            from_user_id = None; to_user_id = None
-            email_transactions = 'last3'; email_opt_in = True
-        user = _Dummy()
-        user._dummy = True
-    html = build_email_html(user)
-    return html
+        # Transient sample user (never added to the session) so the preview works on an empty install.
+        user = User(id=0, name='Jane Doe', email='jane@example.com', balance=Decimal('12.50'),
+                    email_transactions='last3', email_opt_in=True)
+    return build_email_html(user)
 
 
 @settings_bp.route('/settings/templates/preview/admin-summary')
