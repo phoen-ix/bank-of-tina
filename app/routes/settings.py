@@ -19,7 +19,7 @@ from helpers import (get_setting, set_setting, delete_setting, get_tpl, parse_am
                      detect_theme, generate_and_save_icons, now_local, InputError)
 from config import (THEMES, TEMPLATE_DEFAULTS, TEMPLATE_DEFAULTS_DE, BACKUP_DIR, DEFAULT_ICON_BG,
                     CURRENCIES, CRON_DAYS)
-from email_service import send_all_emails, build_email_html, build_admin_summary_email
+from email_service import send_all_emails, build_email_html, build_admin_summary_email, SMTP_SECURITY_MODES
 from backup_service import (run_backup, run_restore, assemble_upload, sweep_stale_uploads,
                             _list_backups, build_backup_status_email,
                             BACKUP_FILENAME_RE, MAX_UPLOAD_CHUNKS)
@@ -44,6 +44,7 @@ def settings() -> str:
     cfg = {
         'smtp_server':   get_setting('smtp_server', 'smtp.gmail.com'),
         'smtp_port':     get_setting('smtp_port', '587'),
+        'smtp_security': get_setting('smtp_security', 'starttls'),
         'smtp_username': get_setting('smtp_username', ''),
         'smtp_password': get_setting('smtp_password', ''),
         'from_email':    get_setting('from_email', ''),
@@ -126,8 +127,12 @@ def settings_email() -> Response:
     if not (port.isdigit() and 0 < int(port) < 65536):
         flash(_('SMTP port must be a number between 1 and 65535.'), 'error')
         return redirect(url_for('settings_bp.settings'))
+    security = request.form.get('smtp_security', 'starttls')
+    if security not in SMTP_SECURITY_MODES:
+        security = 'starttls'
     set_setting('smtp_server',   request.form.get('smtp_server', '').strip())
     set_setting('smtp_port',     port)
+    set_setting('smtp_security', security)
     set_setting('smtp_username', request.form.get('smtp_username', '').strip())
     set_setting('from_email',    request.form.get('from_email', '').strip())
     set_setting('from_name',     request.form.get('from_name', '').strip())

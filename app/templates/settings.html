@@ -191,9 +191,18 @@
                                        value="{{ cfg.smtp_server }}" placeholder="smtp.gmail.com">
                             </div>
                             <div class="mb-3">
+                                <label for="smtp_security" class="form-label">{{ _('Encryption') }}</label>
+                                <select class="form-select" id="smtp_security" name="smtp_security">
+                                    <option value="starttls" data-port="587" {% if cfg.smtp_security == 'starttls' %}selected{% endif %}>{{ _('STARTTLS (usually port 587)') }}</option>
+                                    <option value="ssl" data-port="465" {% if cfg.smtp_security == 'ssl' %}selected{% endif %}>{{ _('SSL/TLS (usually port 465)') }}</option>
+                                    <option value="none" data-port="25" {% if cfg.smtp_security == 'none' %}selected{% endif %}>{{ _('None — unencrypted') }}</option>
+                                </select>
+                                <div class="form-text">{{ _('Server certificates are always verified.') }}</div>
+                            </div>
+                            <div class="mb-3">
                                 <label for="smtp_port" class="form-label">{{ _('SMTP Port') }}</label>
                                 <input type="number" class="form-control" id="smtp_port" name="smtp_port"
-                                       value="{{ cfg.smtp_port }}" placeholder="587">
+                                       value="{{ cfg.smtp_port }}" min="1" max="65535" placeholder="587">
                             </div>
                             <div class="mb-3">
                                 <label for="smtp_username" class="form-label">{{ _('SMTP Username') }}</label>
@@ -1610,6 +1619,14 @@ document.querySelectorAll('[data-restore-file]').forEach(function(btn) {
     btn.addEventListener('click', function() {
         confirmRestore(btn.dataset.restoreFile);
     });
+});
+
+// Encryption mode → suggest its usual port if the port is still a default one
+document.getElementById('smtp_security').addEventListener('change', function() {
+    const port = document.getElementById('smtp_port');
+    if (['', '25', '465', '587'].includes(port.value)) {
+        port.value = this.selectedOptions[0].dataset.port;
+    }
 });
 
 // Upload button

@@ -3,9 +3,11 @@ from __future__ import annotations
 import html
 import logging
 import smtplib
+import ssl
 from datetime import timedelta
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.utils import formataddr, formatdate, make_msgid
 
 from sqlalchemy.orm import joinedload
 
@@ -14,7 +16,10 @@ from flask_babel import gettext as _
 from extensions import db
 from models import User, Transaction, EmailLog
 from helpers import (get_setting, get_tpl, apply_template, fmt_amount, now_local, local_day_start_utc,
-                     prune_log)
+                     to_local, prune_log)
+
+# Values of the smtp_security setting.
+SMTP_SECURITY_MODES = ('starttls', 'ssl', 'none')
 
 logger = logging.getLogger(__name__)
 
@@ -45,12 +50,15 @@ def build_email_html(user: User) -> str:
         else:
             recent_transactions = db.session.execute(base_stmt.limit(3)).scalars().all()
 
-    sym = get_setting('currency_symbol', '\u20ac')
+    # Everything user-controlled is escaped before it goes into the HTML body.
+    sym = html.escape(get_setting('currency_symbol', '\u20ac'))
+    pos_color = get_tpl('color_balance_positive')
+    neg_color = get_tpl('color_balance_negative')
     if user.balance < 0:
-        balance_class = "color: #dc3545;"
+        balance_class = f"color: {neg_color};"
         balance_status = _('You owe %(sym)s%(amount)s', sym=sym, amount=fmt_amount(abs(user.balance)))
     elif user.balance > 0:
-        balance_class = "color: #28a745;"
+        balance_class = f"color: {pos_color};"
         balance_status = _('You are owed %(sym)s%(amount)s', sym=sym, amount=fmt_amount(user.balance))
     else:
         balance_class = "color: #6c757d;"
@@ -63,19 +71,19 @@ def build_email_html(user: User) -> str:
             for trans in recent_transactions:
                 if trans.from_user_id == user.id:
                     direction = "\u2192"
-                    other_user = html.escape(trans.to_user.name) if trans.to_user else "System"
-                    amount_class = "color: #dc3545;"
+                    other_user = html.escape(trans.to_user.name if trans.to_user else _('System'))
+                    amount_class = f"color: {neg_color};"
                     amount_sign = "-"
                 else:
                     direction = "\u2190"
-                    other_user = html.escape(trans.from_user.name) if trans.from_user else "System"
-                    amount_class = "color: #28a745;"
+                    other_user = html.escape(trans.from_user.name if trans.from_user else _('System'))
+                    amount_class = f"color: {pos_color};"
                     amount_sign = "+"
 
                 transactions_html += f"""
                 <tr>
                     <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">
-                        {trans.date.strftime('%Y-%m-%d')}
+                        {to_local(trans.date).strftime('%Y-%m-%d')}
                     </td>
                     <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">
                         {html.escape(trans.description)}
@@ -115,7 +123,7 @@ def build_email_html(user: User) -> str:
 
     grad_start = get_tpl('color_email_grad_start')
     grad_end   = get_tpl('color_email_grad_end')
-    tpl_vars   = dict(Name=user.name, Balance=f'{sym}{fmt_amount(user.balance)}',
+    tpl_vars   = dict(Name=html.escape(user.name), Balance=f'{sym}{fmt_amount(user.balance)}',
                       BalanceStatus=balance_status, Date=now_local().strftime('%Y-%m-%d'))
 
     greeting = apply_template(get_tpl('tpl_email_greeting'), **tpl_vars)
@@ -164,7 +172,7 @@ def build_email_html(user: User) -> str:
 
 
 def build_admin_summary_email(users: list[User], include_emails: bool = False) -> str:
-    sym        = get_setting('currency_symbol', '\u20ac')
+    sym        = html.escape(get_setting('currency_symbol', '\u20ac'))
     date_str   = now_local().strftime('%Y-%m-%d')
     grad_start = get_tpl('color_email_grad_start')
     grad_end   = get_tpl('color_email_grad_end')
@@ -221,34 +229,100 @@ def build_admin_summary_email(users: list[User], include_emails: bool = False) -
 </html>"""
 
 
-def send_single_email(to_email: str, to_name: str, subject: str, html: str) -> tuple[bool, str | None]:
-    smtp_server   = get_setting('smtp_server', 'smtp.gmail.com')
-    smtp_port     = int(get_setting('smtp_port', '587'))
-    smtp_username = get_setting('smtp_username', '')
-    smtp_password = get_setting('smtp_password', '')
-    from_email    = get_setting('from_email', smtp_username)
-    from_name     = get_setting('from_name', 'Bank of Tina')
+class Mailer:
+    """Sends messages over one SMTP connection, opened on first use.
 
-    if not smtp_username or not smtp_password:
-        return False, _('SMTP credentials not configured')
+    Certificates are always verified. The connection mode comes from the
+    smtp_security setting: STARTTLS (usually port 587), implicit TLS (465)
+    or none. A failed connection is remembered so a batch fails fast instead
+    of waiting for the timeout once per recipient.
+    """
 
-    msg = MIMEMultipart('alternative')
-    msg['Subject'] = subject
-    msg['From'] = f'{from_name} <{from_email}>'
-    msg['To'] = f'{to_name} <{to_email}>'
-    msg.attach(MIMEText(html, 'html'))
+    def __init__(self) -> None:
+        self.server: smtplib.SMTP | None = None
+        self.connect_error: str | None = None
+        self.host = get_setting('smtp_server', 'smtp.gmail.com')
+        self.port = get_setting('smtp_port', '587')
+        self.security = get_setting('smtp_security', 'starttls')
+        self.username = get_setting('smtp_username', '')
+        self.password = get_setting('smtp_password', '')
+        self.from_email = get_setting('from_email', '') or self.username
+        self.from_name = get_setting('from_name', 'Bank of Tina')
 
-    try:
-        server = smtplib.SMTP(smtp_server, smtp_port, timeout=30)
-        server.starttls()
-        server.login(smtp_username, smtp_password)
-        server.send_message(msg)
-        server.quit()
+    def __enter__(self) -> Mailer:
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        self.close()
+
+    def _connect(self) -> smtplib.SMTP:
+        context = ssl.create_default_context()
+        port = int(self.port)
+        if self.security == 'ssl':
+            server: smtplib.SMTP = smtplib.SMTP_SSL(self.host, port, timeout=30, context=context)
+        else:
+            server = smtplib.SMTP(self.host, port, timeout=30)
+        try:
+            if self.security == 'starttls':
+                server.starttls(context=context)
+            server.login(self.username, self.password)
+        except Exception:
+            server.close()
+            raise
+        return server
+
+    def _message(self, to_email: str, to_name: str, subject: str, html_body: str) -> MIMEMultipart:
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = ' '.join(subject.splitlines())
+        # formataddr quotes names like "Doe, John" and encodes non-ASCII ones.
+        msg['From'] = formataddr((self.from_name, self.from_email))
+        msg['To'] = formataddr((to_name, to_email))
+        msg['Date'] = formatdate(localtime=True)
+        msg['Message-ID'] = make_msgid(domain=self.from_email.rpartition('@')[2] or None)
+        msg.attach(MIMEText(html_body, 'html', 'utf-8'))
+        return msg
+
+    def send(self, to_email: str, to_name: str, subject: str, html_body: str) -> tuple[bool, str | None]:
+        if not self.username or not self.password:
+            return False, _('SMTP credentials not configured')
+        if self.security not in SMTP_SECURITY_MODES or not self.port.isdigit():
+            return False, _('SMTP settings are invalid')
+        if self.connect_error:
+            return False, self.connect_error
+        msg = self._message(to_email, to_name, subject, html_body)
+        try:
+            if self.server is None:
+                self.server = self._connect()
+            try:
+                self.server.send_message(msg)
+            except smtplib.SMTPServerDisconnected:
+                # The server may drop an idle connection between messages.
+                self.server = self._connect()
+                self.server.send_message(msg)
+        except (smtplib.SMTPRecipientsRefused, smtplib.SMTPDataError, smtplib.SMTPSenderRefused) as e:
+            logger.error('Email failed to %s: %s', to_email, e)
+            return False, str(e)
+        except Exception as e:
+            # Connection-level problem (refused, TLS/certificate, login): give up on the batch.
+            logger.error('Email failed to %s: %s', to_email, e)
+            self.close()
+            self.connect_error = str(e)
+            return False, str(e)
         logger.info('Email sent to %s', to_email)
         return True, None
-    except Exception as e:
-        logger.error('Email failed to %s: %s', to_email, e)
-        return False, str(e)
+
+    def close(self) -> None:
+        if self.server is not None:
+            try:
+                self.server.quit()
+            except Exception:
+                self.server.close()
+            self.server = None
+
+
+def send_single_email(to_email: str, to_name: str, subject: str, html_body: str) -> tuple[bool, str | None]:
+    with Mailer() as mailer:
+        return mailer.send(to_email, to_name, subject, html_body)
 
 
 def send_all_emails() -> tuple[int, int, list[str]]:
@@ -261,46 +335,49 @@ def send_all_emails() -> tuple[int, int, list[str]]:
     errors: list[str] = []
     debug = get_setting('email_debug', '0') == '1'
     subject = apply_template(get_tpl('tpl_email_subject'), Date=now_local().strftime('%Y-%m-%d'))
-    for user in opted_in_users:
-        html = build_email_html(user)
-        ok, err = send_single_email(user.email, user.name, subject, html)
-        if ok:
-            success += 1
-            if debug:
-                db.session.add(EmailLog(level='SUCCESS',
-                                        recipient=f'{user.name} <{user.email}>',
-                                        message='Email sent successfully'))
-        else:
-            fail += 1
-            errors.append(f"{user.name} <{user.email}>: {err}")
-            if debug:
+
+    # Failures are always logged; successes only in debug mode.
+    with Mailer() as mailer:
+        for user in opted_in_users:
+            ok, err = mailer.send(user.email, user.name, subject, build_email_html(user))
+            if ok:
+                success += 1
+                if debug:
+                    db.session.add(EmailLog(level='SUCCESS',
+                                            recipient=f'{user.name} <{user.email}>',
+                                            message='Email sent successfully'))
+            else:
+                fail += 1
+                errors.append(f"{user.name} <{user.email}>: {err}")
                 db.session.add(EmailLog(level='FAIL',
                                         recipient=f'{user.name} <{user.email}>',
                                         message=err or 'Unknown error'))
 
-    admin_id = get_setting('site_admin_id', '')
-    if get_setting('admin_summary_email', '0') == '1' and admin_id:
-        admin = db.session.get(User, int(admin_id)) if admin_id.isdigit() else None
-        if admin:
-            summary_users = [u for u in all_active_users if str(u.id) != admin_id]
-            summary_subject = apply_template(get_tpl('tpl_admin_subject'),
-                                             Date=now_local().strftime('%Y-%m-%d'),
-                                             UserCount=len(summary_users))
-            summary_html = build_admin_summary_email(summary_users, include_emails=get_setting('admin_summary_include_emails', '0') == '1')
-            ok, err = send_single_email(admin.email, admin.name, summary_subject, summary_html)
-            if debug:
+        admin_id = get_setting('site_admin_id', '')
+        if get_setting('admin_summary_email', '0') == '1' and admin_id:
+            admin = db.session.get(User, int(admin_id)) if admin_id.isdigit() else None
+            if admin:
+                summary_users = [u for u in all_active_users if str(u.id) != admin_id]
+                summary_subject = apply_template(get_tpl('tpl_admin_subject'),
+                                                 Date=now_local().strftime('%Y-%m-%d'),
+                                                 UserCount=len(summary_users))
+                summary_html = build_admin_summary_email(summary_users, include_emails=get_setting('admin_summary_include_emails', '0') == '1')
+                ok, err = mailer.send(admin.email, admin.name, summary_subject, summary_html)
                 if ok:
-                    db.session.add(EmailLog(level='INFO', recipient=None,
-                                            message=f'Admin summary sent to {admin.name} <{admin.email}>'))
+                    if debug:
+                        db.session.add(EmailLog(level='INFO', recipient=None,
+                                                message=f'Admin summary sent to {admin.name} <{admin.email}>'))
                 else:
+                    errors.append(_('Admin summary to %(name)s: %(err)s', name=admin.name, err=err))
                     db.session.add(EmailLog(level='FAIL', recipient=f'{admin.name} <{admin.email}>',
                                             message=f'Admin summary failed: {err}'))
 
     if debug:
         db.session.add(EmailLog(level='INFO', recipient=None,
                                 message=f'Run complete: {success} sent, {fail} failed'))
-        prune_log(EmailLog)
-        db.session.commit()
+    db.session.flush()
+    prune_log(EmailLog)
+    db.session.commit()
 
     logger.info('Email batch complete: %d sent, %d failed', success, fail)
     return success, fail, errors

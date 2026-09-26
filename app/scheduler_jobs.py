@@ -7,14 +7,15 @@ import pytz
 from flask import Flask
 from sqlalchemy import func
 
-from flask_babel import force_locale
+from flask_babel import force_locale, gettext as _
 
 from extensions import db, scheduler
 from models import (User, Transaction, ExpenseItem, CommonItem, CommonDescription,
                     CommonPrice, CommonBlacklist, AutoCollectLog)
 from helpers import get_setting, get_tpl, apply_template, now_local, parse_amount, prune_log, InputError
 from email_service import send_all_emails, send_single_email
-from backup_service import run_backup, _prune_old_backups, _list_backups, build_backup_status_email
+from backup_service import (run_backup, _prune_old_backups, _list_backups, build_backup_status_email,
+                            _backup_log)
 
 logger = logging.getLogger(__name__)
 
@@ -167,8 +168,10 @@ def _add_backup_job(app: Flask) -> None:
                         html = build_backup_status_email(ok, result, kept, pruned)
                         subject = apply_template(get_tpl('tpl_backup_subject'),
                                                  Date=now_local().strftime('%Y-%m-%d'),
-                                                 BackupStatus='Success' if ok else 'Failed')
-                        send_single_email(admin.email, admin.name, subject, html)
+                                                 BackupStatus=_('Success') if ok else _('Failed'))
+                        sent, err = send_single_email(admin.email, admin.name, subject, html)
+                        if not sent:
+                            _backup_log('ERROR', f'Status email to {admin.email} failed: {err}')
 
     scheduler.add_job(job, 'cron', day_of_week=day, hour=hour, minute=minute,
                       timezone=tz, id='backup_job', replace_existing=True)
