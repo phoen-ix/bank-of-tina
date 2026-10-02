@@ -28,7 +28,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True, nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
-    balance = db.Column(db.Numeric(12, 2), default=0)
+    balance = db.Column(db.Numeric(12, 4), default=0)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC).replace(tzinfo=None))
     is_active = db.Column(db.Boolean, default=True)
     email_opt_in = db.Column(db.Boolean, default=True)
@@ -52,7 +52,7 @@ class Transaction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     date = db.Column(db.DateTime, default=lambda: datetime.now(UTC).replace(tzinfo=None), index=True)
     description = db.Column(db.String(500), nullable=False)
-    amount = db.Column(db.Numeric(12, 2), nullable=False)
+    amount = db.Column(db.Numeric(12, 4), nullable=False)
     from_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), index=True)
     to_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), index=True)
     transaction_type = db.Column(db.String(50), index=True)
@@ -76,7 +76,7 @@ class ExpenseItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     transaction_id = db.Column(db.Integer, db.ForeignKey('transaction.id'), index=True)
     item_name = db.Column(db.String(200), nullable=False)
-    price = db.Column(db.Numeric(12, 2), nullable=False)
+    price = db.Column(db.Numeric(12, 4), nullable=False)
     buyer_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
     transaction = db.relationship('Transaction', backref='items')
@@ -115,7 +115,7 @@ class CommonPrice(db.Model):
     value: Decimal
 
     id = db.Column(db.Integer, primary_key=True)
-    value = db.Column(db.Numeric(12, 2), nullable=False, unique=True)
+    value = db.Column(db.Numeric(12, 4), nullable=False, unique=True)
 
 
 class CommonBlacklist(db.Model):

@@ -761,7 +761,7 @@ pip install -r docker/requirements-dev.txt
 FLASK_TESTING=1 python -m pytest tests/ -v
 ```
 
-The test suite includes 172 tests across 13 test modules covering helpers, models, routes, settings, analytics, health check, email building and sending, backup/restore, balances and timezones, input validation, rendered pages, and internationalization.
+The test suite includes 176 tests across 13 test modules covering helpers, models, routes, settings, analytics, health check, email building and sending, backup/restore, balances and timezones, input validation, rendered pages, and internationalization.
 
 ---
 

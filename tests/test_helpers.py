@@ -36,6 +36,19 @@ def test_fmt_amount_default_separator(app):
         assert fmt_amount(Decimal('12.5')) == '12,50'
 
 
+def test_amount_str_shows_every_decimal(app):
+    with app.app_context():
+        from helpers import amount_str, fmt_amount, set_setting
+        assert amount_str(Decimal('12.35')) == '12.35'
+        assert amount_str(Decimal('1.1000')) == '1.10'
+        assert amount_str(Decimal('5')) == '5.00'
+        assert amount_str(Decimal('-33.718')) == '-33.718'
+        assert amount_str(Decimal('0.3975')) == '0.3975'
+        assert amount_str(-33.718) == '-33.718'
+        set_setting('decimal_separator', ',')
+        assert fmt_amount(Decimal('0.3975')) == '0,3975'
+
+
 def test_fmt_amount_zero(app):
     with app.app_context():
         from helpers import fmt_amount
@@ -73,14 +86,14 @@ def test_parse_amount_rejects_non_plain_numbers(app, raw):
 
 
 @pytest.mark.parametrize('raw, expected', [
-    ('1.005', '1.01'), ('2.004', '2.00'), ('7', '7.00'), ('.5', '0.50'),
-    ('1.234,56', '1234.56'), ('1,234.56', '1234.56'), ('1 234,5', '1234.50'),
+    ('1.00005', '1.0001'), ('2.00004', '2.0000'), ('7', '7.0000'), ('.5', '0.5000'),
+    ('0,3975', '0.3975'), ('1.234,56', '1234.5600'), ('1,234.56', '1234.5600'), ('1 234,5', '1234.5000'),
 ])
-def test_parse_amount_normalizes_to_cents(app, raw, expected):
+def test_parse_amount_normalizes_to_four_decimals(app, raw, expected):
     with app.app_context():
         from helpers import parse_amount
         assert parse_amount(raw) == Decimal(expected)
-        assert parse_amount(raw).as_tuple().exponent == -2
+        assert parse_amount(raw).as_tuple().exponent == -4
 
 
 def test_parse_amount_positive_and_range(app):
@@ -91,8 +104,8 @@ def test_parse_amount_positive_and_range(app):
         with pytest.raises(AmountError):
             parse_amount('-3', positive=True)
         with pytest.raises(AmountError):
-            parse_amount('10000000000')
-        assert parse_amount('9999999999.99') == Decimal('9999999999.99')
+            parse_amount('100000000')
+        assert parse_amount('99999999.9999') == Decimal('99999999.9999')
 
 
 def test_fmt_amount_comma_separator(app):

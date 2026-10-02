@@ -170,7 +170,7 @@ const originalAmount = amountInput.value;
 function addItemRow(name = '', price = '') {
     const frag = document.getElementById('itemRowTemplate').content.cloneNode(true);
     frag.querySelector('.item-name').value = name;
-    frag.querySelector('.item-price').value = price === '' ? '' : fmtCents(parseCents(price), DECIMAL_SEP);
+    frag.querySelector('.item-price').value = price === '' ? '' : fmtUnits(parseUnits(price), DECIMAL_SEP);
     itemsBox.appendChild(frag);
     syncTotal();
 }
@@ -182,11 +182,11 @@ function syncTotal() {
     let total = 0;
     rows.forEach(row => {
         const input = row.querySelector('.item-price');
-        const cents = parseCents(input.value);
-        input.classList.toggle('is-invalid', Number.isNaN(cents));
-        if (cents > 0) total += cents;
+        const units = parseUnits(input.value);
+        input.classList.toggle('is-invalid', Number.isNaN(units));
+        if (units > 0) total += units;
     });
-    const totalFmt = fmtCents(total, DECIMAL_SEP);
+    const totalFmt = fmtUnits(total, DECIMAL_SEP);
     document.getElementById('itemsTotal').textContent = totalFmt;
     document.getElementById('noItemsMsg').style.display = rows.length ? 'none' : '';
     document.getElementById('amountNote').style.display = rows.length ? '' : 'none';
@@ -201,13 +201,13 @@ document.getElementById('editForm').addEventListener('submit', function(e) {
         const name = row.querySelector('.item-name').value.trim();
         const raw = row.querySelector('.item-price').value.trim();
         if (!name && !raw) continue;
-        const cents = parseCents(raw);
-        if (!name || !(cents > 0)) {
+        const units = parseUnits(raw);
+        if (!name || !(units > 0)) {
             e.preventDefault();
             alert(MSG_BAD_PRICE);
             return;
         }
-        items.push({ name, price: fmtCents(cents, '.') });
+        items.push({ name, price: fmtUnits(units, '.') });
     }
     // Always a list: "[]" tells the server every item was removed.
     document.getElementById('items_json').value = JSON.stringify(items);

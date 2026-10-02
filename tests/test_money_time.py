@@ -73,8 +73,8 @@ def test_amount_rounding_does_not_drift(client, app, make_user):
         from models import Transaction
         user = make_user()
         client.post('/transaction/add', data={'transaction_type': 'deposit', 'user_id': str(user.id),
-                                              'amount': '1.005', 'date': ''})
-        assert _balance(user.id) == Decimal('1.01')
+                                              'amount': '1.00005', 'date': ''})
+        assert _balance(user.id) == Decimal('1.0001')
         tx = db.session.execute(db.select(Transaction)).scalar()
         client.post(f'/transaction/{tx.id}/delete')
         assert _balance(user.id) == Decimal('0')
@@ -90,6 +90,32 @@ def test_adjust_balance_is_atomic_sql(app, make_user):
         adjust_balance(user.id, Decimal('-1.25'))
         db.session.commit()
         assert _balance(user.id) == Decimal('11.25')
+
+
+def test_adjust_balance_with_float_balance_in_session(app, make_user):
+    """Legacy FLOAT columns load as float; adjusting must not add float and Decimal in Python."""
+    with app.app_context():
+        from extensions import db
+        from helpers import adjust_balance
+        user = make_user(balance=Decimal('10'))
+        user.balance = 10.5
+        adjust_balance(user.id, Decimal('0.3975'))
+        assert Decimal(str(user.balance)) == Decimal('10.8975')
+        db.session.commit()
+        assert _balance(user.id) == Decimal('10.8975')
+
+
+def test_expense_keeps_four_decimal_prices(client, app, make_user):
+    with app.app_context():
+        from extensions import db
+        from models import ExpenseItem
+        buyer, debtor = make_user(name='Jan'), make_user(name='Tina')
+        resp = _expense(client, buyer, [{'name': 'Butter', 'price': '0,3975', 'debtor_id': str(debtor.id)}])
+        assert resp.status_code == 302
+        assert _balance(debtor.id) == Decimal('-0.3975')
+        assert _balance(buyer.id) == Decimal('0.3975')
+        assert db.session.execute(db.select(ExpenseItem.price)).scalar() == Decimal('0.3975')
+        assert '-0.3975' in client.get(f'/user/{debtor.id}').get_data(as_text=True)
 
 
 def test_edit_form_round_trips_local_time(client, app, make_user):

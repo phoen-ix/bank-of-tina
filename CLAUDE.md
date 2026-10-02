@@ -15,7 +15,7 @@ Self-hosted Flask/MariaDB web app for tracking shared expenses and balances with
 | Backend | Python 3.14, Flask 3.1, Flask-SQLAlchemy 3.1, Flask-Babel 4.0 |
 | Database | MariaDB 12.3 (via PyMySQL) |
 | ORM | SQLAlchemy with Flask-Migrate (Alembic) for schema migrations |
-| Monetary types | `Decimal` / `db.Numeric(12, 2)` everywhere (no floats) |
+| Monetary types | `Decimal` / `db.Numeric(12, 4)` everywhere (no floats; 4 decimals so split items like 0.3975 stay exact) |
 | Rate limiting | Flask-Limiter 3.5 (in-memory, per-route limits, no global default) |
 | Scheduler | APScheduler `BackgroundScheduler` |
 | Timezone | pytz |
@@ -24,7 +24,7 @@ Self-hosted Flask/MariaDB web app for tracking shared expenses and balances with
 | Frontend | Bootstrap 5.3, Bootstrap Icons 1.10, Chart.js 4.4, vanilla JS (all self-hosted under `static/vendor/`, no CDN) |
 | Container | Docker + docker-compose, gunicorn (1 worker, 4 threads, 300 s timeout), non-root user via gosu entrypoint, app code root-owned |
 | i18n | Flask-Babel, gettext `.po`/`.mo` files, ~500 translated strings (German + English) |
-| Testing | pytest with SQLite in-memory (`FLASK_TESTING=1`), 172 tests |
+| Testing | pytest with SQLite in-memory (`FLASK_TESTING=1`), 176 tests |
 | DB tools | `mariadb-client` installed in image for the `mariadb-dump`/`mariadb` CLI (the `mysql*` names are not installed on trixie) |
 
 ---
@@ -127,13 +127,13 @@ app.py         → everything (assembly point)
 
 | Model | Key fields | Notes |
 |-------|-----------|-------|
-| `User` | `id`, `name`, `email`, `balance` (Numeric(12,2)), `is_active`, `email_opt_in` (Bool, default `True`), `email_transactions` (String, default `'last3'`) | Deactivated users are hidden from dashboard/search filter; `email_opt_in` controls whether the weekly email is sent; `email_transactions` values: `'none'` \| `'last3'` \| `'this_week'` \| `'this_month'` |
-| `Transaction` | `id`, `date` (naive UTC), `description`, `amount` (Numeric(12,2)), `from_user_id`, `to_user_id`, `transaction_type`, `receipt_path`, `notes` (Text, nullable) | Types: `expense`, `deposit`, `withdrawal`. An expense creates one transaction per debtor, all sharing the receipt |
-| `ExpenseItem` | `id`, `transaction_id`, `item_name`, `price` (Numeric(12,2)), `buyer_id` | Child rows of an expense transaction |
+| `User` | `id`, `name`, `email`, `balance` (Numeric(12,4)), `is_active`, `email_opt_in` (Bool, default `True`), `email_transactions` (String, default `'last3'`) | Deactivated users are hidden from dashboard/search filter; `email_opt_in` controls whether the weekly email is sent; `email_transactions` values: `'none'` \| `'last3'` \| `'this_week'` \| `'this_month'` |
+| `Transaction` | `id`, `date` (naive UTC), `description`, `amount` (Numeric(12,4)), `from_user_id`, `to_user_id`, `transaction_type`, `receipt_path`, `notes` (Text, nullable) | Types: `expense`, `deposit`, `withdrawal`. An expense creates one transaction per debtor, all sharing the receipt |
+| `ExpenseItem` | `id`, `transaction_id`, `item_name`, `price` (Numeric(12,4)), `buyer_id` | Child rows of an expense transaction |
 | `Setting` | `key` (PK), `value` | Key/value store for all configuration |
 | `CommonItem` | `id`, `name` | Autocomplete item names |
 | `CommonDescription` | `id`, `value` | Autocomplete descriptions |
-| `CommonPrice` | `id`, `value` (Numeric(12,2)) | Autocomplete prices |
+| `CommonPrice` | `id`, `value` (Numeric(12,4)) | Autocomplete prices |
 | `CommonBlacklist` | `id`, `type`, `value` | Prevents auto-collection of specific values |
 | `AutoCollectLog` | `id`, `ran_at`, `level`, `category`, `message` | Capped at 500 rows (`prune_log`) |
 | `EmailLog` | `id`, `sent_at`, `level`, `recipient`, `message` | Capped at 500 rows; failures always logged, successes only with `email_debug` |
@@ -219,7 +219,7 @@ The `settings()` view builds a `cfg` dict from all keys and passes it to `settin
 ## Key Helpers (`app/helpers.py`)
 
 ```python
-parse_amount(s, positive=False)  # -> Decimal rounded to cents; raises AmountError (an InputError/ValueError) for garbage/NaN/exponents
+parse_amount(s, positive=False)  # -> Decimal rounded to 4 decimals; raises AmountError (an InputError/ValueError) for garbage/NaN/exponents
 adjust_balance(user_id, delta)   # Atomic SQL `balance = balance + delta`; no commit
 apply_balance_effect(tx, reverse=False)  # from_user -= amount, to_user += amount (or the reverse)
 local_to_utc(naive_local) / local_day_start_utc(date)
@@ -231,7 +231,8 @@ redirect_back(default)   # Redirect to the referrer only if it is on this host
 now_local()              # datetime.now() in configured timezone. Works in both request and APScheduler contexts.
 get_tpl(key)             # For tpl_* keys: reads language-suffixed DB key (e.g. tpl_email_subject_de), falls back to TEMPLATE_DEFAULTS_DE/TEMPLATE_DEFAULTS. Color keys are language-independent.
 apply_template(text, **kwargs)  # Replaces [Key] placeholders: apply_template("Hi [Name]", Name="Alice") -> "Hi Alice"
-fmt_amount(value)        # Formats Decimal to 2 places using configured decimal_separator.
+amount_str(value)        # Canonical '.' form with every stored decimal, at least two: '12.35', '-33.718', '0.3975'
+fmt_amount(value)        # amount_str() with the configured decimal_separator.
 hex_to_rgb(hex_color)    # "#0d6efd" -> "13, 110, 253"
 detect_theme()           # Compares current colors against THEMES dict; returns theme key or 'custom'.
 save_receipt(file, buyer_name)         # Saves upload to /uploads/YYYY/MM/DD/BuyerName_stem_<6 hex>.ext
@@ -382,7 +383,7 @@ Both `.po` and `.mo` files are committed.
 ## Common Gotchas
 
 - **Adding a new column** — edit `models.py`, run `flask db migrate -m "description"`. Migration runs automatically on next start.
-- **Monetary values use `Decimal`** — all columns use `db.Numeric(12, 2)`. Always use `parse_amount()` to read form values (catch `InputError`) and `fmt_amount()` / `|money` to display them. Change balances only via `adjust_balance()` / `apply_balance_effect()`. When reading a balance for arithmetic, wrap it in `Decimal(str(...))`.
+- **Monetary values use `Decimal`** — all columns use `db.Numeric(12, 4)` (databases that predate Alembic had FLOAT columns until migration `c4d5e6f7a8b9`). The frontend mirrors this in `money.js` (integer units of 1/10000). Always use `parse_amount()` to read form values (catch `InputError`) and `fmt_amount()` / `|money` to display them. Change balances only via `adjust_balance()` / `apply_balance_effect()`. When reading a balance for arithmetic, wrap it in `Decimal(str(...))`.
 - **Stored dates are naive UTC, form dates are local** — convert input with `parse_local_datetime()`/`local_to_utc()`, filter by local days/months with `local_days_utc()`/`local_month_utc()`, display with `|localdt`.
 - **No user data inside `<script>`** — pass values with `|tojson`, or render HTML in a `<template>` element and clone it (see `add_transaction.html`).
 - **`datetime.now()` is UTC in Docker** — use `now_local()` for display/filenames. For UTC: `datetime.now(UTC).replace(tzinfo=None)`.
@@ -419,7 +420,7 @@ FLASK_TESTING=1 python -m pytest tests/ -v
 
 | File | Tests | Coverage |
 |------|-------|----------|
-| `test_helpers.py` | 30 | `parse_amount`, `fmt_amount`, `hex_to_rgb`, `apply_template` |
+| `test_helpers.py` | 32 | `parse_amount`, `fmt_amount`, `hex_to_rgb`, `apply_template` |
 | `test_models.py` | 12 | User, Transaction, ExpenseItem, Setting, CommonItem |
 | `test_routes.py` | 24 | Dashboard, transactions, search, edit |
 | `test_settings.py` | 15 | Settings CRUD, common items, templates, schedule |
@@ -428,7 +429,7 @@ FLASK_TESTING=1 python -m pytest tests/ -v
 | `test_email_service.py` | 4 | Email building |
 | `test_email_sending.py` | 13 | SMTP modes, cert verification, headers, batching, escaping |
 | `test_backup.py` | 11 | Backup/restore/upload, migration logging |
-| `test_money_time.py` | 19 | Balance integrity, amounts, timezones, receipts, themes |
+| `test_money_time.py` | 21 | Balance integrity, amounts, timezones, receipts, themes |
 | `test_validation.py` | 18 | Input validation, schedules, logs |
 | `test_frontend.py` | 8 | No user data in JS, offline page, tabs, localized labels |
 | `test_i18n.py` | 7 | Locale switching, translations, tx_type filter |

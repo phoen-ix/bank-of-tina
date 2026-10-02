@@ -14,7 +14,7 @@ from flask_babel import gettext as _
 from extensions import db, scheduler, limiter
 from models import (User, CommonItem, CommonDescription, CommonPrice, CommonBlacklist,
                     AutoCollectLog, EmailLog, BackupLog)
-from helpers import (get_setting, set_setting, delete_setting, get_tpl, parse_amount, fmt_amount,
+from helpers import (get_setting, set_setting, delete_setting, get_tpl, parse_amount, amount_str, fmt_amount,
                      detect_theme, generate_and_save_icons, now_local, InputError)
 from config import (THEMES, TEMPLATE_DEFAULTS, TEMPLATE_DEFAULTS_DE, BACKUP_DIR, DEFAULT_ICON_BG,
                     CURRENCIES, CRON_DAYS)
@@ -333,7 +333,7 @@ def add_common_blacklist() -> Response:
     if bl_type == 'price':
         # Stored like auto-collect compares it: '3,5' -> '3.50'.
         try:
-            value = f'{parse_amount(value, positive=True):.2f}'
+            value = amount_str(parse_amount(value, positive=True))
         except InputError:
             flash(_('Valid price is required.'), 'error')
             return redirect(url_for('settings_bp.settings'))

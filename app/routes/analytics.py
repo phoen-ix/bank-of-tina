@@ -65,7 +65,7 @@ def analytics_data() -> Response:
 
     delta_days = (day_to - day_from).days
 
-    balances = [{'name': u.name, 'balance': round(Decimal(str(u.balance)), 2)} for u in users]
+    balances = [{'name': u.name, 'balance': round(Decimal(str(u.balance)), 4)} for u in users]
 
     sample_dates: list[date] = []
     if delta_days <= 90:
@@ -113,7 +113,7 @@ def analytics_data() -> Response:
                         bal -= Decimal(str(tx.amount))
                     elif tx.from_user_id == user.id:
                         bal += Decimal(str(tx.amount))
-            series.append(round(bal, 2))
+            series.append(round(bal, 4))
 
         history_datasets[user.name] = series
 
@@ -136,7 +136,7 @@ def analytics_data() -> Response:
     transaction_volume = {
         'labels':  vol_labels,
         'counts':  [vol[k]['count']           for k in sorted_vol_keys],
-        'amounts': [round(vol[k]['amount'], 2) for k in sorted_vol_keys],
+        'amounts': [round(vol[k]['amount'], 4) for k in sorted_vol_keys],
     }
 
     expense_ids = [tx.id for tx in transactions if tx.transaction_type == 'expense']
@@ -152,7 +152,7 @@ def analytics_data() -> Response:
     top_items = {
         'names':  [x[0]                         for x in top_sorted],
         'counts': [x[1]['count']                for x in top_sorted],
-        'totals': [round(x[1]['total'], 2)      for x in top_sorted],
+        'totals': [round(x[1]['total'], 4)      for x in top_sorted],
     }
 
     return jsonify({

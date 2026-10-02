@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from decimal import Decimal
 
 import pytz
 from flask import Flask
@@ -12,7 +11,7 @@ from flask_babel import force_locale, gettext as _
 from extensions import db, scheduler
 from models import (User, Transaction, ExpenseItem, CommonItem, CommonDescription,
                     CommonPrice, CommonBlacklist, AutoCollectLog)
-from helpers import get_setting, get_tpl, apply_template, now_local, parse_amount, prune_log, InputError
+from helpers import get_setting, get_tpl, apply_template, now_local, parse_amount, amount_str, prune_log, InputError
 from email_service import send_all_emails, send_single_email
 from backup_service import (run_backup, _prune_old_backups, _list_backups, build_backup_status_email,
                             _backup_log)
@@ -42,9 +41,9 @@ def _add_email_job(app: Flask) -> None:
 
 
 def _price_key(value: str) -> str:
-    """Normalize a stored price ('3,5', '3.50') to the '3.50' form used for comparison."""
+    """Normalize a stored price ('3,5', '3.50') to the amount_str() form used for comparison."""
     try:
-        return f'{parse_amount(value):.2f}'
+        return amount_str(parse_amount(value))
     except InputError:
         return value
 
@@ -100,7 +99,7 @@ def auto_collect_common() -> None:
                           .group_by(ExpenseItem.price)
                           .having(func.count(ExpenseItem.id) >= threshold)).all()
         for price, _count in rows:
-            price_str = f"{Decimal(str(price)):.2f}"
+            price_str = amount_str(price)
             if price_str in blacklisted:
                 if debug:
                     db.session.add(AutoCollectLog(level='SKIP', category='price',

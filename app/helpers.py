@@ -21,9 +21,9 @@ from extensions import db
 from models import Setting, Transaction, User
 from config import ALLOWED_EXTENSIONS, TEMPLATE_DEFAULTS, TEMPLATE_DEFAULTS_DE, LOG_KEEP
 
-_CENT = Decimal('0.01')
-# Numeric(12, 2): ten digits before the decimal point.
-_MAX_AMOUNT = Decimal('9999999999.99')
+_QUANTUM = Decimal('0.0001')
+# Numeric(12, 4): eight digits before the decimal point.
+_MAX_AMOUNT = Decimal('99999999.9999')
 _AMOUNT_RE = re.compile(r'[+-]?(\d+\.?\d*|\.\d+)')
 
 
@@ -90,8 +90,13 @@ def adjust_balance(user_id: int | None, delta: Decimal) -> None:
     db.session.execute(
         db.update(User).where(User.id == user_id)
         .values(balance=User.balance + delta)
-        .execution_options(synchronize_session='fetch')
+        .execution_options(synchronize_session=False)
     )
+    # Reload the balance from the DB on next access rather than recomputing it in
+    # Python, where a float from the driver can't be added to a Decimal.
+    user = db.session.identity_map.get(db.session.identity_key(User, user_id))
+    if user is not None:
+        db.session.expire(user, ['balance'])
 
 
 def apply_balance_effect(trans: Transaction, reverse: bool = False) -> None:
@@ -164,7 +169,7 @@ def apply_template(text: str, **kwargs: str | int | None) -> str:
 
 
 def parse_amount(s: str | None, positive: bool = False) -> Decimal:
-    """Parse a user-supplied amount and round it to cents.
+    """Parse a user-supplied amount and round it to 4 decimal places.
 
     Accepts '.' or ',' as decimal separator; when both appear, the right-most
     one is the decimal separator and the other groups thousands ('1.234,56').
@@ -185,7 +190,7 @@ def parse_amount(s: str | None, positive: bool = False) -> Decimal:
         cleaned = cleaned.replace(',', '.')
     if not _AMOUNT_RE.fullmatch(cleaned):
         raise AmountError(_('"%(value)s" is not a valid amount.', value=s))
-    value = Decimal(cleaned).quantize(_CENT, rounding=ROUND_HALF_UP)
+    value = Decimal(cleaned).quantize(_QUANTUM, rounding=ROUND_HALF_UP)
     if abs(value) > _MAX_AMOUNT:
         raise AmountError(_('"%(value)s" is too large.', value=s))
     if positive and value <= 0:
@@ -193,10 +198,17 @@ def parse_amount(s: str | None, positive: bool = False) -> Decimal:
     return value
 
 
+def amount_str(value: Decimal | int | float) -> str:
+    """Canonical '.'-separated form with every stored decimal but at least two:
+    12.35 -> '12.35', -33.718 -> '-33.718', 0.3975 -> '0.3975', 5 -> '5.00'."""
+    s = f'{Decimal(str(value)).quantize(_QUANTUM, rounding=ROUND_HALF_UP):.4f}'
+    return s[:-2] + s[-2:].rstrip('0')
+
+
 def fmt_amount(value: Decimal | int | float) -> str:
-    """Format a numeric value with 2 decimal places using the configured decimal separator."""
+    """Format an amount like amount_str() using the configured decimal separator."""
     sep = get_setting('decimal_separator', '.')
-    return f'{Decimal(str(value)):.2f}'.replace('.', sep)
+    return amount_str(value).replace('.', sep)
 
 
 def hex_to_rgb(hex_color: str) -> str:

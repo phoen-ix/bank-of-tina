@@ -272,7 +272,8 @@ const EMPTY_DATA = {
 };
 
 function fmtMoney(v) {
-    return parseFloat(v).toFixed(2).replace('.', DECIMAL_SEP);
+    // Every stored decimal, at least two (mirrors helpers.amount_str)
+    return parseFloat(v).toFixed(4).replace(/0{1,2}$/, '').replace('.', DECIMAL_SEP);
 }
 
 // Colour palette for multi-series charts
