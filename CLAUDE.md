@@ -16,7 +16,7 @@ Self-hosted Flask/MariaDB web app for tracking shared expenses and balances with
 | Database | MariaDB 12.3 (via PyMySQL) |
 | ORM | SQLAlchemy with Flask-Migrate (Alembic) for schema migrations |
 | Monetary types | `Decimal` / `db.Numeric(12, 4)` everywhere (no floats; 4 decimals so split items like 0.3975 stay exact) |
-| Rate limiting | Flask-Limiter 3.5 (in-memory, per-route limits, no global default) |
+| Rate limiting | Flask-Limiter 4.1 (in-memory, per-route limits, no global default) |
 | Scheduler | APScheduler `BackgroundScheduler` |
 | Timezone | pytz |
 | Logging | Python `logging` to stdout, structured format |

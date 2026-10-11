@@ -40,4 +40,5 @@ ENTRYPOINT ["/entrypoint.sh"]
 
 # Run with gunicorn for production. One process (APScheduler must exist once);
 # threads keep the app responsive while a backup or email run is in progress.
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--threads", "4", "--timeout", "300", "app:app"]
+# No control socket: nothing uses gunicornc, and appuser can't write to $HOME (/app).
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--threads", "4", "--timeout", "300", "--no-control-socket", "app:app"]
