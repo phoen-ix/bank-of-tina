@@ -25,7 +25,7 @@ Eine selbst gehostete Webanwendung zur Verwaltung gemeinsamer Ausgaben und Salde
 - **Notizfeld** — optionale Freitext-Notizen zu jeder Transaktion für längeren Kontext oder Begründung; inline in allen Transaktionslisten angezeigt und in der Suche enthalten
 - **Löschen** jeder Transaktion (Salden werden automatisch zurückgesetzt)
 - **Monatsansicht** — Transaktionen nach Tag gruppiert mit ◀ ▶ Navigation und einem Monat/Jahr-Schnellwähler; standardmäßig der aktuelle Monat
-- **Suche** — Volltextsuche über Beschreibungen und Ausgabenpositionen; erweiterte Filter für Typ, Benutzer, Datumsbereich, Betragsbereich und einen „Hat Anhang/Beleg"-Schalter; paginierte Ergebnisse (25 pro Seite); nur aktive Benutzer erscheinen im Benutzerfilter
+- **Suche** — Volltextsuche über Beschreibungen und Ausgabenpositionen; erweiterte Filter für Typ, Benutzer, Datumsbereich, Betragsbereich und einen „Hat Anhang / Beleg"-Schalter; paginierte Ergebnisse (25 pro Seite); nur aktive Benutzer erscheinen im Benutzerfilter
 
 ### Ausgabenpositionen
 - Einzelpositionen pro Ausgabe hinzufügen (Name + Preis)
@@ -61,11 +61,25 @@ Eine selbst gehostete Webanwendung zur Verwaltung gemeinsamer Ausgaben und Salde
 - **Backup-Status-E-Mail** — wenn ein Seiten-Admin konfiguriert ist, wird nach jedem *geplanten* Backup eine optionale E-Mail mit dem Ergebnis (Erfolg oder Fehler), Dateinamen, behaltenen Backups und Anzahl der bereinigten gesendet; manuelle Backups lösen diese E-Mail nie aus
 - **Debug-Log** — wenn der Debug-Modus an ist, wird jeder Backup-Schritt in die Datenbank geschrieben und in der Einstellungsoberfläche angezeigt
 
+### Diagramme & Statistiken
+Eine eigene **Diagramme**-Seite (Navigationsleiste → Diagramme) mit einer gemeinsamen Filterleiste und vier Tabs:
+
+| Tab | Diagrammtyp | Was angezeigt wird |
+|-----|-------------|-------------------|
+| **Salden** | Horizontaler Balken | Aktueller Saldo pro Benutzer; grün/rot je nach Vorzeichen; sortiert von höchstem zu niedrigstem |
+| **Verlauf** | Mehrlinien | Laufender Saldo jedes Benutzers über die Zeit, aus dem Transaktionslog rekonstruiert; wöchentliche oder monatliche Datenpunkte je nach ausgewähltem Bereich |
+| **Volumen** | Balken + Linie | Transaktionsanzahl (Balken, linke Achse) und Gesamtbetrag (Linie, rechte Achse) gruppiert nach Woche oder Monat |
+| **Top-Artikel** | Horizontaler Balken | Top 15 Ausgabenpositionen nach Gesamtbetrag oder Anzahl; zwischen beiden Modi umschalten |
+
+**Filterleiste** — Datumsbereich-Wähler, Schnellvorlagen (30 Tage / 90 Tage / 1 Jahr / Alle — ab der ersten Transaktion), Mehrfachauswahl-Benutzer-Dropdown, Anwenden-Button. Datumsbereiche beziehen sich auf Kalendertage in der eingestellten Zeitzone.
+
+**Drucken / PDF** — druckt nur den aktuell aktiven Tab, formatiert für A4 Querformat; Diagramm-Canvas wird vor der Browser-Erfassung auf Seitengröße skaliert. Browser-Druckdialog öffnen → Als PDF speichern.
+
 ### 🌐 Mehrsprachigkeit (i18n)
 - **Zwei Sprachen** — Deutsch und Englisch, umschaltbar über Einstellungen → Allgemein → Sprache
 - **Globale Einstellung** — die Sprache gilt app-weit (gespeichert in der Datenbank wie alle anderen Einstellungen)
 - **Vollständige Abdeckung** — alle UI-Elemente, Flash-Nachrichten, E-Mail-Vorlagen, Diagrammbeschriftungen und Transaktionstyp-Badges werden übersetzt
-- **Flask-Babel** — Standard-gettext `.po`/`.mo`-Dateien; ~500 übersetzte Zeichenketten
+- **Flask-Babel** — Standard-gettext `.po`/`.mo`-Dateien
 - **Lokalisierte Datumsanzeige** — Monatsnamen und Tagesheader werden in der gewählten Sprache angezeigt
 - **Standardsprache** — Deutsch (`de`); kann jederzeit auf Englisch (`en`) umgestellt werden
 
@@ -73,7 +87,7 @@ Eine selbst gehostete Webanwendung zur Verwaltung gemeinsamer Ausgaben und Salde
 - **Web App Manifest** — dynamisch unter `/manifest.json` bereitgestellt; `theme_color` folgt der konfigurierten Navigationsfarbe
 - **Service Worker** — behandelt nur Seitenaufrufe; holt immer aktuelle Daten und zeigt die übersetzte Offline-Seite (`/offline`) nur, wenn das Netzwerk nicht erreichbar ist — Serverantworten, auch Fehler, werden unverändert angezeigt; bereitgestellt über `/sw.js` via Flask-Route für volle App-Scope-Kontrolle (Service Worker brauchen HTTPS oder `localhost`)
 - **Icons** — 32×32, 192×192 und 512×512 PNG-Icons; auf dem Host via Bind-Mount (`./icons/`) persistiert, überleben Container-Rebuilds; beim ersten Start automatisch mit der Standard-Designfarbe generiert; `/favicon.ico`-Route liefert das 32px-Icon; verwaltbar über Einstellungen → Vorlagen → App-Icon:
-  - **Aus Navigationsfarbe generieren** — Ein-Klick-Neugenerierung mit der aktuellen Designfarbe als Hintergrund (weiße Bank-Silhouette)
+  - **Mit Navigationsfarbe neu generieren** — Ein-Klick-Neugenerierung mit der aktuellen Designfarbe als Hintergrund (weiße Bank-Silhouette)
   - **Benutzerdefiniertes Icon hochladen** — beliebiges PNG oder JPG hochladen; automatisch auf 32×32, 192×192 und 512×512 skaliert
   - **Auf Standard zurücksetzen** — stellt das Standard-Icon in der Standard-Designfarbe (`#7f8dbb`) wieder her
   - Cache-Busting stellt sicher, dass Browser und PWA neue Icons sofort übernehmen
@@ -91,7 +105,7 @@ Eine selbst gehostete Webanwendung zur Verwaltung gemeinsamer Ausgaben und Salde
 - **Vordefinierte Designs** — Auswahl aus Standard, Klassisch, Ozean, Wald, Sonnenuntergang oder Schiefer über ein Dropdown; ein Preset auswählen füllt sofort alle Wähler; manuelles Ändern eines Wählers wechselt zu „Benutzerdefiniert"
 - **E-Mail-Betreffs** — bearbeitbare Betreffzeile für jeden der drei E-Mail-Typen
 - **E-Mail-Textvorlagen** — Begrüßung, Einleitung, Fußzeile 1 und Fußzeile 2 der wöchentlichen Saldo-E-Mail bearbeiten; Einleitung und Fußzeile der Admin-Zusammenfassungs-E-Mail; Fußzeile der Backup-Status-E-Mail; ein Feld leer lassen um die Zeile auszulassen; **pro Sprache gespeichert** — jede Sprache hat eigene Vorlagentexte, Sprachwechsel zeigt die Vorlagen der jeweiligen Sprache
-- **E-Mail-Adressen-Schalter** — Admin-Zusammenfassungs-E-Mail-Karte hat einen „E-Mail-Adressen in Zusammenfassungstabelle anzeigen"-Schalter (Standard aus); wenn aus, werden nur Namen und Salden angezeigt
+- **E-Mail-Adressen-Schalter** — Admin-Zusammenfassungs-E-Mail-Karte hat einen „E-Mail-Adressen in der Zusammenfassungstabelle anzeigen"-Schalter (Standard aus); wenn aus, werden nur Namen und Salden angezeigt
 - **Platzhalter** — werden beim Senden ersetzt:
 
   | Platzhalter | Verfügbar in |
@@ -150,7 +164,7 @@ cp .env.example .env
 # Secret Key generieren mit:
 python3 -c "import secrets; print(secrets.token_hex(32))"
 ```
-Die Beispiel-Passwörter (`DB_PASSWORD`, `DB_ROOT_PASSWORD`) vor dem ersten Start ändern — `docker compose` verweigert den Start, wenn `SECRET_KEY` oder die Passwörter fehlen.
+Die Beispiel-Passwörter (`DB_PASSWORD`, `DB_ROOT_PASSWORD`) vor dem ersten Start ändern — `docker compose` verweigert den Start, wenn `SECRET_KEY` oder die Passwörter fehlen, und die App startet nicht mit dem Beispiel-`SECRET_KEY`.
 
 ### 3. Anwendung starten
 ```bash
@@ -184,6 +198,11 @@ Das war's. SMTP-Zugangsdaten und der E-Mail-Zeitplan werden über die **Einstell
 4. Artikelzeilen ausfüllen (vorausgefüllt basierend auf der Allgemein-Einstellung)
 5. **Ausgabe erfassen**
 
+### Einzahlung oder Auszahlung erfassen
+1. **Transaktion hinzufügen** → **Einzahlung**- oder **Auszahlung**-Tab (oder **Geld einzahlen** / **Geld auszahlen** auf der Übersicht)
+2. Benutzer und Betrag wählen, optional Beschreibung, Datum und Notizen
+3. **Geld einzahlen** bzw. **Geld auszahlen** — der Saldo ändert sich sofort
+
 ### Transaktionen nach Monat durchblättern
 1. **Alle Transaktionen** in der Navigation → zeigt standardmäßig den aktuellen Monat
 2. Mit ◀ / ▶ einen Monat vor/zurück navigieren (▶ ist im aktuellen Monat deaktiviert)
@@ -192,7 +211,7 @@ Das war's. SMTP-Zugangsdaten und der E-Mail-Zeitplan werden über die **Einstell
 ### Transaktionen suchen
 1. Die Suchleiste in der Navigation (auf jeder Seite) für eine schnelle Stichwortsuche verwenden
 2. Oder direkt zu `/search` navigieren für mehr Kontrolle
-3. **Erweiterte Filter** klicken um nach Typ, Benutzer, Datumsbereich, Betragsbereich und/oder dem **Hat Anhang/Beleg**-Schalter zu filtern — Filter können kombiniert werden
+3. **Erweiterte Filter** klicken um nach Typ, Benutzer, Datumsbereich, Betragsbereich und/oder dem **Hat Anhang / Beleg**-Schalter zu filtern — Filter können kombiniert werden
 4. Ergebnisse erstrecken sich über alle Monate und zeigen das vollständige Datum (`JJJJ-MM-TT HH:MM`)
 
 ### Transaktion bearbeiten
@@ -225,7 +244,7 @@ Das war's. SMTP-Zugangsdaten und der E-Mail-Zeitplan werden über die **Einstell
 
 ### Backup wiederherstellen
 - **Aus der Liste**: **Wiederherstellen** neben einem bestehenden Backup klicken und bestätigen
-- **Aus einer Datei**: den **Backup hochladen**-Bereich verwenden — eine `bot_backup_*.tar.gz`-Datei auswählen und **Hochladen** klicken; die Datei wird in Blöcken hochgeladen (kein Größenlimit) und erscheint nach Fertigstellung in der Liste, bereit zur Wiederherstellung
+- **Aus einer Datei**: den **Backup hochladen**-Bereich verwenden — eine `bot_backup_*.tar.gz`-Datei auswählen und **Hochladen** klicken; die Datei wird in Blöcken hochgeladen (bis 2 GB) und erscheint nach Fertigstellung in der Liste, bereit zur Wiederherstellung
 
 ### Benutzer verwalten
 1. **Einstellungen** → **Benutzer**-Tab
@@ -248,7 +267,7 @@ bank-of-tina/
 │   ├── app.py                    # Einstiegspunkt: Flask-App erstellen, Extensions initialisieren, Scheduler starten
 │   ├── extensions.py             # Gemeinsame Instanzen: db, csrf, migrate, limiter, scheduler, babel
 │   ├── config.py                 # Konstanten (THEMES, TEMPLATE_DEFAULTS[_DE], CURRENCIES, CRON_DAYS, BACKUP_DIR, …) und db_env()
-│   ├── models.py                 # Alle 11 SQLAlchemy-Modelle (vollständig typ-annotiert)
+│   ├── models.py                 # Alle SQLAlchemy-Modelle (vollständig typ-annotiert)
 │   ├── helpers.py                # Hilfsfunktionen: parse_amount, fmt_amount, save_receipt, etc.
 │   ├── email_service.py          # E-Mail-Erstellung und -Versand (Saldo, Admin-Zusammenfassung, Backup-Status)
 │   ├── backup_service.py         # Backup, Wiederherstellung, Upload-Zusammenbau, Bereinigung, Status-E-Mail
@@ -267,21 +286,8 @@ bank-of-tina/
 │       ├── sw.js                 # Service Worker (Offline-Seite nur bei Netzwerkausfall)
 │       ├── js/money.js           # Betragsparser der Ausgabenformulare (wie parse_amount im Backend)
 │       └── vendor/               # Selbst gehostete Frontend-Abhängigkeiten (kein CDN)
-├── tests/
-│   ├── conftest.py               # pytest-Fixtures (SQLite in-memory, kein CSRF, make_user-Factory)
-│   ├── test_helpers.py           # Tests für parse_amount, fmt_amount, hex_to_rgb, apply_template
-│   ├── test_models.py            # Tests für User, Transaction, ExpenseItem, Setting, CommonItem
-│   ├── test_routes.py            # Tests für Übersicht, Transaktionen, Suche, Bearbeitung, API
-│   ├── test_settings.py          # Tests für Einstellungen-CRUD, häufige Artikel, Vorlagen, Zeitplan
-│   ├── test_analytics.py         # Tests für Diagrammseite und Datenendpunkt
-│   ├── test_health.py            # Tests für /health-Endpunkt
-│   ├── test_email_service.py     # Tests für E-Mail-Erstellung
-│   ├── test_email_sending.py     # SMTP-Versand: TLS-Modi, Zertifikatsprüfung, Header, Batch
-│   ├── test_backup.py            # Backup/Restore/Upload (subprocess gemockt)
-│   ├── test_money_time.py        # Salden, Beträge, Zeitzonen
-│   ├── test_validation.py        # Eingabeprüfung, Zeitpläne, Logs
-│   ├── test_frontend.py          # Gerenderte Seiten: Skript-Injection, Offline-Seite, Tabs
-│   └── test_i18n.py              # Tests für Internationalisierung (Sprachumschaltung, Übersetzungen)
+├── tests/                        # pytest-Suite (SQLite in-memory, kein CSRF, make_user-Factory)
+├── docs/                         # history.md (Hintergrund zu Entscheidungen)
 ├── docker/
 │   ├── requirements.txt          # Python-Abhängigkeiten (Laufzeit)
 │   ├── requirements-dev.txt      # + Testabhängigkeiten
@@ -328,7 +334,7 @@ curl http://localhost:5000/health
 # Gibt 503 mit "status": "error" zurück wenn die Datenbank nicht erreichbar ist
 ```
 
-Das Dockerfile enthält eine `HEALTHCHECK`-Anweisung und der docker-compose Web-Service verwendet `/health` für seinen Healthcheck.
+Die `HEALTHCHECK`-Anweisung im Dockerfile ruft `/health` auf; der `web`-Service in `docker-compose.yml` übernimmt sie.
 
 ### Logs anzeigen
 ```bash
@@ -370,23 +376,6 @@ docker compose up -d
 | App von anderen Rechnern nicht erreichbar | Port ist standardmäßig nur auf `127.0.0.1` veröffentlicht — Reverse-Proxy verwenden oder `BIND_ADDRESS=0.0.0.0` setzen (siehe Schnellstart) |
 | Web-Container startet nicht | `docker compose logs web` — die App wiederholt DB-Verbindungen bis zu 5 Mal mit exponentiellem Backoff beim Start; db-Logs prüfen wenn alle Versuche fehlschlagen |
 | DB-Verbindung abgelehnt | Sicherstellen dass `mariadb-data/` beschreibbar ist; `docker compose restart db` |
-| 500-Fehler beim Hinzufügen/Bearbeiten von Transaktionen | Wurde in v1.x behoben — MariaDB/PyMySQL liefert `Numeric`-Spalten als `float`, was bei Arithmetik mit `Decimal`-Werten einen `TypeError` verursachte. Lösung: Salden vor Berechnungen immer mit `Decimal(str(...))` umwandeln |
-
----
-
-### Diagramme & Statistiken
-Eine eigene **Diagramme**-Seite (Navigationsleiste → Diagramme) mit einer gemeinsamen Filterleiste und vier Tabs:
-
-| Tab | Diagrammtyp | Was angezeigt wird |
-|-----|-------------|-------------------|
-| **Salden** | Horizontaler Balken | Aktueller Saldo pro Benutzer; grün/rot je nach Vorzeichen; sortiert von höchstem zu niedrigstem |
-| **Verlauf** | Mehrlinien | Laufender Saldo jedes Benutzers über die Zeit, aus dem Transaktionslog rekonstruiert; wöchentliche oder monatliche Datenpunkte je nach ausgewähltem Bereich |
-| **Volumen** | Balken + Linie | Transaktionsanzahl (Balken, linke Achse) und Gesamtbetrag (Linie, rechte Achse) gruppiert nach Woche oder Monat |
-| **Top-Artikel** | Horizontaler Balken | Top 15 Ausgabenpositionen nach Gesamtbetrag oder Anzahl; zwischen beiden Modi umschalten |
-
-**Filterleiste** — Datumsbereich-Wähler, Schnellvorlagen (30 Tage / 90 Tage / 1 Jahr / Alle — ab der ersten Transaktion), Mehrfachauswahl-Benutzer-Dropdown, Anwenden-Button. Datumsbereiche beziehen sich auf Kalendertage in der eingestellten Zeitzone.
-
-**Drucken / PDF** — druckt nur den aktuell aktiven Tab, formatiert für A4 Querformat; Diagramm-Canvas wird vor der Browser-Erfassung auf Seitengröße skaliert. Browser-Druckdialog öffnen → Als PDF speichern.
 
 ---
 
@@ -399,7 +388,7 @@ pip install -r docker/requirements-dev.txt
 FLASK_TESTING=1 python -m pytest tests/ -v
 ```
 
-Die Testsuite umfasst 172 Tests in 13 Testmodulen: Hilfsfunktionen, Modelle, Routen, Einstellungen, Diagramme, Health-Check, E-Mail-Erstellung und -Versand, Backup/Restore, Salden und Zeitzonen, Eingabeprüfung, gerenderte Seiten und Internationalisierung.
+Die Tests decken Hilfsfunktionen, Modelle, Routen, Einstellungen, Diagramme, Health-Check, E-Mail-Erstellung und -Versand, Backup/Restore, Salden und Zeitzonen, Eingabeprüfung, gerenderte Seiten und Internationalisierung ab. Wie viele es sind: `python -m pytest --collect-only -q | tail -1`.
 
 ---
 
@@ -479,11 +468,25 @@ A self-hosted web application for tracking shared expenses and balances within a
 - **Backup status email** — when a site admin is configured, an optional email is sent after each *scheduled* backup with the result (success or failure), filename, backups kept, and number pruned; manual backups never trigger this email
 - **Debug log** — when debug mode is on, every backup step is written to the database and shown in the Settings UI
 
+### Charts & Statistics
+A dedicated **Charts** page (nav bar → Charts) with a shared filter bar and four tabs, each showing a different view of the data:
+
+| Tab | Chart type | What it shows |
+|-----|-----------|---------------|
+| **Balances** | Horizontal bar | Current balance per user; green/red per sign; sorted highest → lowest |
+| **History** | Multi-line | Each user's running balance over time, reconstructed from the transaction log; weekly or monthly sample points depending on the selected range |
+| **Volume** | Bar + line combo | Transaction count (bars, left axis) and total amount (line, right axis) grouped by week or month |
+| **Top Items** | Horizontal bar | Top 15 expense line items by total amount or count; toggle between the two modes |
+
+**Filter bar** — date range pickers, quick presets (30 days / 90 days / 1 year / All — from the first transaction), multi-select user dropdown, Apply button. Date ranges are calendar days in the configured timezone.
+
+**Print / PDF** — prints only the currently active tab, formatted for A4 landscape; chart canvas is resized to fill the page before the browser captures it. Open browser print dialog → Save as PDF.
+
 ### 🌐 Internationalization (i18n)
 - **Two languages** — German and English, switchable via Settings → General → Language
 - **Global setting** — language applies app-wide (stored in the database like all other settings)
 - **Full coverage** — all UI elements, flash messages, email templates, chart labels, and transaction type badges are translated
-- **Flask-Babel** — standard gettext `.po`/`.mo` files; ~500 translated strings
+- **Flask-Babel** — standard gettext `.po`/`.mo` files
 - **Localized date display** — month names and day headers are shown in the selected language
 - **Default language** — German (`de`); can be switched to English (`en`) at any time
 
@@ -491,9 +494,9 @@ A self-hosted web application for tracking shared expenses and balances within a
 - **Web App Manifest** — served dynamically at `/manifest.json`; `theme_color` tracks the configured navbar color
 - **Service worker** — handles page navigations only; always fetches fresh data and shows the translated offline page (`/offline`) only when the network is down — server responses, errors included, are shown as-is; served from `/sw.js` via a Flask route so it can control the entire app scope (service workers need HTTPS or `localhost`)
 - **Icons** — 32×32, 192×192, and 512×512 PNG icons; persisted on the host via bind mount (`./icons/`) so they survive container rebuilds; auto-generated with the default theme color on first run; `/favicon.ico` route serves the 32px icon; manageable from Settings → Templates → App Icon:
-  - **Regenerate from navbar color** — one-click regeneration using the current theme color as background (white bank silhouette)
+  - **Regenerate with Navbar Color** — one-click regeneration using the current theme color as background (white bank silhouette)
   - **Upload custom icon** — upload any PNG or JPG; automatically resized to 32×32, 192×192, and 512×512
-  - **Reset to default** — restores the default icon in the default theme color (`#7f8dbb`)
+  - **Reset to Default** — restores the default icon in the default theme color (`#7f8dbb`)
   - Cache-busting ensures browsers and PWA pick up new icons immediately
 - **Android Chrome**: three-dot menu → "Add to home screen" (or automatic install banner)
 - **iOS Safari**: Share sheet → "Add to Home Screen" → correct icon, name, and standalone launch
@@ -502,7 +505,7 @@ A self-hosted web application for tracking shared expenses and balances within a
 ### UI
 - **Toast notifications** — success/error messages appear as Bootstrap 5 toasts in the top-right corner, auto-hide after 4 seconds, and stack when multiple messages fire simultaneously
 - **No double submits** — once a form is submitted its buttons are disabled, so a double click can't record anything twice
-- **Skeleton loading** — the Charts page shows pulsing skeleton placeholders (horizontal bars for Balances/Top Items, full-width rectangles for History/Volume) while data loads, replacing the previous spinner
+- **Skeleton loading** — the Charts page shows pulsing skeleton placeholders (horizontal bars for Balances/Top Items, full-width rectangles for History/Volume) while data loads
 
 ### Templates & Theming
 - **Color palette** — navbar color, email header gradient (start + end), positive and negative balance colors; each has a color picker paired with a hex text field
@@ -568,7 +571,7 @@ Open `.env` and set a strong `SECRET_KEY` and your desired database credentials:
 # Generate a secret key with:
 python3 -c "import secrets; print(secrets.token_hex(32))"
 ```
-Change the example passwords (`DB_PASSWORD`, `DB_ROOT_PASSWORD`) before the first start — `docker compose` refuses to start when `SECRET_KEY` or the passwords are missing.
+Change the example passwords (`DB_PASSWORD`, `DB_ROOT_PASSWORD`) before the first start — `docker compose` refuses to start when `SECRET_KEY` or the passwords are missing, and the app refuses the example `SECRET_KEY`.
 
 ### 3. Start the application
 ```bash
@@ -601,6 +604,11 @@ That's it. SMTP credentials and the email schedule are configured from the **Set
 3. Enter a description (optional: upload a receipt)
 4. Fill in item rows (pre-filled based on your General setting)
 5. **Record Expense**
+
+### Recording a Deposit or Withdrawal
+1. **Add Transaction** → **Deposit** or **Withdrawal** tab (or **Add Money** / **Withdraw Money** on the dashboard)
+2. Pick the user and the amount; description, date and notes are optional
+3. **Add Money** or **Withdraw Money** — the balance changes immediately
 
 ### Browsing Transactions by Month
 1. **All Transactions** in the nav → defaults to the current month
@@ -643,7 +651,7 @@ That's it. SMTP credentials and the email schedule are configured from the **Set
 
 ### Restoring a Backup
 - **From the list**: click **Restore** next to any existing backup and confirm
-- **From a file**: use the **Upload Backup** section — select a `bot_backup_*.tar.gz` file and click **Upload**; the file is uploaded in chunks (no size limit) and appears in the list when done, ready to restore
+- **From a file**: use the **Upload Backup** section — select a `bot_backup_*.tar.gz` file and click **Upload**; the file is uploaded in chunks (up to 2 GB) and appears in the list when done, ready to restore
 
 ### Managing Users
 1. **Settings** → **Users** tab
@@ -690,7 +698,7 @@ curl http://localhost:5000/health
 # Returns 503 with "status": "error" when the database is unreachable
 ```
 
-The Dockerfile includes a `HEALTHCHECK` instruction and the docker-compose web service uses `/health` for its healthcheck.
+The Dockerfile's `HEALTHCHECK` calls `/health`; the `web` service in `docker-compose.yml` inherits it.
 
 ### View logs
 ```bash
@@ -732,23 +740,6 @@ docker compose up -d
 | App not reachable from other machines | The port is published on `127.0.0.1` by default — use a reverse proxy or set `BIND_ADDRESS=0.0.0.0` (see Quick Start) |
 | Web container won't start | `docker compose logs web` — the app retries DB connections up to 5 times with exponential backoff on startup; check db logs if all retries fail |
 | DB connection refused | Ensure `mariadb-data/` is writable; `docker compose restart db` |
-| 500 error when adding/editing transactions | Fixed in v1.x — MariaDB/PyMySQL returns `Numeric` columns as `float`, which caused a `TypeError` when doing arithmetic with `Decimal` values. Fix: always wrap balances with `Decimal(str(...))` before calculations |
-
----
-
-### Charts & Statistics
-A dedicated **Charts** page (nav bar → Charts) with a shared filter bar and four tabs, each showing a different view of the data:
-
-| Tab | Chart type | What it shows |
-|-----|-----------|---------------|
-| **Balances** | Horizontal bar | Current balance per user; green/red per sign; sorted highest → lowest |
-| **History** | Multi-line | Each user's running balance over time, reconstructed from the transaction log; weekly or monthly sample points depending on the selected range |
-| **Volume** | Bar + line combo | Transaction count (bars, left axis) and total amount (line, right axis) grouped by week or month |
-| **Top Items** | Horizontal bar | Top 15 expense line items by total amount or count; toggle between the two modes |
-
-**Filter bar** — date range pickers, quick presets (30 days / 90 days / 1 year / All — from the first transaction), multi-select user dropdown, Apply button. Date ranges are calendar days in the configured timezone.
-
-**Print / PDF** — prints only the currently active tab, formatted for A4 landscape; chart canvas is resized to fill the page before the browser captures it. Open browser print dialog → Save as PDF.
 
 ---
 
@@ -761,7 +752,7 @@ pip install -r docker/requirements-dev.txt
 FLASK_TESTING=1 python -m pytest tests/ -v
 ```
 
-The test suite includes 176 tests across 13 test modules covering helpers, models, routes, settings, analytics, health check, email building and sending, backup/restore, balances and timezones, input validation, rendered pages, and internationalization.
+The tests cover helpers, models, routes, settings, analytics, health check, email building and sending, backup/restore, balances and timezones, input validation, rendered pages, and internationalization. To count them: `python -m pytest --collect-only -q | tail -1`.
 
 ---
 
