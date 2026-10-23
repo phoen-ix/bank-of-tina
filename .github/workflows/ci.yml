@@ -79,7 +79,7 @@ jobs:
           npx playwright install --with-deps chromium
 
       - name: Docs tour (render check)
-        run: ARTIFACTS="$RUNNER_TEMP/docs-run" scripts/docs-screenshots.sh "$RUNNER_TEMP/screenshots"
+        run: DOCS_LANGS=en ARTIFACTS="$RUNNER_TEMP/docs-run" scripts/docs-screenshots.sh "$RUNNER_TEMP/screenshots"
 
       - uses: actions/upload-artifact@v7
         if: failure()

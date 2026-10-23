@@ -9,8 +9,8 @@ Background that is not obvious from the code. Newest first.
   `float - Decimal` raised `TypeError` (HTTP 500) when adding, editing or deleting transactions.
 - **`html` shadowing** - scheduled emails crashed because a local variable named `html` shadowed the
   stdlib module that `html.escape()` needs.
-- **Admin hidden from the dashboard** - the site admin acts as the bank; her balance is always the
-  negative sum of everyone else's, so the dashboard and the admin summary email leave her out.
+- **Admin hidden from the dashboard** - the site admin acts as the bank, so the dashboard table and the
+  admin summary email leave her out.
 - **Blueprints** - the backend started as a single ~2300-line `app.py`; it was split into
   `routes/` blueprints plus service modules, with unbound extension instances in `extensions.py`
   to avoid circular imports.

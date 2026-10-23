@@ -112,7 +112,7 @@ On the fleet VM, Docker runs go through the fleet's `slot` gate (`slot heavy ban
 ```
 extensions.py  → flask_babel, flask_sqlalchemy, flask_wtf, flask_migrate, flask_limiter, apscheduler
 config.py      → THEMES, TEMPLATE_DEFAULTS(_DE), CURRENCIES, CRON_DAYS, BACKUP_DIR, db_env()
-models.py      → extensions                                  (11 models)
+models.py      → extensions
 helpers.py     → extensions, models, config                  (money, time, settings, receipts, icons)
 email_service  → extensions, models, helpers                 (build_* emails, Mailer, send_all_emails)
 backup_service → extensions, models, helpers, config         (run_backup/run_restore, chunked upload)
