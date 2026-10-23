@@ -1,0 +1,35 @@
+# Throwaway stack for the docs tour (scripts/docs-screenshots.sh) and later e2e
+# runs: its own container names, named volumes instead of the checkout's
+# ./mariadb-data, ./uploads, ./backups and ./icons, and the web port on
+# 127.0.0.1:${PORT_BASE:-5000}. Always under its own project name:
+#
+#   COMPOSE_PROJECT_NAME=bank-of-tina_docs \
+#     docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --build --wait
+#
+# Tear down with the same files and `down -v --remove-orphans --rmi local`.
+services:
+  db:
+    container_name: ${COMPOSE_PROJECT_NAME:?}-db
+    restart: "no"
+    volumes: !override
+      - db-data:/var/lib/mysql
+
+  web:
+    container_name: ${COMPOSE_PROJECT_NAME:?}-web
+    restart: "no"
+    ports: !override
+      - "127.0.0.1:${PORT_BASE:-5000}:5000"
+    volumes: !override
+      - uploads:/uploads
+      - backups:/backups
+      - icons:/app/static/icons
+    # The image's healthcheck polls every 30 s; `up --wait` should not idle that long.
+    healthcheck:
+      interval: 2s
+      retries: 30
+
+volumes:
+  db-data:
+  uploads:
+  backups:
+  icons:

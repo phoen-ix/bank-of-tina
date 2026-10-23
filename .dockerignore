@@ -25,3 +25,9 @@ __pycache__/
 # Misc
 *.tar.gz
 *.sql
+
+# Docs tour / e2e (not part of the image)
+e2e/
+docs/
+scripts/
+docker-compose.e2e.yml

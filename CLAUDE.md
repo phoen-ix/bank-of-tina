@@ -20,6 +20,9 @@ pybabel update -i app/translations/messages.pot -d app/translations
 # edit app/translations/de/LC_MESSAGES/messages.po (new "fuzzy" guesses are usually wrong)
 pybabel compile -d app/translations
 
+# Docs screenshots (both languages) against throwaway stacks; Node 26 + Docker
+cd e2e && npm ci && npx playwright install chromium && cd ..
+PORT_BASE=24100 scripts/docs-screenshots.sh            # -> docs/screenshots/*.png, then oxipng them
 ```
 
 On the fleet VM, Docker runs go through the fleet's `slot` gate (`slot heavy bank-of-tina -- …`);
@@ -93,6 +96,16 @@ On the fleet VM, Docker runs go through the fleet's `slot` gate (`slot heavy ban
   goes via `MYSQL_PWD`, never the command line; restores run `mariadb --sandbox`; tar extraction uses
   `filter='data'` and only `dump.sql` + `receipts/`.
 
+**Docs tour and fleet**
+- Never test against a checkout's plain `docker compose up`: it uses `./mariadb-data` and the project
+  name `bank-of-tina`. The tour uses `docker-compose.e2e.yml` (named volumes, own container names) under
+  `COMPOSE_PROJECT_NAME=bank-of-tina_docs`; the script refuses live names. Port block on the fleet VM:
+  24100 (`PORT_BASE=24100`).
+- The tour seeds through the web forms (`e2e/docs/seed.ts`) with fixed dates; screenshot names are
+  stable once committed. bank-of-tina keeps a FULL screenshot set in both languages (`x.png` and
+  `x.de.png`), embedded in both halves of the README manual and in `docs/screenshots/README.md`.
+  Budget: ≤400 KB per PNG and ≤6 MB for the folder after `oxipng -o 4 --strip safe` - that is why
+  long tabs are clipped above a section and only the History chart tab is shot. Crop, never lower DPR.
 
 ## Architecture
 
@@ -154,3 +167,5 @@ empties all tables, removes scheduler jobs and sets `language='en'` (tests see E
 ## More
 
 - `docs/history.md` - why things are the way they are (refactors, past bugs).
+- `docs/screenshots/README.md` - screenshot gallery (doubles as the screen manual).
+- `e2e/docs/` - the docs tour; `scripts/docs-screenshots.sh` - its single entry point.

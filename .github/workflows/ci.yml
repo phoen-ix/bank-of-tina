@@ -55,3 +55,35 @@ jobs:
       # The backup/restore code shells out to these; make sure the image has them.
       - name: Check database client tools
         run: docker run --rm --entrypoint sh bank-of-tina:ci -c 'command -v mariadb && command -v mariadb-dump && mariadb --help | grep -q -- --sandbox'
+
+  # The docs tour as a render check: every screen the README shows, in both
+  # languages, against the built image - fails on a missing element or an
+  # uncaught page error. Its screenshots go to the runner's temp dir and are
+  # never committed (docs-screenshots.yml makes the ones to commit).
+  docs-tour:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "26"
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+
+      - name: Install Playwright
+        working-directory: e2e
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: Docs tour (render check)
+        run: ARTIFACTS="$RUNNER_TEMP/docs-run" scripts/docs-screenshots.sh "$RUNNER_TEMP/screenshots"
+
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: docs-tour
+          path: ${{ runner.temp }}/docs-run/
+          retention-days: 7

@@ -1,5 +1,7 @@
 # 🏦 Bank of Tina
 
+<img src="docs/screenshots/dashboard.de.png" alt="Übersicht: Benutzersalden, letzte Transaktionen und Schnellaktionen" width="800">
+
 Eine selbst gehostete Webanwendung zur Verwaltung gemeinsamer Ausgaben und Salden in einem kleinen Büro oder einer Gruppe. Funktionen umfassen Ausgabenerfassung mit Belegen, wöchentliche E-Mail-Berichte pro Benutzer, eine Admin-Zusammenfassungs-E-Mail, Diagramme und Statistiken, automatisierte Backups und eine vollständig konfigurierbare Oberfläche mit Designs und E-Mail-Vorlagen. Komplett zweisprachig (Deutsch und Englisch). Gebaut mit Flask und MariaDB, läuft vollständig in Docker — keine externen Dienste erforderlich.
 
 > **🇬🇧 English version below / 🇩🇪 Deutsche Version zuerst**
@@ -75,6 +77,8 @@ Eine eigene **Diagramme**-Seite (Navigationsleiste → Diagramme) mit einer geme
 
 **Drucken / PDF** — druckt nur den aktuell aktiven Tab, formatiert für A4 Querformat; Diagramm-Canvas wird vor der Browser-Erfassung auf Seitengröße skaliert. Browser-Druckdialog öffnen → Als PDF speichern.
 
+<img src="docs/screenshots/charts-history.de.png" alt="Diagramme: Saldenverlauf aller Benutzer über 90 Tage" width="800">
+
 ### 🌐 Mehrsprachigkeit (i18n)
 - **Zwei Sprachen** — Deutsch und Englisch, umschaltbar über Einstellungen → Allgemein → Sprache
 - **Globale Einstellung** — die Sprache gilt app-weit (gespeichert in der Datenbank wie alle anderen Einstellungen)
@@ -94,6 +98,8 @@ Eine eigene **Diagramme**-Seite (Navigationsleiste → Diagramme) mit einer geme
 - **Android Chrome**: Drei-Punkt-Menü → „Zum Startbildschirm hinzufügen" (oder automatisches Installationsbanner)
 - **iOS Safari**: Teilen-Menü → „Zum Home-Bildschirm" → korrektes Icon, Name und Standalone-Start
 - Kein App Store erforderlich; keine nativen Build-Tools erforderlich
+
+<img src="docs/screenshots/dashboard.mobile.de.png" alt="Übersicht auf dem Smartphone" width="300">
 
 ### Oberfläche
 - **Toast-Benachrichtigungen** — Erfolgs-/Fehlermeldungen erscheinen als Bootstrap-5-Toasts in der oberen rechten Ecke, verschwinden automatisch nach 4 Sekunden und stapeln sich bei mehreren gleichzeitigen Nachrichten
@@ -191,12 +197,16 @@ Das war's. SMTP-Zugangsdaten und der E-Mail-Zeitplan werden über die **Einstell
 2. **Wöchentlicher E-Mail-Bericht** (ein/aus) und **In E-Mail einschließen** (Transaktionsumfang) einstellen
 3. **Hinzufügen**
 
+<img src="docs/screenshots/settings-users.de.png" alt="Einstellungen, Tab Benutzer: neuen Benutzer anlegen, aktive und deaktivierte Benutzer" width="800">
+
 ### Ausgabe erfassen
 1. **Transaktion hinzufügen** → **Ausgabe**-Tab
 2. Auswählen wer bezahlt hat
 3. Beschreibung eingeben (optional: Beleg hochladen)
 4. Artikelzeilen ausfüllen (vorausgefüllt basierend auf der Allgemein-Einstellung)
 5. **Ausgabe erfassen**
+
+<img src="docs/screenshots/transaction-add.de.png" alt="Transaktion hinzufügen, Tab Ausgabe: drei Artikel, Summe und Betrag, der dem Käufer geschuldet wird" width="800">
 
 ### Einzahlung oder Auszahlung erfassen
 1. **Transaktion hinzufügen** → **Einzahlung**- oder **Auszahlung**-Tab (oder **Geld einzahlen** / **Geld auszahlen** auf der Übersicht)
@@ -208,11 +218,15 @@ Das war's. SMTP-Zugangsdaten und der E-Mail-Zeitplan werden über die **Einstell
 2. Mit ◀ / ▶ einen Monat vor/zurück navigieren (▶ ist im aktuellen Monat deaktiviert)
 3. Die **Monat**- und **Jahr**-Dropdowns verwenden um direkt zu einer vergangenen Periode zu springen
 
+<img src="docs/screenshots/transactions.de.png" alt="Alle Transaktionen im Juni, nach Tag gruppiert, mit Summen pro Typ" width="800">
+
 ### Transaktionen suchen
 1. Die Suchleiste in der Navigation (auf jeder Seite) für eine schnelle Stichwortsuche verwenden
 2. Oder direkt zu `/search` navigieren für mehr Kontrolle
 3. **Erweiterte Filter** klicken um nach Typ, Benutzer, Datumsbereich, Betragsbereich und/oder dem **Hat Anhang / Beleg**-Schalter zu filtern — Filter können kombiniert werden
 4. Ergebnisse erstrecken sich über alle Monate und zeigen das vollständige Datum (`JJJJ-MM-TT HH:MM`)
+
+<img src="docs/screenshots/search.de.png" alt="Suche nach „Pizza“ mit geöffneten erweiterten Filtern (Typ Ausgabe, ein Benutzer)" width="800">
 
 ### Transaktion bearbeiten
 1. **Alle Transaktionen** (oder Benutzerdetailseite) → Stift-Symbol
@@ -220,6 +234,8 @@ Das war's. SMTP-Zugangsdaten und der E-Mail-Zeitplan werden über die **Einstell
 3. Ausgabenpositionen hinzufügen, bearbeiten oder entfernen (die Summe aktualisiert das Betragsfeld automatisch)
 4. Neuen Beleg hochladen, bestehenden ersetzen oder **Beleg entfernen** ankreuzen zum Löschen
 5. **Änderungen speichern** — Salden werden automatisch neu berechnet
+
+<img src="docs/screenshots/transaction-edit.de.png" alt="Transaktion bearbeiten: Felder, Ausgabenpositionen und angehängter Beleg" width="800">
 
 ### Transaktion löschen
 - Papierkorb-Symbol auf jeder Transaktionszeile — Salden werden automatisch zurückgesetzt
@@ -230,6 +246,8 @@ Das war's. SMTP-Zugangsdaten und der E-Mail-Zeitplan werden über die **Einstell
 3. **E-Mails jetzt senden** zum Testen verwenden, oder unter **Automatischer Zeitplan** einen wiederkehrenden Zeitplan einrichten
 4. Optional **Admin-Zusammenfassungs-E-Mail senden** aktivieren — erfordert dass zuerst ein Seiten-Admin im Allgemein-Tab eingestellt wird
 
+<img src="docs/screenshots/settings-email.de.png" alt="Einstellungen, Tab E-Mail: SMTP-Zugangsdaten, Jetzt senden und automatischer Zeitplan" width="800">
+
 ### E-Mail-Vorlagen anpassen
 1. **Einstellungen** → **Vorlagen**-Tab
 2. Ein Farb-Preset wählen oder einzelne Farbwähler anpassen
@@ -237,10 +255,16 @@ Das war's. SMTP-Zugangsdaten und der E-Mail-Zeitplan werden über die **Einstell
 4. **Vorschau** klicken um die gerenderte E-Mail in einem neuen Tab vor dem Speichern zu öffnen
 5. **Vorlagen speichern** — Änderungen werden beim nächsten Versand wirksam
 
+<img src="docs/screenshots/settings-templates.de.png" alt="Einstellungen, Tab Vorlagen: Farbpalette, Designs und E-Mail-Texte" width="800">
+
+<img src="docs/screenshots/email-preview.de.png" alt="Vorschau der wöchentlichen Saldo-E-Mail" width="800">
+
 ### Backup erstellen
 1. **Einstellungen** → **Backup**-Tab → **Jetzt Backup erstellen**
 2. Das Backup erscheint sofort in der Liste — **Herunterladen** klicken um es lokal zu speichern
 3. Für automatische Backups **Automatischer Backup-Zeitplan** aktivieren, Tag/Uhrzeit und Anzahl der aufzubewahrenden Backups wählen, dann **Zeitplan speichern**
+
+<img src="docs/screenshots/settings-backup.de.png" alt="Einstellungen, Tab Backup: Backup-Liste mit Herunterladen, Wiederherstellen und Löschen, darunter Backup hochladen" width="800">
 
 ### Backup wiederherstellen
 - **Aus der Liste**: **Wiederherstellen** neben einem bestehenden Backup klicken und bestätigen
@@ -252,10 +276,16 @@ Das war's. SMTP-Zugangsdaten und der E-Mail-Zeitplan werden über die **Einstell
 3. **Deaktivieren** klicken um einen Benutzer in die deaktivierte Liste zu verschieben, oder **Reaktivieren** um ihn in die aktive Liste zurückzuholen
 4. Auf den Namen eines Benutzers klicken um seine Detailseite zu öffnen, dann **Benutzer bearbeiten** um Name, E-Mail, Mitglied-seit-Datum oder E-Mail-Einstellungen zu ändern
 
+<img src="docs/screenshots/user-detail.de.png" alt="Benutzerdetailseite mit Saldo und Transaktionshistorie" width="800">
+
+<img src="docs/screenshots/user-edit.de.png" alt="Dialog Benutzer bearbeiten" width="800">
+
 ### Sprache wechseln
 1. **Einstellungen** → **Allgemein**-Tab → **Sprache**-Dropdown
 2. **Deutsch** oder **English** wählen
 3. **Speichern** — die gesamte Oberfläche wechselt sofort zur gewählten Sprache
+
+<img src="docs/screenshots/settings-general.de.png" alt="Einstellungen, Tab Allgemein: Artikelzeilen, Zeitzone, Sprache, Dezimaltrennzeichen und Währung" width="800">
 
 ---
 
@@ -287,7 +317,9 @@ bank-of-tina/
 │       ├── js/money.js           # Betragsparser der Ausgabenformulare (wie parse_amount im Backend)
 │       └── vendor/               # Selbst gehostete Frontend-Abhängigkeiten (kein CDN)
 ├── tests/                        # pytest-Suite (SQLite in-memory, kein CSRF, make_user-Factory)
-├── docs/                         # history.md (Hintergrund zu Entscheidungen)
+├── e2e/                          # Playwright-Screenshot-Tour (eigenes Node-Paket; docs/seed.ts, docs/tour.spec.ts)
+├── scripts/docs-screenshots.sh   # Screenshots neu erzeugen (Wegwerf-Stack pro Sprache)
+├── docs/                         # screenshots/ (Galerie) und history.md
 ├── docker/
 │   ├── requirements.txt          # Python-Abhängigkeiten (Laufzeit)
 │   ├── requirements-dev.txt      # + Testabhängigkeiten
@@ -298,6 +330,7 @@ bank-of-tina/
 ├── mariadb-data/                 # MariaDB-Datenverzeichnis (Bind-Mount)
 ├── Dockerfile
 ├── docker-compose.yml
+├── docker-compose.e2e.yml        # Overlay der Screenshot-Tour (eigene Container-Namen, benannte Volumes)
 └── .env.example
 ```
 
@@ -392,6 +425,17 @@ Die Tests decken Hilfsfunktionen, Modelle, Routen, Einstellungen, Diagramme, Hea
 
 ---
 
+## 📸 Screenshots
+
+Alle Bilder in dieser Anleitung stammen aus einer automatischen Tour (Playwright, `e2e/docs/`), die eine Demo-Büro-Belegschaft über die Weboberfläche anlegt und jede Seite in beiden Sprachen fotografiert. Übersicht aller Bilder: [`docs/screenshots/`](docs/screenshots/README.md). Neu erzeugen (braucht Docker und Node; startet für jede Sprache einen Wegwerf-Stack unter dem Projektnamen `bank-of-tina_docs`, nie auf `./mariadb-data`):
+
+```bash
+cd e2e && npm ci && npx playwright install chromium && cd ..
+scripts/docs-screenshots.sh            # schreibt docs/screenshots/*.png; PORT_BASE=5000 ist der Standard
+```
+
+---
+
 ## 💡 Zukunftsideen
 
 - [ ] CSV-/Excel-Export von Transaktionen
@@ -408,6 +452,8 @@ Entwickelt mit ❤️ um Büro-Mittagessen einfacher zu machen! 🥗
 ---
 
 # 🇬🇧 English
+
+<img src="docs/screenshots/dashboard.png" alt="Dashboard: user balances, recent transactions and quick actions" width="800">
 
 A self-hosted web application for tracking shared expenses and balances within a small office or group. Features include expense recording with receipts, per-user weekly email reports, an admin summary email, charts and statistics, automated backups, and a fully configurable UI with themes and email templates. Fully bilingual (German and English). Built with Flask and MariaDB, runs entirely in Docker — no external services required.
 
@@ -482,6 +528,8 @@ A dedicated **Charts** page (nav bar → Charts) with a shared filter bar and fo
 
 **Print / PDF** — prints only the currently active tab, formatted for A4 landscape; chart canvas is resized to fill the page before the browser captures it. Open browser print dialog → Save as PDF.
 
+<img src="docs/screenshots/charts-history.png" alt="Charts: every user's running balance over 90 days" width="800">
+
 ### 🌐 Internationalization (i18n)
 - **Two languages** — German and English, switchable via Settings → General → Language
 - **Global setting** — language applies app-wide (stored in the database like all other settings)
@@ -501,6 +549,8 @@ A dedicated **Charts** page (nav bar → Charts) with a shared filter bar and fo
 - **Android Chrome**: three-dot menu → "Add to home screen" (or automatic install banner)
 - **iOS Safari**: Share sheet → "Add to Home Screen" → correct icon, name, and standalone launch
 - No App Store required; no native build tools required
+
+<img src="docs/screenshots/dashboard.mobile.png" alt="Dashboard on a phone" width="300">
 
 ### UI
 - **Toast notifications** — success/error messages appear as Bootstrap 5 toasts in the top-right corner, auto-hide after 4 seconds, and stack when multiple messages fire simultaneously
@@ -598,12 +648,16 @@ That's it. SMTP credentials and the email schedule are configured from the **Set
 2. Set **Weekly email report** (toggle on/off) and **Include in email** (transaction scope)
 3. **Add**
 
+<img src="docs/screenshots/settings-users.png" alt="Settings, Users tab: add a user, active and deactivated users" width="800">
+
 ### Recording an Expense
 1. **Add Transaction** → **Expense** tab
 2. Select who paid
 3. Enter a description (optional: upload a receipt)
 4. Fill in item rows (pre-filled based on your General setting)
 5. **Record Expense**
+
+<img src="docs/screenshots/transaction-add.png" alt="Add Transaction, Expense tab: three items, the total and what is owed to the buyer" width="800">
 
 ### Recording a Deposit or Withdrawal
 1. **Add Transaction** → **Deposit** or **Withdrawal** tab (or **Add Money** / **Withdraw Money** on the dashboard)
@@ -615,11 +669,15 @@ That's it. SMTP credentials and the email schedule are configured from the **Set
 2. Use ◀ / ▶ to move one month at a time (▶ is disabled on the current month)
 3. Use the **Month** and **Year** dropdowns to jump directly to any past period
 
+<img src="docs/screenshots/transactions.png" alt="All Transactions for June, grouped by day, with totals per type" width="800">
+
 ### Searching Transactions
 1. Use the search bar in the navbar (any page) for a quick keyword search
 2. Or navigate to `/search` directly for more control
 3. Click **Advanced filters** to filter by type, user, date range, amount range, and/or the **Has attachment / receipt** toggle — filters can be combined
 4. Results span all months and show the full date (`YYYY-MM-DD HH:MM`)
+
+<img src="docs/screenshots/search.png" alt="Search for ‘Pizza’ with the advanced filters open (type expense, one user)" width="800">
 
 ### Editing a Transaction
 1. **All Transactions** (or a user's detail page) → pencil icon
@@ -627,6 +685,8 @@ That's it. SMTP credentials and the email schedule are configured from the **Set
 3. Add, edit, or remove expense items (the total auto-updates the Amount field)
 4. Upload a new receipt, replace an existing one, or tick **Remove receipt** to delete it
 5. **Save Changes** — balances are recalculated automatically
+
+<img src="docs/screenshots/transaction-edit.png" alt="Edit Transaction: fields, expense items and the attached receipt" width="800">
 
 ### Deleting a Transaction
 - Trash icon on any transaction row — balances are reversed automatically
@@ -637,6 +697,8 @@ That's it. SMTP credentials and the email schedule are configured from the **Set
 3. Use **Send Emails Now** to test, or configure a recurring schedule under **Auto-Schedule**
 4. Optionally enable **Send admin summary email** — requires a site admin to be set in the General tab first
 
+<img src="docs/screenshots/settings-email.png" alt="Settings, Email tab: SMTP credentials, Send Now and the auto-schedule" width="800">
+
 ### Customising Email Templates
 1. **Settings** → **Templates** tab
 2. Pick a colour preset or adjust individual colour pickers
@@ -644,10 +706,16 @@ That's it. SMTP credentials and the email schedule are configured from the **Set
 4. Click **Preview** to open the rendered email in a new tab before saving
 5. **Save Templates** — changes take effect on the next send
 
+<img src="docs/screenshots/settings-templates.png" alt="Settings, Templates tab: colour palette, themes and email texts" width="800">
+
+<img src="docs/screenshots/email-preview.png" alt="Preview of the weekly balance email" width="800">
+
 ### Creating a Backup
 1. **Settings** → **Backup** tab → **Create Backup Now**
 2. The backup appears in the list instantly — click **Download** to save it locally
 3. To schedule automatic backups, enable **Auto-Backup Schedule**, pick a day/time and how many backups to keep, then **Save Schedule**
+
+<img src="docs/screenshots/settings-backup.png" alt="Settings, Backup tab: backup list with download, restore and delete, and the upload form" width="800">
 
 ### Restoring a Backup
 - **From the list**: click **Restore** next to any existing backup and confirm
@@ -659,10 +727,16 @@ That's it. SMTP credentials and the email schedule are configured from the **Set
 3. Click **Deactivate** to move a user to the deactivated list, or **Reactivate** to restore them to the active list
 4. Click a user's name to open their detail page, then **Edit User** to change their name, email, member-since date, or email preferences
 
+<img src="docs/screenshots/user-detail.png" alt="User detail page with balance and transaction history" width="800">
+
+<img src="docs/screenshots/user-edit.png" alt="Edit User dialog" width="800">
+
 ### Switching Language
 1. **Settings** → **General** tab → **Language** dropdown
 2. Select **Deutsch** or **English**
 3. **Save** — the entire UI switches to the selected language immediately
+
+<img src="docs/screenshots/settings-general.png" alt="Settings, General tab: item rows, timezone, language, decimal separator and currency" width="800">
 
 ---
 
@@ -753,6 +827,17 @@ FLASK_TESTING=1 python -m pytest tests/ -v
 ```
 
 The tests cover helpers, models, routes, settings, analytics, health check, email building and sending, backup/restore, balances and timezones, input validation, rendered pages, and internationalization. To count them: `python -m pytest --collect-only -q | tail -1`.
+
+---
+
+## 📸 Screenshots
+
+Every image in this guide comes from an automated tour (Playwright, `e2e/docs/`) that seeds a demo office through the web UI and photographs every screen in both languages. Gallery: [`docs/screenshots/`](docs/screenshots/README.md). To regenerate (needs Docker and Node; starts a throwaway stack per language under the project name `bank-of-tina_docs`, never on `./mariadb-data`):
+
+```bash
+cd e2e && npm ci && npx playwright install chromium && cd ..
+scripts/docs-screenshots.sh            # writes docs/screenshots/*.png; PORT_BASE=5000 is the default
+```
 
 ---
 
