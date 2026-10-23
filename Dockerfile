@@ -1,4 +1,4 @@
-FROM python:3.15.0-slim-trixie
+FROM python:3.15.1-slim-trixie
 
 # Set working directory
 WORKDIR /app
