@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Bank of Tina 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-24 01:44+0000\n"
+"POT-Creation-Date: 2026-10-24 04:27+0000\n"
 "PO-Revision-Date: 2026-03-07 17:00+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: de\n"
@@ -926,6 +926,10 @@ msgstr "Diagramme"
 #: app/templates/settings.html:7
 msgid "Settings"
 msgstr "Einstellungen"
+
+#: app/templates/base.html:78
+msgid "Search…"
+msgstr "Suchen…"
 
 #: app/templates/base.html:78 app/templates/search.html:15
 msgid "Search transactions…"

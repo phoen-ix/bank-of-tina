@@ -130,3 +130,15 @@ def test_backup_upload_card_states_size_limit(app, client, clean_db):
         del g._flask_babel.babel_locale
     html = client.get('/settings').data.decode()
     assert 'Große Dateien werden in Teilen gesendet, bis zu 2 GB.' in html
+
+
+def test_navbar_search_placeholder_fits(app, client, clean_db):
+    """The narrow navbar input gets a short placeholder; the full text stays as its label."""
+    from flask_babel import refresh
+    html = client.get('/').data.decode()
+    assert 'placeholder="Search…" aria-label="Search transactions…"' in html
+
+    set_setting('language', 'de')
+    refresh()
+    html = client.get('/').data.decode()
+    assert 'placeholder="Suchen…" aria-label="Transaktionen suchen…"' in html
