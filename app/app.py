@@ -133,7 +133,10 @@ def localdt_filter(dt: datetime | None, fmt: str = '%Y-%m-%d %H:%M') -> str:
 
 
 @app.template_filter('format_date_babel')
-def format_date_babel_filter(value: datetime, fmt: str = 'EEEE, d MMMM') -> str:
+def format_date_babel_filter(value: datetime, fmt: str | None = None) -> str:
+    if fmt is None:
+        # German day numbers take a period: "Freitag, 12. Juni".
+        fmt = 'EEEE, d. MMMM' if get_locale() == 'de' else 'EEEE, d MMMM'
     return babel_format_date(value, fmt)
 
 

@@ -102,3 +102,17 @@ def test_html_lang_attribute(app, client, clean_db):
         set_setting('language', 'en')
     resp = client.get('/')
     assert b'<html lang="en">' in resp.data
+
+
+def test_day_header_date_format(app, clean_db):
+    """German day headers put a period after the day number ("12. Juni")."""
+    from datetime import date
+    from flask import render_template_string
+    from flask_babel import refresh
+    with app.test_request_context():
+        set_setting('language', 'de')
+        refresh()
+        assert render_template_string('{{ d|format_date_babel }}', d=date(2026, 6, 12)) == 'Freitag, 12. Juni'
+        set_setting('language', 'en')
+        refresh()
+        assert render_template_string('{{ d|format_date_babel }}', d=date(2026, 6, 12)) == 'Friday, 12 June'
