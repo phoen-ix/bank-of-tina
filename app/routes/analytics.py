@@ -5,7 +5,7 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 from flask import Blueprint, Response, render_template, request, jsonify
-from flask_babel import format_date
+from flask_babel import format_date, get_locale
 
 from extensions import db
 from models import User, Transaction, ExpenseItem
@@ -129,7 +129,9 @@ def analytics_data() -> Response:
 
     sorted_vol_keys = sorted(vol.keys())
     if delta_days <= 90:
-        vol_labels = [format_date(datetime.strptime(k, '%Y-%m-%d'), 'd MMM') for k in sorted_vol_keys]
+        # German day numbers take a period: "12. Juni".
+        week_fmt = 'd. MMM' if get_locale().language == 'de' else 'd MMM'
+        vol_labels = [format_date(datetime.strptime(k, '%Y-%m-%d'), week_fmt) for k in sorted_vol_keys]
     else:
         vol_labels = [format_date(datetime.strptime(k + '-01', '%Y-%m-%d'), 'MMM yyyy') for k in sorted_vol_keys]
 

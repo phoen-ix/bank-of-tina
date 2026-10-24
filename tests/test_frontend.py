@@ -86,4 +86,4 @@ def test_analytics_volume_labels_follow_locale(client, app, make_user):
         if hasattr(g, '_flask_babel') and hasattr(g._flask_babel, 'babel_locale'):
             del g._flask_babel.babel_locale
         data = client.get(f'/analytics/data?date_from=2026-03-01&date_to=2026-03-20&users={user.id}').get_json()
-        assert data['transaction_volume']['labels'] == ['2 März']
+        assert data['transaction_volume']['labels'] == ['2. März']
