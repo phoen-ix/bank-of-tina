@@ -39,6 +39,19 @@ test.beforeEach(async ({ page }) => {
   pageErrors = []
   page.on('pageerror', (e) => pageErrors.push(e))
   await page.clock.setFixedTime(NOW)
+  // Whether the icon font arrives before or after the first layout is a race,
+  // and the loser keeps small icon buttons 1 px taller (/search was 864 or
+  // 868 px tall). So lay nothing out until the font is there.
+  await page.addInitScript(() => {
+    const hide = new CSSStyleSheet()
+    hide.replaceSync('html { display: none !important }')
+    document.adoptedStyleSheets = [hide]
+    document.addEventListener('DOMContentLoaded', () => {
+      void document.fonts.load('1em bootstrap-icons').finally(() => {
+        document.adoptedStyleSheets = document.adoptedStyleSheets.filter((s) => s !== hide)
+      })
+    })
+  })
   // Chart.js animates on its own clock; draw every chart in its final state.
   await page.addInitScript(() => {
     let chart: { defaults: { animation: boolean } } | undefined
