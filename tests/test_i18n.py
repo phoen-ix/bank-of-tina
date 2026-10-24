@@ -116,3 +116,17 @@ def test_day_header_date_format(app, clean_db):
         set_setting('language', 'en')
         refresh()
         assert render_template_string('{{ d|format_date_babel }}', d=date(2026, 6, 12)) == 'Friday, 12 June'
+
+
+def test_backup_upload_card_states_size_limit(app, client, clean_db):
+    """The upload card names the 2 GB cap (400 chunks of 5 MB) in both languages."""
+    from flask import g
+    html = client.get('/settings').data.decode()
+    assert 'Large files are sent in chunks, up to 2 GB.' in html
+
+    with app.app_context():
+        set_setting('language', 'de')
+    if hasattr(g, '_flask_babel') and hasattr(g._flask_babel, 'babel_locale'):
+        del g._flask_babel.babel_locale
+    html = client.get('/settings').data.decode()
+    assert 'Große Dateien werden in Teilen gesendet, bis zu 2 GB.' in html

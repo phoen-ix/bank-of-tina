@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Bank of Tina 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-26 15:50+0000\n"
+"POT-Creation-Date: 2026-10-24 01:44+0000\n"
 "PO-Revision-Date: 2026-03-07 17:00+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: de\n"
@@ -22,15 +22,15 @@ msgstr ""
 msgid "Too many requests. Please wait and try again."
 msgstr "Zu viele Anfragen. Bitte warten und erneut versuchen."
 
-#: app/app.py:143
+#: app/app.py:146
 msgid "deposit"
 msgstr "Einzahlung"
 
-#: app/app.py:144
+#: app/app.py:147
 msgid "withdrawal"
 msgstr "Auszahlung"
 
-#: app/app.py:145
+#: app/app.py:148
 msgid "expense"
 msgstr "Ausgabe"
 
@@ -234,25 +234,25 @@ msgstr "E-Mail-Versand ist in den allgemeinen Einstellungen deaktiviert."
 msgid "Admin summary to %(name)s: %(err)s"
 msgstr "Admin-Zusammenfassung an %(name)s: %(err)s"
 
-#: app/helpers.py:177 app/helpers.py:192
+#: app/helpers.py:182 app/helpers.py:197
 msgid "Amounts must be greater than zero."
 msgstr "Beträge müssen größer als null sein."
 
-#: app/helpers.py:187
+#: app/helpers.py:192
 #, python-format
 msgid "\"%(value)s\" is not a valid amount."
 msgstr "„%(value)s“ ist kein gültiger Betrag."
 
-#: app/helpers.py:190
+#: app/helpers.py:195
 #, python-format
 msgid "\"%(value)s\" is too large."
 msgstr "„%(value)s“ ist zu groß."
 
-#: app/scheduler_jobs.py:171
+#: app/scheduler_jobs.py:170
 msgid "Success"
 msgstr "Erfolgreich"
 
-#: app/scheduler_jobs.py:171
+#: app/scheduler_jobs.py:170
 msgid "Failed"
 msgstr "Fehlgeschlagen"
 
@@ -1795,10 +1795,10 @@ msgstr "Backup hochladen"
 #: app/templates/settings.html:883
 msgid ""
 "Upload a <code>bot_backup_*.tar.gz</code> file. Large files are sent in "
-"chunks so there is no size limit."
+"chunks, up to 2 GB."
 msgstr ""
 "Eine <code>bot_backup_*.tar.gz</code>-Datei hochladen. Große Dateien "
-"werden in Teilen gesendet, daher gibt es kein Größenlimit."
+"werden in Teilen gesendet, bis zu 2 GB."
 
 #: app/templates/settings.html:891 app/templates/settings.html:1308
 msgid "Upload"

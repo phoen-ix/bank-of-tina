@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-26 15:50+0000\n"
+"POT-Creation-Date: 2026-10-24 01:44+0000\n"
 "PO-Revision-Date: 2026-03-07 16:54+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -22,15 +22,15 @@ msgstr ""
 msgid "Too many requests. Please wait and try again."
 msgstr ""
 
-#: app/app.py:143
+#: app/app.py:146
 msgid "deposit"
 msgstr ""
 
-#: app/app.py:144
+#: app/app.py:147
 msgid "withdrawal"
 msgstr ""
 
-#: app/app.py:145
+#: app/app.py:148
 msgid "expense"
 msgstr ""
 
@@ -232,25 +232,25 @@ msgstr ""
 msgid "Admin summary to %(name)s: %(err)s"
 msgstr ""
 
-#: app/helpers.py:177 app/helpers.py:192
+#: app/helpers.py:182 app/helpers.py:197
 msgid "Amounts must be greater than zero."
 msgstr ""
 
-#: app/helpers.py:187
+#: app/helpers.py:192
 #, python-format
 msgid "\"%(value)s\" is not a valid amount."
 msgstr ""
 
-#: app/helpers.py:190
+#: app/helpers.py:195
 #, python-format
 msgid "\"%(value)s\" is too large."
 msgstr ""
 
-#: app/scheduler_jobs.py:171
+#: app/scheduler_jobs.py:170
 msgid "Success"
 msgstr ""
 
-#: app/scheduler_jobs.py:171
+#: app/scheduler_jobs.py:170
 msgid "Failed"
 msgstr ""
 
@@ -1739,7 +1739,7 @@ msgstr ""
 #: app/templates/settings.html:883
 msgid ""
 "Upload a <code>bot_backup_*.tar.gz</code> file. Large files are sent in "
-"chunks so there is no size limit."
+"chunks, up to 2 GB."
 msgstr ""
 
 #: app/templates/settings.html:891 app/templates/settings.html:1308
@@ -2194,5 +2194,11 @@ msgstr ""
 #~ "This will overwrite the current database"
 #~ " and all receipt images. This cannot"
 #~ " be undone."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "Upload a <code>bot_backup_*.tar.gz</code> file. "
+#~ "Large files are sent in chunks so"
+#~ " there is no size limit."
 #~ msgstr ""
 
