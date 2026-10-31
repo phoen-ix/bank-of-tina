@@ -144,3 +144,12 @@ def test_apply_template_missing_placeholder(app):
         from helpers import apply_template
         result = apply_template('Hello [Name], status: [Status]', Name='Bob')
         assert result == 'Hello Bob, status: [Status]'
+
+
+def test_icon_version_changes_on_every_rewrite(app, tmp_path, monkeypatch):
+    import time
+    monkeypatch.setattr(app, 'root_path', str(tmp_path))
+    monkeypatch.setattr(time, 'time', lambda: 1793426843.0)  # both rewrites in the same second
+    with app.app_context():
+        from helpers import generate_and_save_icons
+        assert generate_and_save_icons('#000000') != generate_and_save_icons('#0d6efd')

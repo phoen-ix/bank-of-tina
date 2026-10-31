@@ -275,7 +275,7 @@ def generate_and_save_icons(bg_hex: str) -> str:
         path = os.path.join(icons_dir, f'icon-{size}.png')
         with open(path, 'wb') as f:
             f.write(make_icon_png(size, bg_rgb))
-    version = str(int(time.time()))
+    version = str(time.time_ns())  # a second rewrite within the same second still busts the cache
     set_setting('icon_version', version)
     return version
 

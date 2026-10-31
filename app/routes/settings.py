@@ -513,7 +513,7 @@ def settings_icon() -> Response:
                 resized = img.resize((size, size), Image.LANCZOS)
                 path = os.path.join(icons_dir, f'icon-{size}.png')
                 resized.save(path, 'PNG')
-            set_setting('icon_version', str(int(time.time())))
+            set_setting('icon_version', str(time.time_ns()))
             flash(_('Custom icon uploaded.'), 'success')
         except ImportError:
             flash(_('Pillow is not installed \u2014 cannot process uploaded images.'), 'danger')
