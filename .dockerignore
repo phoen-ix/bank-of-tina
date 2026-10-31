@@ -2,6 +2,7 @@
 uploads/
 backups/
 icons/
+app/static/icons/
 mariadb-data/
 
 # Environment & secrets
