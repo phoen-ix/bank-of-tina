@@ -219,3 +219,36 @@ def test_migrations_keep_app_logging(app):
     assert logging.getLogger().handlers == root_handlers
     for name in ('email_service', 'backup_service', 'routes.main'):
         assert logging.getLogger(name).disabled is False
+
+
+def test_backup_job_prunes_to_keep_and_mails_admin(app, backup_dir, make_user, monkeypatch):
+    import scheduler_jobs
+    from extensions import scheduler
+    names = [f'bot_backup_2026_01_0{d}_03-00-00.tar.gz' for d in range(1, 5)]
+
+    def fake_backup():
+        for name in names:
+            (backup_dir / name).write_bytes(b'x')
+        return True, names[-1]
+
+    sent = []
+    monkeypatch.setattr(scheduler_jobs, 'run_backup', fake_backup)
+    monkeypatch.setattr(scheduler_jobs, 'send_single_email', lambda *a: sent.append(a) or (True, None))
+    with app.app_context():
+        from helpers import set_setting
+        admin = make_user(email='admin@example.com')
+        set_setting('site_admin_id', str(admin.id))
+        set_setting('backup_admin_email', '1')
+        set_setting('backup_keep', '2')
+        scheduler_jobs._add_backup_job(app)
+        try:
+            scheduler.get_job('backup_job').func()
+        finally:
+            scheduler.remove_all_jobs()
+
+    assert sorted(p.name for p in backup_dir.iterdir()) == names[-2:]
+    assert len(sent) == 1
+    to_email, _name, subject, html = sent[0]
+    assert to_email == 'admin@example.com'
+    assert subject.startswith('Bank of Tina - Backup Success (')
+    assert '2 old backup(s) deleted' in html

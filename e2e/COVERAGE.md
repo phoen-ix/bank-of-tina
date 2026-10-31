@@ -39,7 +39,7 @@ Tests: `npx playwright test --list` (101 tests in 15 files, including the setup 
 | 15 | `/analytics` | GET | ✅ sweep › page: charts |
 | 16 | `/analytics/data` | GET | ✅ analytics.spec.ts › filters: users and dates drive every chart |
 | 17 | `/settings` | GET | ✅ sweep › page: settings, page: settings tab general/email/common-items/backup/templates/users |
-| 18 | `/settings/general` | POST | ✅ global/general.spec.ts › (every test) |
+| 18 | `/settings/general` | POST | ✅ global/general.spec.ts › language: the whole UI switches to German and back |
 | 19 | `/settings/email` | POST | ✅ global/email.spec.ts › credentials form: saved, password kept when left blank, port suggestion |
 | 20 | `/settings/send-now` | POST | ✅ global/email.spec.ts › Send Now: every opted-in user gets their balance, the admin a summary |
 | 21 | `/settings/email/clear-log` | POST | ✅ global/email.spec.ts › Send Now: every opted-in user gets their balance, the admin a summary |
@@ -85,7 +85,7 @@ Tests: `npx playwright test --list` (101 tests in 15 files, including the setup 
 |---|---|---|
 | 57 | Navbar links, brand, search box (base.html) | ✅ pwa.spec.ts › navbar links and brand; search.spec.ts › text matches description, notes and item names; % and _ are literal |
 | 58 | Navbar collapse toggler (phone) | ✅ pwa.spec.ts › phone: the menu collapses behind the toggler |
-| 59 | Flash toasts | ✅ every journey (`expectToast`) |
+| 59 | Flash toasts | ✅ transactions.spec.ts › delete: cancelled confirm keeps it, confirmed delete reverses balances |
 | 60 | Dashboard: balances table, links, positive/negative colours | ✅ users.spec.ts › user detail: details, history with paid/received, items and notes; global/templates.spec.ts › custom colours: hex box and picker stay in sync, the preset turns Custom |
 | 61 | Dashboard: recent transactions, "View All Transactions" | ✅ global/general.spec.ts › dashboard options: email column and recent transactions |
 | 62 | Dashboard: quick actions (Record Expense / Add Money / Withdraw Money) | ✅ add-transaction.spec.ts › deposit and withdrawal › quick actions open the matching tab |
@@ -142,7 +142,7 @@ Tests: `npx playwright test --list` (101 tests in 15 files, including the setup 
 | 113 | Email: SMTP failure | ✅ global/email.spec.ts › a broken SMTP server: every send fails, and the failures are logged |
 | 114 | Email: sending switched off | ✅ global/email.spec.ts › sending switched off: Send Now does nothing |
 | 115 | Email: auto-schedule switch shows/hides fields, summary line | ✅ global/email.spec.ts › auto-schedule: enable, the summary line, disable |
-| 116 | Scheduled runs firing (email, auto-collect, backup + status email to the admin) | ❌ (c) the jobs run in the app's own clock; `tests/test_email_sending.py::test_backup_status_mail_failure_is_logged` runs the backup job, `tests/test_validation.py::test_timezone_change_reschedules_backup_job` / `test_broken_schedule_settings_do_not_block_startup` the scheduling; the e2e suite drives the same code through Send Now / Run Now / Create Backup Now |
+| 116 | Scheduled runs firing (email, auto-collect, backup + status email to the admin) | ❌ (c) the jobs run in the app's own clock; `tests/test_backup.py::test_backup_job_prunes_to_keep_and_mails_admin` runs the backup job (retention pruning, status mail to the admin), `tests/test_email_sending.py::test_backup_status_mail_failure_is_logged` its mail failure, `tests/test_validation.py::test_timezone_change_reschedules_backup_job` / `test_broken_schedule_settings_do_not_block_startup` the scheduling; the e2e suite drives the same code through Send Now / Run Now / Create Backup Now |
 | 117 | Common: global autocomplete switch | ✅ global/autocollect.spec.ts › switching autocomplete off empties every suggestion list |
 | 118 | Common: item names add (no duplicates) / remove confirm | ✅ common.spec.ts › item names: add, no duplicates, autocomplete, remove |
 | 119 | Common: descriptions add / remove confirm | ✅ common.spec.ts › descriptions: add and remove |
