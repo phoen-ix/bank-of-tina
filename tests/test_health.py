@@ -63,6 +63,10 @@ def test_redirect_back_ignores_foreign_referrer(client, app, make_user):
                                headers={'Referer': 'https://evil.example/phish'})
         assert response.status_code == 302
         assert 'evil.example' not in response.headers['Location']
+        # Browsers read the backslash as a slash: evil.example is the host.
+        response = client.post(f'/user/{user.id}/toggle-active',
+                               headers={'Referer': 'https://evil.example\\@localhost/'})
+        assert 'evil.example' not in response.headers['Location']
         response = client.post(f'/user/{user.id}/toggle-active',
                                headers={'Referer': 'http://localhost/user/1'})
         assert response.headers['Location'] == 'http://localhost/user/1'

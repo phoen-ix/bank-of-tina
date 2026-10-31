@@ -9,7 +9,7 @@ import zlib
 from datetime import UTC, date, datetime, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 
-from urllib.parse import urlsplit
+from urllib.parse import urlparse
 
 import pytz
 from flask import Response, current_app, g, redirect, request
@@ -365,9 +365,9 @@ def to_local(dt: datetime | None) -> datetime | None:
 
 def redirect_back(default: str) -> Response:
     """Redirect to the referring page when it is on this host, otherwise to `default`."""
-    ref = request.referrer
-    if ref:
-        parts = urlsplit(ref)
-        if parts.scheme in ('http', 'https') and parts.netloc == request.host:
-            return redirect(ref)
+    # Browsers read a backslash in a URL as a slash; parse it the same way.
+    ref = (request.referrer or '').replace('\\', '/')
+    parts = urlparse(ref)
+    if parts.scheme in ('http', 'https') and parts.netloc == request.host:
+        return redirect(ref)
     return redirect(default)
