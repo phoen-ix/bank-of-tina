@@ -20,9 +20,10 @@ pybabel update -i app/translations/messages.pot -d app/translations
 # edit app/translations/de/LC_MESSAGES/messages.po (new "fuzzy" guesses are usually wrong)
 pybabel compile -d app/translations
 
-# Docs screenshots (both languages) against throwaway stacks; Node 26 + Docker
+# Node 26 + Docker for both:
 cd e2e && npm ci && npx playwright install chromium && cd ..
-PORT_BASE=24100 scripts/docs-screenshots.sh            # -> docs/screenshots/*.png, then oxipng them
+PORT_BASE=24100 scripts/e2e.sh [playwright args]       # e2e suite (e2e/tests, e2e/COVERAGE.md)
+PORT_BASE=24100 scripts/docs-screenshots.sh            # docs screenshots (both languages), then oxipng them
 ```
 
 On the fleet VM, Docker runs go through the fleet's `slot` gate (`slot heavy bank-of-tina -- …`);
@@ -95,6 +96,17 @@ On the fleet VM, Docker runs go through the fleet's `slot` gate (`slot heavy ban
 - The image has `mariadb` / `mariadb-dump` (the `mysql*` names don't exist on trixie). The DB password
   goes via `MYSQL_PWD`, never the command line; restores run `mariadb --sandbox`; tar extraction uses
   `filter='data'` and only `dump.sql` + `receipts/`.
+
+**E2E suite** (`e2e/tests`, Playwright projects `setup` → `app` → `global`)
+- No login, but global settings: specs that change language, timezone, separators, site admin, SMTP,
+  templates, icons, auto-collect or backups (restore replaces the whole DB) live in `e2e/tests/global/`
+  (one at a time, after `app`) and put the baseline back (`GENERAL` in `fixtures.ts`). Everything else
+  owns its data: users and descriptions with `uid()`, month views in `app.freeMonth()` (2040-2099).
+- The stack runs with `BEHIND_PROXY=1` and every test sends its own `X-Forwarded-For`, so the
+  per-client rate limits (10 users/min, 30 transactions/min) never couple two tests.
+- Mail goes to Mailpit (compose profile `mail`, host `mailpit:1025`, API on `PORT_BASE+5`); a page
+  error, console error or 5xx fails any test (`guard` fixture; `guard.allow()` for expected ones).
+- New UI text: update COVERAGE.md and add the row's test.
 
 **Docs tour and fleet**
 - Never test against a checkout's plain `docker compose up`: it uses `./mariadb-data` and the project
@@ -169,3 +181,4 @@ empties all tables, removes scheduler jobs and sets `language='en'` (tests see E
 - `docs/history.md` - why things are the way they are (refactors, past bugs).
 - `docs/screenshots/README.md` - screenshot gallery (doubles as the screen manual).
 - `e2e/docs/` - the docs tour; `scripts/docs-screenshots.sh` - its single entry point.
+- `e2e/tests/` + `e2e/COVERAGE.md` - the e2e suite and its inventory; `scripts/e2e.sh` - its entry point.

@@ -6,6 +6,9 @@ def test_index_page(client, app):
     response = client.get('/')
     assert response.status_code == 200
     assert b'Bank of Tina' in response.data
+    # The empty state (the e2e suite's shared stack always has users).
+    assert b'No users yet.' in response.data
+    assert b'No transactions yet.' in response.data
 
 
 def test_add_user(client, app):

@@ -317,7 +317,8 @@ bank-of-tina/
 │       ├── js/money.js           # Betragsparser der Ausgabenformulare (wie parse_amount im Backend)
 │       └── vendor/               # Selbst gehostete Frontend-Abhängigkeiten (kein CDN)
 ├── tests/                        # pytest-Suite (SQLite in-memory, kein CSRF, make_user-Factory)
-├── e2e/                          # Playwright-Screenshot-Tour (eigenes Node-Paket; docs/seed.ts, docs/tour.spec.ts)
+├── e2e/                          # Playwright (eigenes Node-Paket): E2E-Suite tests/ + COVERAGE.md, Screenshot-Tour docs/
+├── scripts/e2e.sh                # E2E-Suite gegen einen Wegwerf-Stack (App, MariaDB, Mailpit)
 ├── scripts/docs-screenshots.sh   # Screenshots neu erzeugen (Wegwerf-Stack pro Sprache)
 ├── docs/                         # screenshots/ (Galerie) und history.md
 ├── docker/
@@ -330,7 +331,7 @@ bank-of-tina/
 ├── mariadb-data/                 # MariaDB-Datenverzeichnis (Bind-Mount)
 ├── Dockerfile
 ├── docker-compose.yml
-├── docker-compose.e2e.yml        # Overlay der Screenshot-Tour (eigene Container-Namen, benannte Volumes)
+├── docker-compose.e2e.yml        # Overlay für E2E-Suite und Screenshot-Tour (eigene Container-Namen, benannte Volumes, Mailpit)
 └── .env.example
 ```
 
@@ -422,6 +423,16 @@ FLASK_TESTING=1 python -m pytest tests/ -v
 ```
 
 Die Tests decken Hilfsfunktionen, Modelle, Routen, Einstellungen, Diagramme, Health-Check, E-Mail-Erstellung und -Versand, Backup/Restore, Salden und Zeitzonen, Eingabeprüfung, gerenderte Seiten und Internationalisierung ab. Wie viele es sind: `python -m pytest --collect-only -q | tail -1`.
+
+### E2E
+
+Die Playwright-Suite in `e2e/tests/` bedient jede Seite und jede Funktion im Browser (Inventar: [`e2e/COVERAGE.md`](e2e/COVERAGE.md)). `scripts/e2e.sh` baut das Produktions-Image, startet App, MariaDB und Mailpit als Wegwerf-Stack unter dem Projektnamen `bank-of-tina_e2e` (nie auf `./mariadb-data`) und räumt danach alles weg:
+
+```bash
+cd e2e && npm ci && npx playwright install chromium && cd ..
+scripts/e2e.sh                         # PORT_BASE=5000 ist der Standard, Mailpit auf PORT_BASE+5
+scripts/e2e.sh tests/search.spec.ts    # weitere Argumente gehen an `playwright test`
+```
 
 ---
 
@@ -828,6 +839,16 @@ FLASK_TESTING=1 python -m pytest tests/ -v
 ```
 
 The tests cover helpers, models, routes, settings, analytics, health check, email building and sending, backup/restore, balances and timezones, input validation, rendered pages, and internationalization. To count them: `python -m pytest --collect-only -q | tail -1`.
+
+### E2E
+
+The Playwright suite in `e2e/tests/` drives every page and feature in a browser (inventory: [`e2e/COVERAGE.md`](e2e/COVERAGE.md)). `scripts/e2e.sh` builds the production image, starts the app, MariaDB and Mailpit as a throwaway stack under the project name `bank-of-tina_e2e` (never on `./mariadb-data`) and removes it all afterwards:
+
+```bash
+cd e2e && npm ci && npx playwright install chromium && cd ..
+scripts/e2e.sh                         # PORT_BASE=5000 is the default, Mailpit on PORT_BASE+5
+scripts/e2e.sh tests/search.spec.ts    # extra arguments go to `playwright test`
+```
 
 ---
 

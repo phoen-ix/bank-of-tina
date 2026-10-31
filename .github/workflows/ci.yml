@@ -88,3 +88,34 @@ jobs:
           name: docs-tour
           path: ${{ runner.temp }}/docs-run/
           retention-days: 7
+
+  # The e2e suite (e2e/tests, inventory e2e/COVERAGE.md) against the built
+  # image, MariaDB and Mailpit, the same way as locally: scripts/e2e.sh.
+  # CI=true gives every test one retry and an HTML report.
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "26"
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+
+      - name: Install Playwright
+        working-directory: e2e
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: E2E suite
+        run: ARTIFACTS="$RUNNER_TEMP/e2e" scripts/e2e.sh
+
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: e2e
+          path: ${{ runner.temp }}/e2e/
+          retention-days: 7
