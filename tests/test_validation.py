@@ -98,6 +98,7 @@ def test_email_pattern_is_linear():
         assert bool(EMAIL_RE.fullmatch(email)) is ok, email
     start = time.monotonic()
     assert not EMAIL_RE.fullmatch('a@' + '.' * 20000 + ' ')
+    assert not EMAIL_RE.search('!' * 20000)
     assert time.monotonic() - start < 0.5
 
 

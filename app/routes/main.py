@@ -25,9 +25,10 @@ main_bp = Blueprint('main', __name__)
 VALID_EMAIL_TX: set[str] = {'none', 'last3', 'this_week', 'this_month'}
 DESCRIPTION_MAX = 500   # Transaction.description
 USER_FIELD_MAX = 100    # User.name / User.email
-# local@domain, the domain with a dot neither first nor last. The dot-free run before the
-# dot keeps fullmatch() linear ('[^@\s]+\.[^@\s]+' backtracked quadratically).
-EMAIL_RE = re.compile(r'[^@\s]+@[^@\s][^@\s.]*\.[^@\s]+')
+# local@domain, the domain with a dot neither first nor last. Linear: '^' stops a search
+# from retrying '[^@\s]+@' at every position, and the dot-free run before the dot keeps the
+# domain from backtracking ('[^@\s]+\.[^@\s]+' was quadratic).
+EMAIL_RE = re.compile(r'^[^@\s]+@[^@\s][^@\s.]*\.[^@\s]+')
 ITEM_NAME_MAX = 200     # ExpenseItem.item_name
 
 
