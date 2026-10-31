@@ -93,6 +93,8 @@ On the fleet VM, Docker runs go through the fleet's `slot` gate (`slot heavy ban
 - `/uploads`, `/backups` and `/app/static/icons` are bind mounts: clear their contents, never `rmtree`
   the directories. App code in the image is root-owned; the entrypoint fixes mount ownership, then
   drops to `appuser` (UID 1000) via gosu.
+- A file path built from request data goes through `helpers.path_inside()`; validate names with
+  `re.fullmatch` (`$` also matches before a trailing newline).
 - The image has `mariadb` / `mariadb-dump` (the `mysql*` names don't exist on trixie). The DB password
   goes via `MYSQL_PWD`, never the command line; restores run `mariadb --sandbox`; tar extraction uses
   `filter='data'` and only `dump.sql` + `receipts/`.
