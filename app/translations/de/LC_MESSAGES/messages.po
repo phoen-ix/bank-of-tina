@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Bank of Tina 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-31 01:50+0000\n"
+"POT-Creation-Date: 2026-10-31 01:51+0000\n"
 "PO-Revision-Date: 2026-03-07 17:00+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: de\n"
@@ -452,125 +452,145 @@ msgstr "Ungültiger Blacklist-Eintrag."
 
 #: app/routes/settings.py:343
 #, python-format
-msgid "\"%(value)s\" added to %(type)s blacklist."
-msgstr "\"%(value)s\" zur %(type)s-Blacklist hinzugefügt."
+msgid "\"%(value)s\" added to item blacklist."
+msgstr "\"%(value)s\" zur Artikel-Blacklist hinzugefügt."
 
-#: app/routes/settings.py:353
+#: app/routes/settings.py:344
 #, python-format
-msgid "\"%(value)s\" removed from %(type)s blacklist."
-msgstr "\"%(value)s\" aus der %(type)s-Blacklist entfernt."
+msgid "\"%(value)s\" added to description blacklist."
+msgstr "\"%(value)s\" zur Beschreibungs-Blacklist hinzugefügt."
 
-#: app/routes/settings.py:361
+#: app/routes/settings.py:345
+#, python-format
+msgid "\"%(value)s\" added to price blacklist."
+msgstr "\"%(value)s\" zur Preis-Blacklist hinzugefügt."
+
+#: app/routes/settings.py:355
+#, python-format
+msgid "\"%(value)s\" removed from item blacklist."
+msgstr "\"%(value)s\" aus der Artikel-Blacklist entfernt."
+
+#: app/routes/settings.py:356
+#, python-format
+msgid "\"%(value)s\" removed from description blacklist."
+msgstr "\"%(value)s\" aus der Beschreibungs-Blacklist entfernt."
+
+#: app/routes/settings.py:357
+#, python-format
+msgid "\"%(value)s\" removed from price blacklist."
+msgstr "\"%(value)s\" aus der Preis-Blacklist entfernt."
+
+#: app/routes/settings.py:365
 msgid "Common autocomplete settings saved."
 msgstr "Autovervollständigungs-Einstellungen gespeichert."
 
-#: app/routes/settings.py:405
+#: app/routes/settings.py:409
 msgid "Auto-collect schedule saved and enabled."
 msgstr "Auto-Sammlung-Zeitplan gespeichert und aktiviert."
 
-#: app/routes/settings.py:409
+#: app/routes/settings.py:413
 msgid "Auto-collect schedule disabled."
 msgstr "Auto-Sammlung-Zeitplan deaktiviert."
 
-#: app/routes/settings.py:417
+#: app/routes/settings.py:421
 msgid "Auto-collect job ran successfully."
 msgstr "Auto-Sammlung erfolgreich ausgeführt."
 
-#: app/routes/settings.py:425
+#: app/routes/settings.py:429
 msgid "Debug log cleared."
 msgstr "Debug-Log gelöscht."
 
-#: app/routes/settings.py:461
+#: app/routes/settings.py:465
 msgid "Templates saved."
 msgstr "Vorlagen gespeichert."
 
-#: app/routes/settings.py:473
+#: app/routes/settings.py:477
 msgid "Templates reset to defaults."
 msgstr "Vorlagen auf Standardwerte zurückgesetzt."
 
-#: app/routes/settings.py:486
+#: app/routes/settings.py:490
 msgid "Icon regenerated with current navbar color."
 msgstr "Icon mit aktueller Navigationsfarbe neu generiert."
 
-#: app/routes/settings.py:490
+#: app/routes/settings.py:494
 msgid "Icon reset to default."
 msgstr "Icon auf Standard zurückgesetzt."
 
-#: app/routes/settings.py:495
+#: app/routes/settings.py:499
 msgid "No file selected."
 msgstr "Keine Datei ausgewählt."
 
-#: app/routes/settings.py:500
+#: app/routes/settings.py:504
 msgid "Only PNG or JPG files are accepted."
 msgstr "Nur PNG- oder JPG-Dateien werden akzeptiert."
 
-#: app/routes/settings.py:513
+#: app/routes/settings.py:517
 msgid "Custom icon uploaded."
 msgstr "Benutzerdefiniertes Icon hochgeladen."
 
-#: app/routes/settings.py:515
+#: app/routes/settings.py:519
 msgid "Pillow is not installed — cannot process uploaded images."
 msgstr ""
 "Pillow ist nicht installiert — hochgeladene Bilder können nicht "
 "verarbeitet werden."
 
-#: app/routes/settings.py:517
+#: app/routes/settings.py:521
 #, python-format
 msgid "Failed to process image: %(error)s"
 msgstr "Bildverarbeitung fehlgeschlagen: %(error)s"
 
-#: app/routes/settings.py:519
+#: app/routes/settings.py:523
 msgid "Unknown action."
 msgstr "Unbekannte Aktion."
 
-#: app/routes/settings.py:581
+#: app/routes/settings.py:585
 msgid "Backup schedule saved and enabled."
 msgstr "Backup-Zeitplan gespeichert und aktiviert."
 
-#: app/routes/settings.py:585
+#: app/routes/settings.py:589
 msgid "Backup schedule disabled."
 msgstr "Backup-Zeitplan deaktiviert."
 
-#: app/routes/settings.py:595
+#: app/routes/settings.py:599
 #, python-format
 msgid "Backup created: %(result)s"
 msgstr "Backup erstellt: %(result)s"
 
-#: app/routes/settings.py:597
+#: app/routes/settings.py:601
 #, python-format
 msgid "Backup failed: %(result)s"
 msgstr "Backup fehlgeschlagen: %(result)s"
 
-#: app/routes/settings.py:605
+#: app/routes/settings.py:609
 msgid "Backup debug log cleared."
 msgstr "Backup-Debug-Log gelöscht."
 
-#: app/routes/settings.py:619 app/routes/settings.py:674
+#: app/routes/settings.py:623 app/routes/settings.py:678
 msgid "Invalid filename."
 msgstr "Ungültiger Dateiname."
 
-#: app/routes/settings.py:624
+#: app/routes/settings.py:628
 #, python-format
 msgid "%(filename)s deleted."
 msgstr "%(filename)s gelöscht."
 
-#: app/routes/settings.py:626 app/routes/settings.py:678
+#: app/routes/settings.py:630 app/routes/settings.py:682
 msgid "Backup file not found."
 msgstr "Backup-Datei nicht gefunden."
 
-#: app/routes/settings.py:636
+#: app/routes/settings.py:640
 msgid "Invalid upload ID"
 msgstr "Ungültige Upload-ID"
 
-#: app/routes/settings.py:641 app/routes/settings.py:643
+#: app/routes/settings.py:645 app/routes/settings.py:647
 msgid "Invalid chunk parameters"
 msgstr "Ungültige Chunk-Parameter"
 
-#: app/routes/settings.py:645
+#: app/routes/settings.py:649
 msgid "No chunk data"
 msgstr "Keine Chunk-Daten"
 
-#: app/routes/settings.py:689
+#: app/routes/settings.py:693
 #, python-format
 msgid ""
 "Restore from %(filename)s completed successfully. The previous state was "
@@ -579,7 +599,7 @@ msgstr ""
 "Wiederherstellung von %(filename)s erfolgreich abgeschlossen. Der "
 "vorherige Stand wurde als %(safety)s gesichert."
 
-#: app/routes/settings.py:693
+#: app/routes/settings.py:697
 #, python-format
 msgid "Restore failed: %(error)s"
 msgstr "Wiederherstellung fehlgeschlagen: %(error)s"

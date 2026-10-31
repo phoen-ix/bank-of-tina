@@ -340,7 +340,9 @@ def add_common_blacklist() -> Response:
     if not db.session.execute(db.select(CommonBlacklist).filter_by(type=bl_type, value=value)).scalar():
         db.session.add(CommonBlacklist(type=bl_type, value=value))
         db.session.commit()
-    flash(_('"%(value)s" added to %(type)s blacklist.', value=value, type=bl_type), 'success')
+    flash({'item': _('"%(value)s" added to item blacklist.', value=value),
+           'description': _('"%(value)s" added to description blacklist.', value=value),
+           'price': _('"%(value)s" added to price blacklist.', value=value)}[bl_type], 'success')
     return redirect(url_for('settings_bp.settings'))
 
 
@@ -350,7 +352,9 @@ def delete_common_blacklist(item_id: int) -> Response:
     value, bl_type = item.value, item.type
     db.session.delete(item)
     db.session.commit()
-    flash(_('"%(value)s" removed from %(type)s blacklist.', value=value, type=bl_type), 'success')
+    flash({'item': _('"%(value)s" removed from item blacklist.', value=value),
+           'description': _('"%(value)s" removed from description blacklist.', value=value),
+           'price': _('"%(value)s" removed from price blacklist.', value=value)}[bl_type], 'success')
     return redirect(url_for('settings_bp.settings'))
 
 

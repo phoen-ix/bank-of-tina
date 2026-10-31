@@ -142,3 +142,16 @@ def test_navbar_search_placeholder_fits(app, client, clean_db):
     refresh()
     html = client.get('/').data.decode()
     assert 'placeholder="Suchen…" aria-label="Transaktionen suchen…"' in html
+
+
+def test_blacklist_messages_name_the_list_in_german(app, client, clean_db):
+    """The German flash names the list in German, not as 'item'/'description'/'price'."""
+    set_setting('language', 'de')
+    for bl_type, value, text in (('item', 'Servietten', 'zur Artikel-Blacklist hinzugefügt'),
+                                 ('description', 'Diverses', 'zur Beschreibungs-Blacklist hinzugefügt'),
+                                 ('price', '3,5', 'zur Preis-Blacklist hinzugefügt')):
+        html = client.post('/settings/common-blacklist/add', data={'type': bl_type, 'value': value},
+                           follow_redirects=True).data.decode()
+        assert text in html
+    html = client.post('/settings/common-blacklist/1/delete', follow_redirects=True).data.decode()
+    assert 'aus der Artikel-Blacklist entfernt' in html

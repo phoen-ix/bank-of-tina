@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-31 01:50+0000\n"
+"POT-Creation-Date: 2026-10-31 01:51+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -449,130 +449,150 @@ msgstr ""
 
 #: app/routes/settings.py:343
 #, python-format
-msgid "\"%(value)s\" added to %(type)s blacklist."
+msgid "\"%(value)s\" added to item blacklist."
 msgstr ""
 
-#: app/routes/settings.py:353
+#: app/routes/settings.py:344
 #, python-format
-msgid "\"%(value)s\" removed from %(type)s blacklist."
+msgid "\"%(value)s\" added to description blacklist."
 msgstr ""
 
-#: app/routes/settings.py:361
+#: app/routes/settings.py:345
+#, python-format
+msgid "\"%(value)s\" added to price blacklist."
+msgstr ""
+
+#: app/routes/settings.py:355
+#, python-format
+msgid "\"%(value)s\" removed from item blacklist."
+msgstr ""
+
+#: app/routes/settings.py:356
+#, python-format
+msgid "\"%(value)s\" removed from description blacklist."
+msgstr ""
+
+#: app/routes/settings.py:357
+#, python-format
+msgid "\"%(value)s\" removed from price blacklist."
+msgstr ""
+
+#: app/routes/settings.py:365
 msgid "Common autocomplete settings saved."
 msgstr ""
 
-#: app/routes/settings.py:405
+#: app/routes/settings.py:409
 msgid "Auto-collect schedule saved and enabled."
 msgstr ""
 
-#: app/routes/settings.py:409
+#: app/routes/settings.py:413
 msgid "Auto-collect schedule disabled."
 msgstr ""
 
-#: app/routes/settings.py:417
+#: app/routes/settings.py:421
 msgid "Auto-collect job ran successfully."
 msgstr ""
 
-#: app/routes/settings.py:425
+#: app/routes/settings.py:429
 msgid "Debug log cleared."
 msgstr ""
 
-#: app/routes/settings.py:461
+#: app/routes/settings.py:465
 msgid "Templates saved."
 msgstr ""
 
-#: app/routes/settings.py:473
+#: app/routes/settings.py:477
 msgid "Templates reset to defaults."
 msgstr ""
 
-#: app/routes/settings.py:486
+#: app/routes/settings.py:490
 msgid "Icon regenerated with current navbar color."
 msgstr ""
 
-#: app/routes/settings.py:490
+#: app/routes/settings.py:494
 msgid "Icon reset to default."
 msgstr ""
 
-#: app/routes/settings.py:495
+#: app/routes/settings.py:499
 msgid "No file selected."
 msgstr ""
 
-#: app/routes/settings.py:500
+#: app/routes/settings.py:504
 msgid "Only PNG or JPG files are accepted."
 msgstr ""
 
-#: app/routes/settings.py:513
+#: app/routes/settings.py:517
 msgid "Custom icon uploaded."
 msgstr ""
 
-#: app/routes/settings.py:515
+#: app/routes/settings.py:519
 msgid "Pillow is not installed — cannot process uploaded images."
 msgstr ""
 
-#: app/routes/settings.py:517
+#: app/routes/settings.py:521
 #, python-format
 msgid "Failed to process image: %(error)s"
 msgstr ""
 
-#: app/routes/settings.py:519
+#: app/routes/settings.py:523
 msgid "Unknown action."
 msgstr ""
 
-#: app/routes/settings.py:581
+#: app/routes/settings.py:585
 msgid "Backup schedule saved and enabled."
 msgstr ""
 
-#: app/routes/settings.py:585
+#: app/routes/settings.py:589
 msgid "Backup schedule disabled."
 msgstr ""
 
-#: app/routes/settings.py:595
+#: app/routes/settings.py:599
 #, python-format
 msgid "Backup created: %(result)s"
 msgstr ""
 
-#: app/routes/settings.py:597
+#: app/routes/settings.py:601
 #, python-format
 msgid "Backup failed: %(result)s"
 msgstr ""
 
-#: app/routes/settings.py:605
+#: app/routes/settings.py:609
 msgid "Backup debug log cleared."
 msgstr ""
 
-#: app/routes/settings.py:619 app/routes/settings.py:674
+#: app/routes/settings.py:623 app/routes/settings.py:678
 msgid "Invalid filename."
 msgstr ""
 
-#: app/routes/settings.py:624
+#: app/routes/settings.py:628
 #, python-format
 msgid "%(filename)s deleted."
 msgstr ""
 
-#: app/routes/settings.py:626 app/routes/settings.py:678
+#: app/routes/settings.py:630 app/routes/settings.py:682
 msgid "Backup file not found."
 msgstr ""
 
-#: app/routes/settings.py:636
+#: app/routes/settings.py:640
 msgid "Invalid upload ID"
 msgstr ""
 
-#: app/routes/settings.py:641 app/routes/settings.py:643
+#: app/routes/settings.py:645 app/routes/settings.py:647
 msgid "Invalid chunk parameters"
 msgstr ""
 
-#: app/routes/settings.py:645
+#: app/routes/settings.py:649
 msgid "No chunk data"
 msgstr ""
 
-#: app/routes/settings.py:689
+#: app/routes/settings.py:693
 #, python-format
 msgid ""
 "Restore from %(filename)s completed successfully. The previous state was "
 "saved as %(safety)s."
 msgstr ""
 
-#: app/routes/settings.py:693
+#: app/routes/settings.py:697
 #, python-format
 msgid "Restore failed: %(error)s"
 msgstr ""
