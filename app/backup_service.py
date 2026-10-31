@@ -154,6 +154,11 @@ def run_restore(filename: str) -> tuple[bool, str]:
         if not ok:
             return False, _('Could not create a safety backup of the current data: %(err)s', err=safety)
 
+        # The dump drops and recreates every table. End this session's
+        # transaction first: the metadata locks of its reads above (settings)
+        # would make the restore client wait for this request, and it for the client.
+        db.session.close()
+
         # --sandbox makes the client refuse shell escapes (\!) and other
         # client-side commands embedded in a crafted dump.
         cmd, env = _db_command('mariadb', '--sandbox')

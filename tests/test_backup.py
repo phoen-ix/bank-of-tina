@@ -88,6 +88,25 @@ def test_restore_order_and_sandbox(app, backup_dir, monkeypatch):
     assert not os.path.exists(os.path.join(uploads, 'old.txt'))
 
 
+def test_restore_runs_outside_a_db_transaction(app, backup_dir, monkeypatch):
+    """The restore client drops every table: an open transaction of this request
+    (metadata locks of earlier reads) would make it wait forever."""
+    import backup_service
+    from extensions import db
+    fake = FakeDb()
+    open_tx = []
+    def run(cmd, **kwargs):
+        if cmd[0] == 'mariadb':
+            open_tx.append(db.session().in_transaction())
+        return fake(cmd, **kwargs)
+    monkeypatch.setattr(backup_service.subprocess, 'run', run)
+    _make_archive(backup_dir / 'bot_backup_2026_01_01_00-00-00.tar.gz', {'dump.sql': b'SELECT 1;'})
+    with app.app_context():
+        ok, safety = backup_service.run_restore('bot_backup_2026_01_01_00-00-00.tar.gz')
+    assert ok, safety
+    assert open_tx == [False]
+
+
 def test_restore_db_failure_keeps_receipts(app, backup_dir, monkeypatch):
     import backup_service
     monkeypatch.setattr(backup_service.subprocess, 'run', FakeDb(restore_rc=1))
