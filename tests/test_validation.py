@@ -89,6 +89,18 @@ def test_add_user_rejects_bad_input(client, app, make_user, name, email):
         assert db.session.execute(db.select(db.func.count(User.id))).scalar() == 1
 
 
+def test_email_pattern_is_linear():
+    """The old domain part backtracked quadratically ('a@' + 20000 dots: seconds)."""
+    import time
+    from routes.main import EMAIL_RE
+    for email, ok in (('a@b.c', True), ('a.b@c.d.e', True), ('a@.b.c', True), ('a@b..c', True),
+                      ('a@b.', False), ('a@.b', False), ('a@bc', False), ('a b@c.d', False)):
+        assert bool(EMAIL_RE.fullmatch(email)) is ok, email
+    start = time.monotonic()
+    assert not EMAIL_RE.fullmatch('a@' + '.' * 20000 + ' ')
+    assert time.monotonic() - start < 0.5
+
+
 def test_add_user_strips_name(client, app):
     with app.app_context():
         from extensions import db
