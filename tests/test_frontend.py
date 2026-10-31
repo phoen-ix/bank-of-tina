@@ -1,11 +1,38 @@
 """Rendered-page regressions: script injection, offline page, settings tabs, localized labels."""
-import re
 from datetime import datetime
 from decimal import Decimal
+from html.parser import HTMLParser
+
+
+class _ScriptBodies(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.bodies, self._in_script = [], False
+
+    def handle_starttag(self, tag, attrs):
+        if tag == 'script':
+            self._in_script = True
+            self.bodies.append('')
+
+    def handle_endtag(self, tag):
+        if tag == 'script':
+            self._in_script = False
+
+    def handle_data(self, data):
+        if self._in_script:
+            self.bodies[-1] += data
 
 
 def _scripts(html):
-    return re.findall(r'<script[^>]*>(.*?)</script>', html, flags=re.S)
+    """Every <script> body, found by an HTML parser (a regex misses <SCRIPT>, </script >)."""
+    parser = _ScriptBodies()
+    parser.feed(html)
+    parser.close()
+    return parser.bodies
+
+
+def test_scripts_helper_finds_every_spelling():
+    assert _scripts('<SCRIPT nonce="n">a</SCRIPT ><script>b</script\n>') == ['a', 'b']
 
 
 def test_user_names_never_reach_javascript(client, app, make_user):
