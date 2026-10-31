@@ -159,10 +159,12 @@
 {% block scripts %}
 <script nonce="{{ csp_nonce }}">
 (function () {
+    // Only the query string changes: select values can never turn into a different URL.
     function jump() {
-        var m = document.getElementById('jump-month').value;
-        var y = document.getElementById('jump-year').value;
-        window.location = {{ url_for("main.view_transactions")|tojson }} + '?year=' + y + '&month=' + m;
+        window.location.search = new URLSearchParams({
+            year: document.getElementById('jump-year').value,
+            month: document.getElementById('jump-month').value
+        });
     }
     document.getElementById('jump-month').addEventListener('change', jump);
     document.getElementById('jump-year').addEventListener('change', jump);
