@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-24 04:27+0000\n"
+"POT-Creation-Date: 2026-10-31 01:50+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -577,6 +577,10 @@ msgstr ""
 msgid "Restore failed: %(error)s"
 msgstr ""
 
+#: app/templates/_pagination.html:2
+msgid "Page navigation"
+msgstr ""
+
 #: app/templates/_pagination.html:6
 msgid "Prev"
 msgstr ""
@@ -925,7 +929,7 @@ msgstr ""
 msgid "Search"
 msgstr ""
 
-#: app/templates/base.html:97
+#: app/templates/base.html:97 app/templates/user_detail.html:143
 msgid "Close"
 msgstr ""
 
@@ -1418,6 +1422,11 @@ msgstr ""
 msgid "24-hour"
 msgstr ""
 
+#: app/templates/settings.html:358 app/templates/settings.html:744
+#: app/templates/settings.html:977
+msgid "Minute"
+msgstr ""
+
 #: app/templates/settings.html:370 app/templates/settings.html:756
 #: app/templates/settings.html:998
 msgid "every day"
@@ -1672,6 +1681,10 @@ msgstr ""
 
 #: app/templates/settings.html:723 app/templates/settings.html:956
 msgid "Run"
+msgstr ""
+
+#: app/templates/settings.html:736 app/templates/settings.html:969
+msgid "Hour"
 msgstr ""
 
 #: app/templates/settings.html:762

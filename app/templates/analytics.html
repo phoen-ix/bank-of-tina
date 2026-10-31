@@ -19,19 +19,19 @@
         <div class="row g-2 align-items-end flex-wrap">
 
             <div class="col-auto">
-                <label class="form-label mb-1 small fw-semibold">{{ _('From') }}</label>
+                <label for="filter-from" class="form-label mb-1 small fw-semibold">{{ _('From') }}</label>
                 <input type="date" id="filter-from" class="form-control form-control-sm"
                        value="{{ default_from }}">
             </div>
 
             <div class="col-auto">
-                <label class="form-label mb-1 small fw-semibold">{{ _('To') }}</label>
+                <label for="filter-to" class="form-label mb-1 small fw-semibold">{{ _('To') }}</label>
                 <input type="date" id="filter-to" class="form-control form-control-sm"
                        value="{{ default_to }}">
             </div>
 
             <div class="col-auto">
-                <label class="form-label mb-1 small fw-semibold">{{ _('Users') }}</label>
+                <label for="user-dropdown-btn" class="form-label mb-1 small fw-semibold">{{ _('Users') }}</label>
                 <div class="dropdown">
                     <button class="btn btn-outline-secondary btn-sm dropdown-toggle"
                             id="user-dropdown-btn"
