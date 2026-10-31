@@ -34,6 +34,14 @@ def test_csp_header(client, app):
     assert "frame-ancestors 'none'" in csp
 
 
+def test_csp_without_template_has_no_empty_nonce(client, app):
+    """Email previews and error pages render no template: no "'nonce-'" source (browsers log it as invalid)."""
+    for path in ('/settings/templates/preview/backup', '/no-such-page'):
+        csp = client.get(path).headers['Content-Security-Policy']
+        assert "'nonce-'" not in csp
+        assert "script-src 'self';" in csp
+
+
 def test_csp_not_on_json(client, app):
     """CSP header should not appear on JSON responses."""
     response = client.get('/health')

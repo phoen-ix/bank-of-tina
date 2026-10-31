@@ -176,10 +176,12 @@ def set_security_headers(response: Response) -> Response:
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['Referrer-Policy'] = 'same-origin'
     if 'text/html' in response.content_type:
+        # Only pages rendered from a template have a nonce; an empty one is an invalid source.
         nonce = g.get('csp_nonce', '')
+        script_src = f"'self' 'nonce-{nonce}'" if nonce else "'self'"
         response.headers['Content-Security-Policy'] = (
             "default-src 'self'; "
-            f"script-src 'self' 'nonce-{nonce}'; "
+            f"script-src {script_src}; "
             "style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data:; "
             "font-src 'self'; "
