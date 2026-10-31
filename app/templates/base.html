@@ -130,9 +130,10 @@
             }
         });
     })();
-    // Generic confirm delegation for data-confirm attributes
+    // Generic confirm delegation for data-confirm attributes: on a clicked
+    // element, or on a form when it is submitted (asked once, not on the click too)
     document.addEventListener('click', function(e) {
-        var el = e.target.closest('[data-confirm]');
+        var el = e.target.closest('[data-confirm]:not(form)');
         if (el && !confirm(el.dataset.confirm)) e.preventDefault();
     });
     document.addEventListener('submit', function(e) {
