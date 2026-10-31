@@ -55,12 +55,24 @@ def save_receipt(file: FileStorage | None, buyer_name: str) -> str | None:
 
     now = now_local()
     rel_dir = now.strftime('%Y/%m/%d')
-    abs_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], rel_dir)
-    os.makedirs(abs_dir, exist_ok=True)
+    upload_root = current_app.config['UPLOAD_FOLDER']
+    os.makedirs(os.path.join(upload_root, rel_dir), exist_ok=True)
 
     filename = f"{safe_buyer}_{stem}_{secrets.token_hex(3)}.{ext.lower()}"
-    file.save(os.path.join(abs_dir, filename))
+    file.save(path_inside(upload_root, rel_dir, filename))
     return f"{rel_dir}/{filename}"
+
+
+def path_inside(root: str, *parts: str) -> str:
+    """os.path.join(root, *parts) for parts taken from a request.
+
+    Raises ValueError when the result would leave `root` ('..', an absolute part).
+    """
+    root = os.path.normpath(root)
+    path = os.path.normpath(os.path.join(root, *parts))
+    if not path.startswith(root + os.sep):
+        raise ValueError(f'{path!r} is outside {root!r}')
+    return path
 
 
 def delete_receipt_file(receipt_path: str | None, exclude_transaction_id: int) -> None:

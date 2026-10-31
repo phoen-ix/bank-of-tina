@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Bank of Tina 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-31 01:51+0000\n"
+"POT-Creation-Date: 2026-10-31 10:38+0000\n"
 "PO-Revision-Date: 2026-03-07 17:00+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: de\n"
@@ -34,56 +34,60 @@ msgstr "Auszahlung"
 msgid "expense"
 msgstr "Ausgabe"
 
-#: app/backup_service.py:151
+#: app/backup_service.py:152
 msgid "The archive does not contain a database dump."
 msgstr "Das Archiv enthält keinen Datenbank-Dump."
 
-#: app/backup_service.py:155
+#: app/backup_service.py:156
 #, python-format
 msgid "Could not create a safety backup of the current data: %(err)s"
 msgstr ""
 "Sicherheits-Backup der aktuellen Daten konnte nicht erstellt werden: "
 "%(err)s"
 
-#: app/backup_service.py:164
+#: app/backup_service.py:170
 #, python-format
 msgid "Database restore failed: %(err)s"
 msgstr "Datenbankwiederherstellung fehlgeschlagen: %(err)s"
 
-#: app/backup_service.py:204
+#: app/backup_service.py:210
 msgid "The uploaded file is not a backup archive."
 msgstr "Die hochgeladene Datei ist kein Backup-Archiv."
 
-#: app/backup_service.py:249
+#: app/backup_service.py:217
+msgid "The uploaded backup could not be saved."
+msgstr "Das hochgeladene Backup konnte nicht gespeichert werden."
+
+#: app/backup_service.py:257
 msgid "Backup completed successfully"
 msgstr "Backup erfolgreich erstellt"
 
-#: app/backup_service.py:251
+#: app/backup_service.py:259
 msgid "File"
 msgstr "Datei"
 
-#: app/backup_service.py:253
+#: app/backup_service.py:261
 msgid "Backups kept"
 msgstr "Aufbewahrte Backups"
 
-#: app/backup_service.py:257
+#: app/backup_service.py:265
 msgid "Pruned"
 msgstr "Bereinigt"
 
-#: app/backup_service.py:258
+#: app/backup_service.py:266
 #, python-format
 msgid "%(count)d old backup(s) deleted"
 msgstr "%(count)d alte(s) Backup(s) gelöscht"
 
-#: app/backup_service.py:262
+#: app/backup_service.py:270
 msgid "Backup failed"
 msgstr "Backup fehlgeschlagen"
 
-#: app/backup_service.py:264
+#: app/backup_service.py:272
 msgid "Error"
 msgstr "Fehler"
 
-#: app/backup_service.py:273
+#: app/backup_service.py:281
 msgid "Scheduled Backup Report"
 msgstr "Geplanter Backup-Bericht"
 
@@ -234,16 +238,16 @@ msgstr "E-Mail-Versand ist in den allgemeinen Einstellungen deaktiviert."
 msgid "Admin summary to %(name)s: %(err)s"
 msgstr "Admin-Zusammenfassung an %(name)s: %(err)s"
 
-#: app/helpers.py:182 app/helpers.py:197
+#: app/helpers.py:194 app/helpers.py:209
 msgid "Amounts must be greater than zero."
 msgstr "Beträge müssen größer als null sein."
 
-#: app/helpers.py:192
+#: app/helpers.py:204
 #, python-format
 msgid "\"%(value)s\" is not a valid amount."
 msgstr "„%(value)s“ ist kein gültiger Betrag."
 
-#: app/helpers.py:195
+#: app/helpers.py:207
 #, python-format
 msgid "\"%(value)s\" is too large."
 msgstr "„%(value)s“ ist zu groß."
@@ -256,117 +260,117 @@ msgstr "Erfolgreich"
 msgid "Failed"
 msgstr "Fehlgeschlagen"
 
-#: app/routes/main.py:36
+#: app/routes/main.py:38
 msgid "Please select a user."
 msgstr "Bitte einen Benutzer auswählen."
 
-#: app/routes/main.py:41 app/routes/main.py:43
+#: app/routes/main.py:43 app/routes/main.py:45
 msgid "Unknown user."
 msgstr "Unbekannter Benutzer."
 
-#: app/routes/main.py:53
+#: app/routes/main.py:55
 msgid "Receipts must be JPG, PNG or PDF files."
 msgstr "Belege müssen JPG-, PNG- oder PDF-Dateien sein."
 
-#: app/routes/main.py:62 app/routes/main.py:64 app/routes/main.py:68
+#: app/routes/main.py:64 app/routes/main.py:66 app/routes/main.py:70
 msgid "The item list could not be read."
 msgstr "Die Artikelliste konnte nicht gelesen werden."
 
-#: app/routes/main.py:71
+#: app/routes/main.py:73
 msgid "Every item needs a name."
 msgstr "Jeder Artikel braucht einen Namen."
 
-#: app/routes/main.py:127
+#: app/routes/main.py:129
 msgid "Name and email are required!"
 msgstr "Name und E-Mail sind erforderlich!"
 
-#: app/routes/main.py:129
+#: app/routes/main.py:131
 #, python-format
 msgid "Name and email can be at most %(max)d characters."
 msgstr "Name und E-Mail dürfen höchstens %(max)d Zeichen lang sein."
 
-#: app/routes/main.py:131
+#: app/routes/main.py:133
 msgid "Please enter a valid email address."
 msgstr "Bitte eine gültige E-Mail-Adresse eingeben."
 
-#: app/routes/main.py:137
+#: app/routes/main.py:139
 msgid "Another user with that name already exists!"
 msgstr "Ein anderer Benutzer mit diesem Namen existiert bereits!"
 
-#: app/routes/main.py:139
+#: app/routes/main.py:141
 msgid "Another user with that email already exists!"
 msgstr "Ein anderer Benutzer mit dieser E-Mail existiert bereits!"
 
-#: app/routes/main.py:165
+#: app/routes/main.py:167
 #, python-format
 msgid "User %(name)s added successfully!"
 msgstr "Benutzer %(name)s erfolgreich hinzugefügt!"
 
-#: app/routes/main.py:176
+#: app/routes/main.py:178
 msgid "All fields are required!"
 msgstr "Alle Felder sind erforderlich!"
 
-#: app/routes/main.py:184
+#: app/routes/main.py:186
 msgid "Invalid date format!"
 msgstr "Ungültiges Datumsformat!"
 
-#: app/routes/main.py:196
+#: app/routes/main.py:198
 msgid "User updated successfully!"
 msgstr "Benutzer erfolgreich aktualisiert!"
 
-#: app/routes/main.py:207
+#: app/routes/main.py:209
 #, python-format
 msgid "User %(name)s has been activated."
 msgstr "Benutzer %(name)s wurde aktiviert."
 
-#: app/routes/main.py:209
+#: app/routes/main.py:211
 #, python-format
 msgid "User %(name)s has been deactivated."
 msgstr "Benutzer %(name)s wurde deaktiviert."
 
-#: app/routes/main.py:242
+#: app/routes/main.py:244
 #, python-format
 msgid "Deposit of %(sym)s%(amount)s added successfully!"
 msgstr "Einzahlung von %(sym)s%(amount)s erfolgreich hinzugefügt!"
 
-#: app/routes/main.py:245
+#: app/routes/main.py:247
 #, python-format
 msgid "Withdrawal of %(sym)s%(amount)s processed successfully!"
 msgstr "Auszahlung von %(sym)s%(amount)s erfolgreich verarbeitet!"
 
-#: app/routes/main.py:256
+#: app/routes/main.py:258
 msgid "At least one item is required for an expense."
 msgstr "Mindestens ein Artikel ist für eine Ausgabe erforderlich."
 
-#: app/routes/main.py:265
+#: app/routes/main.py:267
 msgid "Nobody owes anything: all items belong to the buyer."
 msgstr "Niemand schuldet etwas: Alle Artikel gehören dem Käufer."
 
-#: app/routes/main.py:290
+#: app/routes/main.py:292
 msgid "Expense recorded successfully!"
 msgstr "Ausgabe erfolgreich erfasst!"
 
-#: app/routes/main.py:293
+#: app/routes/main.py:295
 msgid "Unknown transaction type."
 msgstr "Unbekannter Transaktionstyp."
 
-#: app/routes/main.py:484 app/routes/main.py:485
+#: app/routes/main.py:486 app/routes/main.py:487
 msgid "Bank of Tina"
 msgstr "Bank of Tina"
 
-#: app/routes/main.py:486
+#: app/routes/main.py:488
 msgid "Track shared expenses and balances"
 msgstr "Gemeinsame Ausgaben und Salden verwalten"
 
-#: app/routes/main.py:523
+#: app/routes/main.py:525
 msgid "Could not parse the date."
 msgstr "Das Datum konnte nicht gelesen werden."
 
-#: app/routes/main.py:566
+#: app/routes/main.py:568
 msgid "Transaction updated successfully!"
 msgstr "Transaktion erfolgreich aktualisiert!"
 
-#: app/routes/main.py:583
+#: app/routes/main.py:585
 msgid "Transaction deleted."
 msgstr "Transaktion gelöscht."
 

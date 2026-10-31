@@ -15,7 +15,7 @@ from extensions import db, scheduler, limiter
 from models import (User, CommonItem, CommonDescription, CommonPrice, CommonBlacklist,
                     AutoCollectLog, EmailLog, BackupLog)
 from helpers import (get_setting, set_setting, delete_setting, get_tpl, parse_amount, amount_str, fmt_amount,
-                     detect_theme, generate_and_save_icons, now_local, InputError)
+                     detect_theme, generate_and_save_icons, now_local, path_inside, InputError)
 from config import (THEMES, TEMPLATE_DEFAULTS, TEMPLATE_DEFAULTS_DE, BACKUP_DIR, DEFAULT_ICON_BG,
                     CURRENCIES, CRON_DAYS)
 from email_service import send_all_emails, build_email_html, build_admin_summary_email, SMTP_SECURITY_MODES
@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 settings_bp = Blueprint('settings_bp', __name__)
 
-UPLOAD_ID_RE: re.Pattern[str] = re.compile(r'^[a-f0-9\-]{36}$')
+UPLOAD_ID_RE: re.Pattern[str] = re.compile(r'[a-f0-9-]{36}')
 
 
 def _cron_day(field: str, default: str) -> str:
@@ -612,17 +612,17 @@ def settings_backup_clear_log() -> Response:
 
 @settings_bp.route('/backups/download/<filename>')
 def backup_download(filename: str) -> Response:
-    if not BACKUP_FILENAME_RE.match(filename):
+    if not BACKUP_FILENAME_RE.fullmatch(filename):
         abort(404)
     return send_from_directory(BACKUP_DIR, filename, as_attachment=True)
 
 
 @settings_bp.route('/backups/delete/<filename>', methods=['POST'])
 def backup_delete(filename: str) -> Response:
-    if not BACKUP_FILENAME_RE.match(filename):
+    if not BACKUP_FILENAME_RE.fullmatch(filename):
         flash(_('Invalid filename.'), 'error')
         return redirect(url_for('settings_bp.settings'))
-    path = os.path.join(BACKUP_DIR, filename)
+    path = path_inside(BACKUP_DIR, filename)
     if os.path.exists(path):
         os.remove(path)
         flash(_('%(filename)s deleted.', filename=filename), 'success')
@@ -636,7 +636,7 @@ def backup_upload_chunk() -> tuple[Response, int] | Response:
     upload_id   = request.form.get('uploadId', '')
     chunk_file  = request.files.get('chunk')
 
-    if not UPLOAD_ID_RE.match(upload_id):
+    if not UPLOAD_ID_RE.fullmatch(upload_id):
         return jsonify({'error': _('Invalid upload ID')}), 400
     try:
         chunk_index  = int(request.form.get('chunkIndex', ''))
@@ -650,7 +650,7 @@ def backup_upload_chunk() -> tuple[Response, int] | Response:
 
     if chunk_index == 0:
         sweep_stale_uploads()
-    tmp_dir = os.path.join(BACKUP_DIR, '.tmp', upload_id)
+    tmp_dir = path_inside(BACKUP_DIR, '.tmp', upload_id)
     os.makedirs(tmp_dir, exist_ok=True)
     chunk_file.save(os.path.join(tmp_dir, f'{chunk_index:05d}'))
 
@@ -674,11 +674,11 @@ def _migrate_after_restore() -> None:
 @settings_bp.route('/backups/restore/<filename>', methods=['POST'])
 @limiter.limit("3/minute")
 def backup_restore(filename: str) -> Response:
-    if not BACKUP_FILENAME_RE.match(filename):
+    if not BACKUP_FILENAME_RE.fullmatch(filename):
         flash(_('Invalid filename.'), 'error')
         return redirect(url_for('settings_bp.settings'))
 
-    if not os.path.exists(os.path.join(BACKUP_DIR, filename)):
+    if not os.path.exists(path_inside(BACKUP_DIR, filename)):
         flash(_('Backup file not found.'), 'error')
         return redirect(url_for('settings_bp.settings'))
 

@@ -17,7 +17,7 @@ from flask_babel import gettext as _
 
 from extensions import db
 from models import BackupLog
-from helpers import get_setting, get_tpl, apply_template, now_local, prune_log
+from helpers import get_setting, get_tpl, apply_template, now_local, prune_log, path_inside
 from config import BACKUP_DIR, db_env
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,8 @@ _RESTORABLE = ('dump.sql', 'receipts')
 # Upload chunks are 5 MB (settings.html); 400 chunks = 2 GB.
 MAX_UPLOAD_CHUNKS = 400
 _STALE_UPLOAD_SECONDS = 24 * 3600
-BACKUP_FILENAME_RE: re.Pattern[str] = re.compile(r'^bot_backup_[\d_-]+\.tar\.gz$')
+# Use fullmatch: '$' would also accept a trailing newline.
+BACKUP_FILENAME_RE: re.Pattern[str] = re.compile(r'bot_backup_[\d_-]+\.tar\.gz')
 
 
 def _backup_log(level: str, message: str) -> None:
@@ -138,7 +139,7 @@ def run_restore(filename: str) -> tuple[bool, str]:
     the database is restored, and only if that succeeded are the receipts
     replaced. Returns (True, safety_backup_filename) or (False, error_msg).
     """
-    path = os.path.join(BACKUP_DIR, filename)
+    path = path_inside(BACKUP_DIR, filename)
     with tempfile.TemporaryDirectory() as tmp:
         with tarfile.open(path, 'r:gz') as tar:
             members = [m for m in tar.getmembers() if _restorable(m.name)]
@@ -209,9 +210,11 @@ def assemble_upload(chunk_dir: str, total_chunks: int) -> tuple[bool, str]:
             return False, _('The uploaded file is not a backup archive.')
         return True, filename
     except OSError as e:
+        # The OS error names server paths: log it, tell the client only that it failed.
+        logger.error('Backup upload could not be assembled: %s', e)
         if os.path.exists(dest):
             os.remove(dest)
-        return False, str(e)[:300]
+        return False, _('The uploaded backup could not be saved.')
     finally:
         shutil.rmtree(chunk_dir, ignore_errors=True)
 
@@ -220,7 +223,7 @@ def _prune_old_backups(keep: int) -> None:
     """Delete oldest backups keeping only the most recent `keep` files."""
     if keep <= 0:
         return
-    files = sorted(f for f in os.listdir(BACKUP_DIR) if BACKUP_FILENAME_RE.match(f))
+    files = sorted(f for f in os.listdir(BACKUP_DIR) if BACKUP_FILENAME_RE.fullmatch(f))
     while len(files) > keep:
         os.remove(os.path.join(BACKUP_DIR, files.pop(0)))
 
@@ -230,7 +233,7 @@ def _list_backups() -> list[dict[str, str | int | datetime]]:
     backups: list[dict[str, str | int | datetime]] = []
     if os.path.exists(BACKUP_DIR):
         for f in sorted(os.listdir(BACKUP_DIR), reverse=True):
-            if BACKUP_FILENAME_RE.match(f):
+            if BACKUP_FILENAME_RE.fullmatch(f):
                 fpath = os.path.join(BACKUP_DIR, f)
                 stat = os.stat(fpath)
                 backups.append({

@@ -5,6 +5,8 @@ import stat
 import subprocess
 import tarfile
 
+import pytest
+
 
 def _make_archive(path, members):
     """Write a tar.gz at `path` with {name: bytes} members."""
@@ -208,6 +210,39 @@ def test_upload_rejects_non_archive(client, app, backup_dir):
     response = _upload(client, {'chunkIndex': '0', 'totalChunks': '1'}, b'not a tarball')
     assert response.status_code == 400
     assert not [f for f in os.listdir(backup_dir) if f.endswith('.tar.gz')]
+
+
+def test_upload_failure_does_not_leak_the_os_error(client, app, backup_dir, tmp_path, monkeypatch):
+    import backup_service
+    monkeypatch.setattr(backup_service, '_new_backup_path',
+                        lambda: ('x.tar.gz', str(tmp_path / 'no-such-dir' / 'x.tar.gz')))
+    response = _upload(client, {'chunkIndex': '0', 'totalChunks': '1'})
+    assert response.status_code == 400
+    assert response.get_json()['error'] == 'The uploaded backup could not be saved.'
+    assert 'no-such-dir' not in response.get_data(as_text=True)
+
+
+def test_names_with_a_trailing_newline_are_refused(client, app, backup_dir):
+    """'$' in the old patterns matched before a final newline."""
+    (backup_dir / 'bot_backup_2026_01_01_00-00-00.tar.gz').write_bytes(b'x')
+    name = 'bot_backup_2026_01_01_00-00-00.tar.gz%0A'
+    assert client.get(f'/backups/download/{name}').status_code == 404
+    for action in ('delete', 'restore'):
+        response = client.post(f'/backups/{action}/{name}', follow_redirects=True)
+        assert 'Invalid filename.' in response.get_data(as_text=True)
+    form = {'uploadId': '12345678-1234-1234-1234-123456789abc\n', 'chunkIndex': '0', 'totalChunks': '2',
+            'chunk': (io.BytesIO(b'x'), 'chunk')}
+    response = client.post('/backups/upload-chunk', data=form, content_type='multipart/form-data')
+    assert response.status_code == 400
+    assert not (backup_dir / '.tmp').exists()
+
+
+def test_path_inside_refuses_to_leave_the_root(tmp_path):
+    from helpers import path_inside
+    assert path_inside(str(tmp_path), 'a', 'b.txt') == str(tmp_path / 'a' / 'b.txt')
+    for parts in (('..', 'x'), ('/etc/passwd',), ('a', '../../x'), ('.',)):
+        with pytest.raises(ValueError):
+            path_inside(str(tmp_path), *parts)
 
 
 def test_migrations_keep_app_logging(app):
