@@ -3,7 +3,7 @@
 Self-hosted Flask/MariaDB web app for tracking shared expenses and balances in a small office.
 No login; all configuration happens in the web UI (Settings). Runs in Docker on port 5000.
 Repo `https://github.com/phoen-ix/bank-of-tina`, branch `main`. README.md is bilingual (German first,
-then English) and carries the user manual.
+then English); the user manual is `docs/manual.de.md` / `docs/manual.md`.
 
 ## Commands
 
@@ -117,7 +117,8 @@ On the fleet VM, Docker runs go through the fleet's `slot` gate (`slot heavy ban
   24100 (`PORT_BASE=24100`).
 - The tour seeds through the web forms (`e2e/docs/seed.ts`) with fixed dates; screenshot names are
   stable once committed. bank-of-tina keeps a FULL screenshot set in both languages (`x.png` and
-  `x.de.png`), embedded in both halves of the README manual and in `docs/screenshots/README.md`.
+  `x.de.png`), embedded in the manuals (`docs/manual.de.md`, `docs/manual.md`) and in
+  `docs/screenshots/README.md`.
   Budget: ≤400 KB per PNG and ≤6 MB for the folder after `oxipng -o 4 --strip safe` - that is why
   long tabs are clipped above a section and only the History chart tab is shot. Crop, never lower DPR.
 
@@ -180,6 +181,7 @@ empties all tables, removes scheduler jobs and sets `language='en'` (tests see E
 
 ## More
 
+- `docs/manual.de.md` / `docs/manual.md` - user manual: tasks, settings tabs, operations, troubleshooting.
 - `docs/history.md` - why things are the way they are (refactors, past bugs).
 - `docs/screenshots/README.md` - screenshot gallery (doubles as the screen manual).
 - `e2e/docs/` - the docs tour; `scripts/docs-screenshots.sh` - its single entry point.
