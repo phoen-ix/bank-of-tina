@@ -56,7 +56,7 @@ The common tasks step by step, every Settings tab at a glance, operations, maint
 
 ## Setting Up Email
 1. **Settings** → **Email** tab
-2. Fill in SMTP credentials and click **Save Settings**
+2. Fill in SMTP credentials and click **Save Settings**. **EHLO Name** is optional (empty: the domain of the From Email); with a **Site URL** (the app's public address) the weekly email carries an unsubscribe link
 3. Use **Send Emails Now** to test, or configure a recurring schedule under **Auto-Schedule**
 4. Optionally enable **Send admin summary email** — requires a site admin to be set in the General tab first
 
@@ -110,7 +110,7 @@ Everything is configured in the web UI; no `.env` editing needed. The Settings p
 | Tab | What you configure |
 |-----|--------------------|
 | **General** | Default number of blank item rows in the Add Transaction form; number of recent transactions shown on the dashboard (0 hides the section); timezone; **language** (German/English); **decimal separator** (period `1.99` or comma `1,99`) applied to all monetary display and input throughout the app; **currency symbol** (€, $, £, ¥, and more) shown before all monetary amounts throughout the UI, charts, and emails; toggle to show/hide the email column on the dashboard; site admin (used for admin summary emails) |
-| **Email** | SMTP credentials and **encryption** (STARTTLS / SSL/TLS / none); enable/disable email sending; debug mode (logs runs to DB, surfaces SMTP errors in the UI); admin summary email toggle; send balance emails on demand; set a recurring auto-schedule |
+| **Email** | SMTP credentials and **encryption** (STARTTLS / SSL/TLS / none); EHLO name; site URL for the unsubscribe link; enable/disable email sending; debug mode (logs runs to DB, surfaces SMTP errors in the UI); admin summary email toggle; send balance emails on demand; set a recurring auto-schedule |
 | **Common** | Global autocomplete toggle; manually manage item names, descriptions, and prices (each with its own blacklist); configure the auto-collect scheduled job and view its debug log |
 | **Backup** | Create/download/delete backups; restore from any backup or an uploaded file; configure an automatic backup schedule with auto-prune; backup status email to site admin (scheduled runs only); debug log |
 | **Templates** | Color palette + preset themes; editable subjects and body text for all three email types (balance, admin summary, backup status); preview buttons for each email; **App Icon** card — regenerate icons from navbar color, upload a custom icon, or reset to default |

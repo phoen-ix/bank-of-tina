@@ -164,7 +164,7 @@ export async function seedDemo(baseURL: string, lang: Lang): Promise<Demo> {
     await f.post('/settings/email', {
       smtp_server: 'mail.tina-office.example', smtp_port: '587', smtp_security: 'starttls',
       smtp_username: 'bank@tina-office.example', from_email: 'bank@tina-office.example', from_name: 'Bank of Tina',
-      email_enabled: '1', admin_summary_email: '1',
+      app_url: 'https://bank.tina-office.example', email_enabled: '1', admin_summary_email: '1',
     })
     await f.post('/settings/schedule', { schedule_enabled: '1', schedule_day: 'mon', schedule_hour: '9', schedule_minute: '0' })
     for (const name of ['Cappuccino', 'Croissant', 'Pizza Margherita', 'Sushi Bento']) {

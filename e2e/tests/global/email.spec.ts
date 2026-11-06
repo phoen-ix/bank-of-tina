@@ -9,6 +9,8 @@ const MAILPIT = process.env.MAILPIT_URL ?? ''
 const SMTP = {
   smtp_server: 'mailpit', smtp_port: '1025', smtp_security: 'none', smtp_username: 'e2e',
   smtp_password: 'e2e-smtp-not-a-secret', from_email: 'bank@e2e.example', from_name: 'Bank of Tina',
+  // The weekly email's unsubscribe link points here.
+  smtp_ehlo_name: '', app_url: process.env.E2E_BASE_URL ?? 'http://localhost:5000',
   email_enabled: '1', email_debug: '', admin_summary_email: '',
 }
 
@@ -56,17 +58,24 @@ test('credentials form: saved, password kept when left blank, port suggestion', 
   await page.getByLabel('Encryption').selectOption('none')
   await page.getByLabel('SMTP Port').fill('1025')
   await page.getByLabel('From Name').fill('Tina’s Bank')
+  await expect(page.getByText('The name the app gives the SMTP server in EHLO. Empty: the domain of the From Email.')).toBeVisible()
+  await page.getByLabel('EHLO Name').fill('mx.e2e.example')
+  await expect(page.getByLabel('Site URL')).toHaveValue(SMTP.app_url)
+  await expect(page.getByText(/^The public address of the app\. With it, the weekly email carries an unsubscribe link/)).toBeVisible()
   await page.getByRole('button', { name: 'Save Settings' }).click()
   await expectToast(page, 'Settings saved.')
   await expect(page.getByLabel('From Name')).toHaveValue('Tina’s Bank')
+  await expect(page.getByLabel('EHLO Name')).toHaveValue('mx.e2e.example')
   await expect(page.getByLabel('Encryption')).toHaveValue('none')
   // The blank password field did not wipe the stored password: sending still logs in.
   await sendNow(page)
   await expectToast(page, /^\d+ email\(s\) sent, 0 failed\.$/)
 })
 
-test('invalid port is refused by the server', async ({ app }) => {
+test('invalid port, EHLO name and site URL are refused by the server', async ({ app }) => {
   expect(await app.post('/settings/email', { ...SMTP, smtp_port: '70000' }, { error: true })).toContain('SMTP port must be a number between 1 and 65535.')
+  expect(await app.post('/settings/email', { ...SMTP, smtp_ehlo_name: 'mx e2e' }, { error: true })).toContain('The EHLO name may only contain letters, digits, dots and hyphens.')
+  expect(await app.post('/settings/email', { ...SMTP, app_url: 'tina.e2e.example' }, { error: true })).toContain('The site URL must start with http:// or https://.')
 })
 
 test('Send Now: every opted-in user gets their balance, the admin a summary', async ({ page, app, request }) => {

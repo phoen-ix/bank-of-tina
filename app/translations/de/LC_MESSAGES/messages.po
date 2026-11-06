@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Bank of Tina 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-06 16:08+0000\n"
+"POT-Creation-Date: 2026-11-06 17:11+0000\n"
 "PO-Revision-Date: 2026-03-07 17:00+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: de\n"
@@ -139,89 +139,89 @@ msgstr "Brasilianischer Real"
 msgid "Israeli Shekel"
 msgstr "Israelischer Schekel"
 
-#: app/email_service.py:94
+#: app/email_service.py:93
 #, python-format
 msgid "You owe %(sym)s%(amount)s"
 msgstr "Du schuldest %(sym)s%(amount)s"
 
-#: app/email_service.py:97
+#: app/email_service.py:96
 #, python-format
 msgid "You are owed %(sym)s%(amount)s"
 msgstr "Dir werden %(sym)s%(amount)s geschuldet"
 
-#: app/email_service.py:100
+#: app/email_service.py:99
 msgid "Your balance is settled"
 msgstr "Dein Saldo ist ausgeglichen"
 
-#: app/email_service.py:109 app/email_service.py:114
+#: app/email_service.py:108 app/email_service.py:113
 msgid "System"
 msgstr "System"
 
-#: app/email_service.py:138
+#: app/email_service.py:137
 msgid "No recent transactions"
 msgstr "Keine aktuellen Transaktionen"
 
-#: app/email_service.py:144 app/templates/index.html:51
+#: app/email_service.py:143 app/templates/index.html:51
 msgid "Recent Transactions"
 msgstr "Letzte Transaktionen"
 
-#: app/email_service.py:148 app/templates/search.html:99
+#: app/email_service.py:147 app/templates/search.html:99
 msgid "Date"
 msgstr "Datum"
 
-#: app/email_service.py:149 app/templates/add_transaction.html:52
+#: app/email_service.py:148 app/templates/add_transaction.html:52
 #: app/templates/edit_transaction.html:24 app/templates/search.html:101
 #: app/templates/transactions.html:47
 msgid "Description"
 msgstr "Beschreibung"
 
-#: app/email_service.py:150
+#: app/email_service.py:149
 msgid "With"
 msgstr "Mit"
 
-#: app/email_service.py:151 app/templates/add_transaction.html:116
+#: app/email_service.py:150 app/templates/add_transaction.html:116
 #: app/templates/add_transaction.html:158 app/templates/analytics.html:258
 #: app/templates/edit_transaction.html:36 app/templates/search.html:104
 #: app/templates/transactions.html:50
 msgid "Amount"
 msgstr "Betrag"
 
-#: app/email_service.py:175
+#: app/email_service.py:174
 msgid "Unsubscribe from these emails"
 msgstr "Diese E-Mails abbestellen"
 
-#: app/email_service.py:188
+#: app/email_service.py:187
 msgid "Weekly Balance Update"
 msgstr "Wöchentliches Saldo-Update"
 
-#: app/email_service.py:196
+#: app/email_service.py:195
 msgid "Current Balance"
 msgstr "Aktueller Saldo"
 
-#: app/email_service.py:240 app/templates/index.html:19
-#: app/templates/settings.html:22 app/templates/settings.html:1341
-#: app/templates/settings.html:1385 app/templates/settings.html:1436
+#: app/email_service.py:239 app/templates/index.html:19
+#: app/templates/settings.html:22 app/templates/settings.html:1353
+#: app/templates/settings.html:1397 app/templates/settings.html:1448
 #: app/templates/user_detail.html:152
 msgid "Email"
 msgstr "E-Mail"
 
-#: app/email_service.py:248
+#: app/email_service.py:247
 msgid "Admin Summary"
 msgstr "Admin-Zusammenfassung"
 
-#: app/email_service.py:252
+#: app/email_service.py:251
 msgid "All Active Users"
 msgstr "Alle aktiven Benutzer"
 
-#: app/email_service.py:256 app/templates/index.html:18
-#: app/templates/settings.html:1337 app/templates/settings.html:1384
-#: app/templates/settings.html:1435 app/templates/user_detail.html:148
+#: app/email_service.py:255 app/templates/index.html:18
+#: app/templates/settings.html:1349 app/templates/settings.html:1396
+#: app/templates/settings.html:1447 app/templates/user_detail.html:148
 msgid "Name"
 msgstr "Name"
 
-#: app/email_service.py:258 app/templates/analytics.html:255
-#: app/templates/index.html:20 app/templates/settings.html:1386
-#: app/templates/settings.html:1437
+#: app/email_service.py:257 app/templates/analytics.html:255
+#: app/templates/index.html:20 app/templates/settings.html:1398
+#: app/templates/settings.html:1449
 msgid "Balance"
 msgstr "Saldo"
 
@@ -383,227 +383,235 @@ msgstr "Transaktion erfolgreich aktualisiert!"
 msgid "Transaction deleted."
 msgstr "Transaktion gelöscht."
 
-#: app/routes/settings.py:128
+#: app/routes/settings.py:130
 msgid "SMTP port must be a number between 1 and 65535."
 msgstr "Der SMTP-Port muss eine Zahl zwischen 1 und 65535 sein."
 
-#: app/routes/settings.py:148
+#: app/routes/settings.py:134
+msgid "The EHLO name may only contain letters, digits, dots and hyphens."
+msgstr "Der EHLO-Name darf nur Buchstaben, Ziffern, Punkte und Bindestriche enthalten."
+
+#: app/routes/settings.py:138
+msgid "The site URL must start with http:// or https://."
+msgstr "Die Seiten-URL muss mit http:// oder https:// beginnen."
+
+#: app/routes/settings.py:160
 msgid "Settings saved."
 msgstr "Einstellungen gespeichert."
 
-#: app/routes/settings.py:156
+#: app/routes/settings.py:168
 #, python-format
 msgid "%(success)s email(s) sent, %(fail)s failed."
 msgstr "%(success)s E-Mail(s) gesendet, %(fail)s fehlgeschlagen."
 
-#: app/routes/settings.py:159
+#: app/routes/settings.py:171
 #, python-format
 msgid "Debug: %(err)s"
 msgstr "Debug: %(err)s"
 
-#: app/routes/settings.py:167
+#: app/routes/settings.py:179
 msgid "Email debug log cleared."
 msgstr "E-Mail-Debug-Log gelöscht."
 
-#: app/routes/settings.py:188
+#: app/routes/settings.py:200
 msgid "Schedule saved and enabled."
 msgstr "Zeitplan gespeichert und aktiviert."
 
-#: app/routes/settings.py:192
+#: app/routes/settings.py:204
 msgid "Schedule disabled."
 msgstr "Zeitplan deaktiviert."
 
-#: app/routes/settings.py:228
+#: app/routes/settings.py:240
 msgid "General settings saved."
 msgstr "Allgemeine Einstellungen gespeichert."
 
-#: app/routes/settings.py:260
+#: app/routes/settings.py:272
 msgid "Item name is required."
 msgstr "Artikelname ist erforderlich."
 
-#: app/routes/settings.py:265
+#: app/routes/settings.py:277
 #, python-format
 msgid "\"%(name)s\" added to common items."
 msgstr "\"%(name)s\" zu häufigen Artikeln hinzugefügt."
 
-#: app/routes/settings.py:275
+#: app/routes/settings.py:287
 #, python-format
 msgid "\"%(name)s\" removed from common items."
 msgstr "\"%(name)s\" aus häufigen Artikeln entfernt."
 
-#: app/routes/settings.py:283
+#: app/routes/settings.py:295
 msgid "Description is required."
 msgstr "Beschreibung ist erforderlich."
 
-#: app/routes/settings.py:288
+#: app/routes/settings.py:300
 #, python-format
 msgid "\"%(value)s\" added to common descriptions."
 msgstr "\"%(value)s\" zu häufigen Beschreibungen hinzugefügt."
 
-#: app/routes/settings.py:298
+#: app/routes/settings.py:310
 #, python-format
 msgid "\"%(value)s\" removed from common descriptions."
 msgstr "\"%(value)s\" aus häufigen Beschreibungen entfernt."
 
-#: app/routes/settings.py:307 app/routes/settings.py:338
+#: app/routes/settings.py:319 app/routes/settings.py:350
 msgid "Valid price is required."
 msgstr "Gültiger Preis ist erforderlich."
 
-#: app/routes/settings.py:312
+#: app/routes/settings.py:324
 #, python-format
 msgid "%(sym)s%(amount)s added to common prices."
 msgstr "%(sym)s%(amount)s zu häufigen Preisen hinzugefügt."
 
-#: app/routes/settings.py:322
+#: app/routes/settings.py:334
 #, python-format
 msgid "%(sym)s%(amount)s removed from common prices."
 msgstr "%(sym)s%(amount)s aus häufigen Preisen entfernt."
 
-#: app/routes/settings.py:331
+#: app/routes/settings.py:343
 msgid "Invalid blacklist entry."
 msgstr "Ungültiger Blacklist-Eintrag."
 
-#: app/routes/settings.py:343
+#: app/routes/settings.py:355
 #, python-format
 msgid "\"%(value)s\" added to item blacklist."
 msgstr "\"%(value)s\" zur Artikel-Blacklist hinzugefügt."
 
-#: app/routes/settings.py:344
+#: app/routes/settings.py:356
 #, python-format
 msgid "\"%(value)s\" added to description blacklist."
 msgstr "\"%(value)s\" zur Beschreibungs-Blacklist hinzugefügt."
 
-#: app/routes/settings.py:345
+#: app/routes/settings.py:357
 #, python-format
 msgid "\"%(value)s\" added to price blacklist."
 msgstr "\"%(value)s\" zur Preis-Blacklist hinzugefügt."
 
-#: app/routes/settings.py:355
+#: app/routes/settings.py:367
 #, python-format
 msgid "\"%(value)s\" removed from item blacklist."
 msgstr "\"%(value)s\" aus der Artikel-Blacklist entfernt."
 
-#: app/routes/settings.py:356
+#: app/routes/settings.py:368
 #, python-format
 msgid "\"%(value)s\" removed from description blacklist."
 msgstr "\"%(value)s\" aus der Beschreibungs-Blacklist entfernt."
 
-#: app/routes/settings.py:357
+#: app/routes/settings.py:369
 #, python-format
 msgid "\"%(value)s\" removed from price blacklist."
 msgstr "\"%(value)s\" aus der Preis-Blacklist entfernt."
 
-#: app/routes/settings.py:365
+#: app/routes/settings.py:377
 msgid "Common autocomplete settings saved."
 msgstr "Autovervollständigungs-Einstellungen gespeichert."
 
-#: app/routes/settings.py:409
+#: app/routes/settings.py:421
 msgid "Auto-collect schedule saved and enabled."
 msgstr "Auto-Sammlung-Zeitplan gespeichert und aktiviert."
 
-#: app/routes/settings.py:413
+#: app/routes/settings.py:425
 msgid "Auto-collect schedule disabled."
 msgstr "Auto-Sammlung-Zeitplan deaktiviert."
 
-#: app/routes/settings.py:421
+#: app/routes/settings.py:433
 msgid "Auto-collect job ran successfully."
 msgstr "Auto-Sammlung erfolgreich ausgeführt."
 
-#: app/routes/settings.py:429
+#: app/routes/settings.py:441
 msgid "Debug log cleared."
 msgstr "Debug-Log gelöscht."
 
-#: app/routes/settings.py:465
+#: app/routes/settings.py:477
 msgid "Templates saved."
 msgstr "Vorlagen gespeichert."
 
-#: app/routes/settings.py:477
+#: app/routes/settings.py:489
 msgid "Templates reset to defaults."
 msgstr "Vorlagen auf Standardwerte zurückgesetzt."
 
-#: app/routes/settings.py:490
+#: app/routes/settings.py:502
 msgid "Icon regenerated with current navbar color."
 msgstr "Icon mit aktueller Navigationsfarbe neu generiert."
 
-#: app/routes/settings.py:494
+#: app/routes/settings.py:506
 msgid "Icon reset to default."
 msgstr "Icon auf Standard zurückgesetzt."
 
-#: app/routes/settings.py:499
+#: app/routes/settings.py:511
 msgid "No file selected."
 msgstr "Keine Datei ausgewählt."
 
-#: app/routes/settings.py:504
+#: app/routes/settings.py:516
 msgid "Only PNG or JPG files are accepted."
 msgstr "Nur PNG- oder JPG-Dateien werden akzeptiert."
 
-#: app/routes/settings.py:517
+#: app/routes/settings.py:529
 msgid "Custom icon uploaded."
 msgstr "Benutzerdefiniertes Icon hochgeladen."
 
-#: app/routes/settings.py:519
+#: app/routes/settings.py:531
 msgid "Pillow is not installed — cannot process uploaded images."
 msgstr ""
 "Pillow ist nicht installiert — hochgeladene Bilder können nicht "
 "verarbeitet werden."
 
-#: app/routes/settings.py:521
+#: app/routes/settings.py:533
 #, python-format
 msgid "Failed to process image: %(error)s"
 msgstr "Bildverarbeitung fehlgeschlagen: %(error)s"
 
-#: app/routes/settings.py:523
+#: app/routes/settings.py:535
 msgid "Unknown action."
 msgstr "Unbekannte Aktion."
 
-#: app/routes/settings.py:585
+#: app/routes/settings.py:597
 msgid "Backup schedule saved and enabled."
 msgstr "Backup-Zeitplan gespeichert und aktiviert."
 
-#: app/routes/settings.py:589
+#: app/routes/settings.py:601
 msgid "Backup schedule disabled."
 msgstr "Backup-Zeitplan deaktiviert."
 
-#: app/routes/settings.py:599
+#: app/routes/settings.py:611
 #, python-format
 msgid "Backup created: %(result)s"
 msgstr "Backup erstellt: %(result)s"
 
-#: app/routes/settings.py:601
+#: app/routes/settings.py:613
 #, python-format
 msgid "Backup failed: %(result)s"
 msgstr "Backup fehlgeschlagen: %(result)s"
 
-#: app/routes/settings.py:609
+#: app/routes/settings.py:621
 msgid "Backup debug log cleared."
 msgstr "Backup-Debug-Log gelöscht."
 
-#: app/routes/settings.py:623 app/routes/settings.py:678
+#: app/routes/settings.py:635 app/routes/settings.py:690
 msgid "Invalid filename."
 msgstr "Ungültiger Dateiname."
 
-#: app/routes/settings.py:628
+#: app/routes/settings.py:640
 #, python-format
 msgid "%(filename)s deleted."
 msgstr "%(filename)s gelöscht."
 
-#: app/routes/settings.py:630 app/routes/settings.py:682
+#: app/routes/settings.py:642 app/routes/settings.py:694
 msgid "Backup file not found."
 msgstr "Backup-Datei nicht gefunden."
 
-#: app/routes/settings.py:640
+#: app/routes/settings.py:652
 msgid "Invalid upload ID"
 msgstr "Ungültige Upload-ID"
 
-#: app/routes/settings.py:645 app/routes/settings.py:647
+#: app/routes/settings.py:657 app/routes/settings.py:659
 msgid "Invalid chunk parameters"
 msgstr "Ungültige Chunk-Parameter"
 
-#: app/routes/settings.py:649
+#: app/routes/settings.py:661
 msgid "No chunk data"
 msgstr "Keine Chunk-Daten"
 
-#: app/routes/settings.py:693
+#: app/routes/settings.py:705
 #, python-format
 msgid ""
 "Restore from %(filename)s completed successfully. The previous state was "
@@ -612,7 +620,7 @@ msgstr ""
 "Wiederherstellung von %(filename)s erfolgreich abgeschlossen. Der "
 "vorherige Stand wurde als %(safety)s gesichert."
 
-#: app/routes/settings.py:697
+#: app/routes/settings.py:709
 #, python-format
 msgid "Restore failed: %(error)s"
 msgstr "Wiederherstellung fehlgeschlagen: %(error)s"
@@ -1180,7 +1188,7 @@ msgstr "Bearbeiten"
 msgid "Delete this transaction? Balances will be reversed."
 msgstr "Diese Transaktion löschen? Salden werden zurückgesetzt."
 
-#: app/templates/search.html:159 app/templates/settings.html:856
+#: app/templates/search.html:159 app/templates/settings.html:868
 #: app/templates/transactions.html:114 app/templates/user_detail.html:113
 msgid "Delete"
 msgstr "Löschen"
@@ -1314,7 +1322,7 @@ msgstr ""
 "Wird verwendet, um nach jedem E-Mail-Versand eine Admin-Zusammenfassung "
 "zu senden. Benutzer auswählen oder leer lassen zum Deaktivieren."
 
-#: app/templates/settings.html:175 app/templates/settings.html:440
+#: app/templates/settings.html:175 app/templates/settings.html:452
 msgid "Save"
 msgstr "Speichern"
 
@@ -1370,23 +1378,50 @@ msgstr "Absender-E-Mail"
 msgid "From Name"
 msgstr "Absendername"
 
-#: app/templates/settings.html:246
+#: app/templates/settings.html:238
+msgid "EHLO Name"
+msgstr "EHLO-Name"
+
+#: app/templates/settings.html:241
+msgid ""
+"The name the app gives the SMTP server in EHLO. Empty: the domain of the "
+"From Email."
+msgstr ""
+"Der Name, mit dem sich die App beim SMTP-Server im EHLO meldet. Leer: die "
+"Domain der Absender-E-Mail."
+
+#: app/templates/settings.html:244
+msgid "Site URL"
+msgstr "Seiten-URL"
+
+#: app/templates/settings.html:247
+msgid ""
+"The public address of the app. With it, the weekly email carries an "
+"unsubscribe link and one-click unsubscribe headers; behind a proxy with "
+"login, let /unsubscribe/ through. Empty: no unsubscribe link."
+msgstr ""
+"Die öffentliche Adresse der App. Damit trägt die wöchentliche Mail einen "
+"Abbestell-Link und Header zum Abbestellen mit einem Klick; hinter einem "
+"Proxy mit Anmeldung muss /unsubscribe/ ohne Anmeldung erreichbar sein. Leer: "
+"kein Abbestell-Link."
+
+#: app/templates/settings.html:258
 msgid "Enable email sending"
 msgstr "E-Mail-Versand aktivieren"
 
-#: app/templates/settings.html:250
+#: app/templates/settings.html:262
 msgid "When off, both manual \"Send Now\" and the auto-schedule will do nothing."
 msgstr ""
 "Wenn deaktiviert, bewirken weder \"Jetzt senden\" noch der automatische "
 "Zeitplan etwas."
 
-#: app/templates/settings.html:260
+#: app/templates/settings.html:272
 msgid "Debug mode — log runs to DB and show errors in the UI"
 msgstr ""
 "Debug-Modus — Läufe in DB protokollieren und Fehler in der Oberfläche "
 "anzeigen"
 
-#: app/templates/settings.html:264
+#: app/templates/settings.html:276
 msgid ""
 "When on, every send run is written to the debug log below and SMTP errors"
 " are shown as flash notifications."
@@ -1394,11 +1429,11 @@ msgstr ""
 "Wenn aktiviert, wird jeder Sendevorgang im Debug-Log unten protokolliert "
 "und SMTP-Fehler werden als Benachrichtigungen angezeigt."
 
-#: app/templates/settings.html:275
+#: app/templates/settings.html:287
 msgid "Send admin summary email"
 msgstr "Admin-Zusammenfassungs-E-Mail senden"
 
-#: app/templates/settings.html:280
+#: app/templates/settings.html:292
 msgid ""
 "After each email run, send a full overview of all active users' balances "
 "to the site admin."
@@ -1406,7 +1441,7 @@ msgstr ""
 "Nach jedem E-Mail-Versand eine vollständige Übersicht aller aktiven "
 "Benutzersalden an den Seiten-Admin senden."
 
-#: app/templates/settings.html:282 app/templates/settings.html:948
+#: app/templates/settings.html:294 app/templates/settings.html:960
 msgid ""
 "No site admin is configured. Set one in <strong>General</strong> to "
 "enable this option."
@@ -1414,15 +1449,15 @@ msgstr ""
 "Kein Seiten-Admin konfiguriert. Unter <strong>Allgemein</strong> einen "
 "festlegen, um diese Option zu aktivieren."
 
-#: app/templates/settings.html:288
+#: app/templates/settings.html:300
 msgid "Save Settings"
 msgstr "Einstellungen speichern"
 
-#: app/templates/settings.html:300
+#: app/templates/settings.html:312
 msgid "Send Now"
 msgstr "Jetzt senden"
 
-#: app/templates/settings.html:304
+#: app/templates/settings.html:316
 msgid ""
 "Send a balance-update email to every active user immediately using the "
 "credentials configured on the left."
@@ -1430,155 +1465,155 @@ msgstr ""
 "Sofort eine Saldo-Update-E-Mail an jeden aktiven Benutzer mit den links "
 "konfigurierten Zugangsdaten senden."
 
-#: app/templates/settings.html:308
+#: app/templates/settings.html:320
 msgid "Send Emails Now"
 msgstr "E-Mails jetzt senden"
 
-#: app/templates/settings.html:316
+#: app/templates/settings.html:328
 msgid "Auto-Schedule"
 msgstr "Automatischer Zeitplan"
 
-#: app/templates/settings.html:327
+#: app/templates/settings.html:339
 msgid "Enable automatic schedule"
 msgstr "Automatischen Zeitplan aktivieren"
 
-#: app/templates/settings.html:334
+#: app/templates/settings.html:346
 msgid "Day"
 msgstr "Tag"
 
-#: app/templates/settings.html:336 app/templates/settings.html:726
-#: app/templates/settings.html:959
+#: app/templates/settings.html:348 app/templates/settings.html:738
+#: app/templates/settings.html:971
 msgid "Every day"
 msgstr "Jeden Tag"
 
-#: app/templates/settings.html:337 app/templates/settings.html:727
-#: app/templates/settings.html:960
+#: app/templates/settings.html:349 app/templates/settings.html:739
+#: app/templates/settings.html:972
 msgid "Monday"
 msgstr "Montag"
 
-#: app/templates/settings.html:338 app/templates/settings.html:728
-#: app/templates/settings.html:961
+#: app/templates/settings.html:350 app/templates/settings.html:740
+#: app/templates/settings.html:973
 msgid "Tuesday"
 msgstr "Dienstag"
 
-#: app/templates/settings.html:339 app/templates/settings.html:729
-#: app/templates/settings.html:962
+#: app/templates/settings.html:351 app/templates/settings.html:741
+#: app/templates/settings.html:974
 msgid "Wednesday"
 msgstr "Mittwoch"
 
-#: app/templates/settings.html:340 app/templates/settings.html:730
-#: app/templates/settings.html:963
+#: app/templates/settings.html:352 app/templates/settings.html:742
+#: app/templates/settings.html:975
 msgid "Thursday"
 msgstr "Donnerstag"
 
-#: app/templates/settings.html:341 app/templates/settings.html:731
-#: app/templates/settings.html:964
+#: app/templates/settings.html:353 app/templates/settings.html:743
+#: app/templates/settings.html:976
 msgid "Friday"
 msgstr "Freitag"
 
-#: app/templates/settings.html:342 app/templates/settings.html:732
-#: app/templates/settings.html:965
+#: app/templates/settings.html:354 app/templates/settings.html:744
+#: app/templates/settings.html:977
 msgid "Saturday"
 msgstr "Samstag"
 
-#: app/templates/settings.html:343 app/templates/settings.html:733
-#: app/templates/settings.html:966
+#: app/templates/settings.html:355 app/templates/settings.html:745
+#: app/templates/settings.html:978
 msgid "Sunday"
 msgstr "Sonntag"
 
-#: app/templates/settings.html:348 app/templates/transactions.html:45
+#: app/templates/settings.html:360 app/templates/transactions.html:45
 msgid "Time"
 msgstr "Uhrzeit"
 
-#: app/templates/settings.html:348
+#: app/templates/settings.html:360
 msgid "24-hour"
 msgstr "24 Std."
 
-#: app/templates/settings.html:358 app/templates/settings.html:744
-#: app/templates/settings.html:977
+#: app/templates/settings.html:370 app/templates/settings.html:756
+#: app/templates/settings.html:989
 msgid "Minute"
 msgstr "Minute"
 
-#: app/templates/settings.html:370 app/templates/settings.html:756
-#: app/templates/settings.html:998
+#: app/templates/settings.html:382 app/templates/settings.html:768
+#: app/templates/settings.html:1010
 msgid "every day"
 msgstr "jeden Tag"
 
-#: app/templates/settings.html:370 app/templates/settings.html:756
-#: app/templates/settings.html:998
+#: app/templates/settings.html:382 app/templates/settings.html:768
+#: app/templates/settings.html:1010
 msgid "every Monday"
 msgstr "jeden Montag"
 
-#: app/templates/settings.html:371 app/templates/settings.html:757
-#: app/templates/settings.html:999
+#: app/templates/settings.html:383 app/templates/settings.html:769
+#: app/templates/settings.html:1011
 msgid "every Tuesday"
 msgstr "jeden Dienstag"
 
-#: app/templates/settings.html:371 app/templates/settings.html:757
-#: app/templates/settings.html:999
+#: app/templates/settings.html:383 app/templates/settings.html:769
+#: app/templates/settings.html:1011
 msgid "every Wednesday"
 msgstr "jeden Mittwoch"
 
-#: app/templates/settings.html:372 app/templates/settings.html:758
-#: app/templates/settings.html:1000
+#: app/templates/settings.html:384 app/templates/settings.html:770
+#: app/templates/settings.html:1012
 msgid "every Thursday"
 msgstr "jeden Donnerstag"
 
-#: app/templates/settings.html:372 app/templates/settings.html:758
-#: app/templates/settings.html:1000
+#: app/templates/settings.html:384 app/templates/settings.html:770
+#: app/templates/settings.html:1012
 msgid "every Friday"
 msgstr "jeden Freitag"
 
-#: app/templates/settings.html:373 app/templates/settings.html:759
-#: app/templates/settings.html:1001
+#: app/templates/settings.html:385 app/templates/settings.html:771
+#: app/templates/settings.html:1013
 msgid "every Saturday"
 msgstr "jeden Samstag"
 
-#: app/templates/settings.html:373 app/templates/settings.html:759
-#: app/templates/settings.html:1001
+#: app/templates/settings.html:385 app/templates/settings.html:771
+#: app/templates/settings.html:1013
 msgid "every Sunday"
 msgstr "jeden Sonntag"
 
-#: app/templates/settings.html:376
+#: app/templates/settings.html:388
 msgid "Emails will be sent"
 msgstr "E-Mails werden gesendet"
 
-#: app/templates/settings.html:377 app/templates/settings.html:735
-#: app/templates/settings.html:763 app/templates/settings.html:968
-#: app/templates/settings.html:1005
+#: app/templates/settings.html:389 app/templates/settings.html:747
+#: app/templates/settings.html:775 app/templates/settings.html:980
+#: app/templates/settings.html:1017
 msgid "at"
 msgstr "um"
 
-#: app/templates/settings.html:385 app/templates/settings.html:1013
+#: app/templates/settings.html:397 app/templates/settings.html:1025
 msgid "Save Schedule"
 msgstr "Zeitplan speichern"
 
-#: app/templates/settings.html:397
+#: app/templates/settings.html:409
 msgid "Email Debug Log"
 msgstr "E-Mail-Debug-Log"
 
-#: app/templates/settings.html:400
+#: app/templates/settings.html:412
 msgid "Clear the entire email debug log?"
 msgstr "Das gesamte E-Mail-Debug-Log löschen?"
 
-#: app/templates/settings.html:401 app/templates/settings.html:790
-#: app/templates/settings.html:1026
+#: app/templates/settings.html:413 app/templates/settings.html:802
+#: app/templates/settings.html:1038
 msgid "Clear Log"
 msgstr "Log löschen"
 
-#: app/templates/settings.html:410
+#: app/templates/settings.html:422
 msgid "No log entries yet. Send emails to generate log entries."
 msgstr "Noch keine Logeinträge. E-Mails senden, um Logeinträge zu erzeugen."
 
-#: app/templates/settings.html:424
+#: app/templates/settings.html:436
 msgid "Common Autocomplete"
 msgstr "Häufige Autovervollständigung"
 
-#: app/templates/settings.html:433
+#: app/templates/settings.html:445
 msgid "Enable Common autocomplete feature"
 msgstr "Häufige Autovervollständigung aktivieren"
 
-#: app/templates/settings.html:437
+#: app/templates/settings.html:449
 msgid ""
 "When off, all autocomplete suggestions (item names, descriptions, prices)"
 " are disabled across the app."
@@ -1586,46 +1621,46 @@ msgstr ""
 "Wenn deaktiviert, werden alle Autovervollständigungs-Vorschläge "
 "(Artikelnamen, Beschreibungen, Preise) in der gesamten App deaktiviert."
 
-#: app/templates/settings.html:449
+#: app/templates/settings.html:461
 msgid "Item Names"
 msgstr "Artikelnamen"
 
-#: app/templates/settings.html:453
+#: app/templates/settings.html:465
 msgid "These appear as autocomplete suggestions in expense item name fields."
 msgstr ""
 "Diese erscheinen als Autovervollständigungs-Vorschläge in Artikelnamen-"
 "Feldern."
 
-#: app/templates/settings.html:456
+#: app/templates/settings.html:468
 msgid "New item name"
 msgstr "Neuer Artikelname"
 
-#: app/templates/settings.html:458 app/templates/settings.html:522
-#: app/templates/settings.html:587 app/templates/settings.html:1365
+#: app/templates/settings.html:470 app/templates/settings.html:534
+#: app/templates/settings.html:599 app/templates/settings.html:1377
 msgid "Add"
 msgstr "Hinzufügen"
 
-#: app/templates/settings.html:468 app/templates/settings.html:497
-#: app/templates/settings.html:532 app/templates/settings.html:561
-#: app/templates/settings.html:597 app/templates/settings.html:627
+#: app/templates/settings.html:480 app/templates/settings.html:509
+#: app/templates/settings.html:544 app/templates/settings.html:573
+#: app/templates/settings.html:609 app/templates/settings.html:639
 msgid "Remove"
 msgstr "Entfernen"
 
-#: app/templates/settings.html:468
+#: app/templates/settings.html:480
 #, python-format
 msgid "Remove '%(name)s' from common items?"
 msgstr "'%(name)s' aus häufigen Artikeln entfernen?"
 
-#: app/templates/settings.html:476
+#: app/templates/settings.html:488
 msgid "No common items saved yet."
 msgstr "Noch keine häufigen Artikel gespeichert."
 
-#: app/templates/settings.html:480 app/templates/settings.html:544
-#: app/templates/settings.html:609
+#: app/templates/settings.html:492 app/templates/settings.html:556
+#: app/templates/settings.html:621
 msgid "Blacklist"
 msgstr "Blacklist"
 
-#: app/templates/settings.html:481 app/templates/settings.html:545
+#: app/templates/settings.html:493 app/templates/settings.html:557
 msgid ""
 "Values listed here are never auto-collected, even if they meet the "
 "threshold."
@@ -1633,29 +1668,29 @@ msgstr ""
 "Hier aufgeführte Werte werden nie automatisch gesammelt, auch wenn sie "
 "den Schwellenwert erreichen."
 
-#: app/templates/settings.html:484
+#: app/templates/settings.html:496
 msgid "Item name to blacklist"
 msgstr "Artikelname für Blacklist"
 
-#: app/templates/settings.html:486 app/templates/settings.html:550
-#: app/templates/settings.html:616
+#: app/templates/settings.html:498 app/templates/settings.html:562
+#: app/templates/settings.html:628
 msgid "Add to blacklist"
 msgstr "Zur Blacklist hinzufügen"
 
-#: app/templates/settings.html:497
+#: app/templates/settings.html:509
 #, python-format
 msgid "Remove '%(value)s' from item blacklist?"
 msgstr "'%(value)s' aus der Artikel-Blacklist entfernen?"
 
-#: app/templates/settings.html:505
+#: app/templates/settings.html:517
 msgid "No blacklisted item names."
 msgstr "Keine Artikelnamen auf der Blacklist."
 
-#: app/templates/settings.html:513 app/templates/settings.html:694
+#: app/templates/settings.html:525 app/templates/settings.html:706
 msgid "Descriptions"
 msgstr "Beschreibungen"
 
-#: app/templates/settings.html:517
+#: app/templates/settings.html:529
 msgid ""
 "These appear as autocomplete suggestions in the transaction description "
 "field."
@@ -1663,57 +1698,57 @@ msgstr ""
 "Diese erscheinen als Autovervollständigungs-Vorschläge im "
 "Transaktionsbeschreibungs-Feld."
 
-#: app/templates/settings.html:520
+#: app/templates/settings.html:532
 msgid "New description"
 msgstr "Neue Beschreibung"
 
-#: app/templates/settings.html:532
+#: app/templates/settings.html:544
 #, python-format
 msgid "Remove '%(value)s' from common descriptions?"
 msgstr "'%(value)s' aus häufigen Beschreibungen entfernen?"
 
-#: app/templates/settings.html:540
+#: app/templates/settings.html:552
 msgid "No common descriptions saved yet."
 msgstr "Noch keine häufigen Beschreibungen gespeichert."
 
-#: app/templates/settings.html:548
+#: app/templates/settings.html:560
 msgid "Description to blacklist"
 msgstr "Beschreibung für Blacklist"
 
-#: app/templates/settings.html:561
+#: app/templates/settings.html:573
 #, python-format
 msgid "Remove '%(value)s' from description blacklist?"
 msgstr "'%(value)s' aus der Beschreibungs-Blacklist entfernen?"
 
-#: app/templates/settings.html:569
+#: app/templates/settings.html:581
 msgid "No blacklisted descriptions."
 msgstr "Keine Beschreibungen auf der Blacklist."
 
-#: app/templates/settings.html:577 app/templates/settings.html:709
+#: app/templates/settings.html:589 app/templates/settings.html:721
 msgid "Prices"
 msgstr "Preise"
 
-#: app/templates/settings.html:581
+#: app/templates/settings.html:593
 msgid "These appear as autocomplete suggestions in the expense item price fields."
 msgstr ""
 "Diese erscheinen als Autovervollständigungs-Vorschläge in Artikelpreis-"
 "Feldern."
 
-#: app/templates/settings.html:584
+#: app/templates/settings.html:596
 #, python-format
 msgid "Price (e.g. 3%(sep)s50)"
 msgstr "Preis (z.B. 3%(sep)s50)"
 
-#: app/templates/settings.html:597
+#: app/templates/settings.html:609
 #, python-format
 msgid "Remove %(symbol)s%(amount)s from common prices?"
 msgstr "%(symbol)s%(amount)s aus häufigen Preisen entfernen?"
 
-#: app/templates/settings.html:605
+#: app/templates/settings.html:617
 msgid "No common prices saved yet."
 msgstr "Noch keine häufigen Preise gespeichert."
 
-#: app/templates/settings.html:610
+#: app/templates/settings.html:622
 #, python-format
 msgid ""
 "Prices listed here are never auto-collected, even if they meet the "
@@ -1722,29 +1757,29 @@ msgstr ""
 "Hier aufgeführte Preise werden nie automatisch gesammelt, auch wenn sie "
 "den Schwellenwert erreichen. Als Dezimalzahl eingeben (z.B. 3%(sep)s50)."
 
-#: app/templates/settings.html:613
+#: app/templates/settings.html:625
 #, python-format
 msgid "Price to blacklist (e.g. 3%(sep)s50)"
 msgstr "Preis für Blacklist (z.B. 3%(sep)s50)"
 
-#: app/templates/settings.html:627
+#: app/templates/settings.html:639
 #, python-format
 msgid "Remove %(value)s from price blacklist?"
 msgstr "%(value)s aus der Preis-Blacklist entfernen?"
 
-#: app/templates/settings.html:635
+#: app/templates/settings.html:647
 msgid "No blacklisted prices."
 msgstr "Keine Preise auf der Blacklist."
 
-#: app/templates/settings.html:643
+#: app/templates/settings.html:655
 msgid "Auto-Collect Schedule"
 msgstr "Auto-Sammlungs-Zeitplan"
 
-#: app/templates/settings.html:654
+#: app/templates/settings.html:666
 msgid "Enable auto-collect"
 msgstr "Auto-Sammlung aktivieren"
 
-#: app/templates/settings.html:658
+#: app/templates/settings.html:670
 msgid ""
 "Automatically promote frequently-used values to the common lists on a "
 "schedule."
@@ -1752,97 +1787,97 @@ msgstr ""
 "Häufig verwendete Werte automatisch nach Zeitplan in die häufigen Listen "
 "übernehmen."
 
-#: app/templates/settings.html:666
+#: app/templates/settings.html:678
 msgid "Debug mode — log all decisions to database"
 msgstr "Debug-Modus — alle Entscheidungen in der Datenbank protokollieren"
 
-#: app/templates/settings.html:679
+#: app/templates/settings.html:691
 msgid "Item names"
 msgstr "Artikelnamen"
 
-#: app/templates/settings.html:682 app/templates/settings.html:697
-#: app/templates/settings.html:712
+#: app/templates/settings.html:694 app/templates/settings.html:709
+#: app/templates/settings.html:724
 msgid "Min occurrences:"
 msgstr "Mind. Vorkommen:"
 
-#: app/templates/settings.html:723 app/templates/settings.html:956
+#: app/templates/settings.html:735 app/templates/settings.html:968
 msgid "Run"
 msgstr "Ausführen"
 
-#: app/templates/settings.html:736 app/templates/settings.html:969
+#: app/templates/settings.html:748 app/templates/settings.html:981
 msgid "Hour"
 msgstr "Stunde"
 
-#: app/templates/settings.html:762
+#: app/templates/settings.html:774
 msgid "Auto-collect runs"
 msgstr "Auto-Sammlung läuft"
 
-#: app/templates/settings.html:772
+#: app/templates/settings.html:784
 msgid "Save Auto-Collect"
 msgstr "Auto-Sammlung speichern"
 
-#: app/templates/settings.html:779
+#: app/templates/settings.html:791
 msgid "Run Now"
 msgstr "Jetzt ausführen"
 
-#: app/templates/settings.html:786
+#: app/templates/settings.html:798
 msgid "Debug Log"
 msgstr "Debug-Log"
 
-#: app/templates/settings.html:789
+#: app/templates/settings.html:801
 msgid "Clear the entire debug log?"
 msgstr "Das gesamte Debug-Log löschen?"
 
-#: app/templates/settings.html:798
+#: app/templates/settings.html:810
 msgid "No log entries yet. Run auto-collect to generate log entries."
 msgstr ""
 "Noch keine Logeinträge. Auto-Sammlung ausführen, um Logeinträge zu "
 "erzeugen."
 
-#: app/templates/settings.html:813
+#: app/templates/settings.html:825
 msgid "Backups"
 msgstr "Backups"
 
-#: app/templates/settings.html:816
+#: app/templates/settings.html:828
 msgid "Create Backup Now"
 msgstr "Jetzt Backup erstellen"
 
-#: app/templates/settings.html:826
+#: app/templates/settings.html:838
 msgid "Filename"
 msgstr "Dateiname"
 
-#: app/templates/settings.html:827
+#: app/templates/settings.html:839
 msgid "Size"
 msgstr "Größe"
 
-#: app/templates/settings.html:828
+#: app/templates/settings.html:840
 msgid "Created"
 msgstr "Erstellt"
 
-#: app/templates/settings.html:846
+#: app/templates/settings.html:858
 msgid "Download"
 msgstr "Herunterladen"
 
-#: app/templates/settings.html:850
+#: app/templates/settings.html:862
 msgid "Restore"
 msgstr "Wiederherstellen"
 
-#: app/templates/settings.html:855
+#: app/templates/settings.html:867
 #, python-format
 msgid "Delete %(filename)s?"
 msgstr "%(filename)s löschen?"
 
-#: app/templates/settings.html:868
+#: app/templates/settings.html:880
 msgid "No backups yet. Click \"Create Backup Now\" to create your first one."
 msgstr ""
 "Noch keine Backups. Klicke auf \"Jetzt Backup erstellen\" für dein erstes"
 " Backup."
 
-#: app/templates/settings.html:879
+#: app/templates/settings.html:891
 msgid "Upload Backup"
 msgstr "Backup hochladen"
 
-#: app/templates/settings.html:883
+#: app/templates/settings.html:895
 msgid ""
 "Upload a <code>bot_backup_*.tar.gz</code> file. Large files are sent in "
 "chunks, up to 2 GB."
@@ -1850,35 +1885,35 @@ msgstr ""
 "Eine <code>bot_backup_*.tar.gz</code>-Datei hochladen. Große Dateien "
 "werden in Teilen gesendet, bis zu 2 GB."
 
-#: app/templates/settings.html:891 app/templates/settings.html:1308
+#: app/templates/settings.html:903 app/templates/settings.html:1320
 msgid "Upload"
 msgstr "Hochladen"
 
-#: app/templates/settings.html:899
+#: app/templates/settings.html:911
 msgid "Preparing…"
 msgstr "Wird vorbereitet…"
 
-#: app/templates/settings.html:907
+#: app/templates/settings.html:919
 msgid "Auto-Backup Schedule"
 msgstr "Automatischer Backup-Zeitplan"
 
-#: app/templates/settings.html:918
+#: app/templates/settings.html:930
 msgid "Enable automatic backups"
 msgstr "Automatische Backups aktivieren"
 
-#: app/templates/settings.html:922
+#: app/templates/settings.html:934
 msgid "Automatically create a backup on the configured schedule."
 msgstr "Automatisch ein Backup nach dem konfigurierten Zeitplan erstellen."
 
-#: app/templates/settings.html:930
+#: app/templates/settings.html:942
 msgid "Debug mode — log backup runs to database"
 msgstr "Debug-Modus — Backup-Läufe in der Datenbank protokollieren"
 
-#: app/templates/settings.html:941
+#: app/templates/settings.html:953
 msgid "Send backup status email to site admin"
 msgstr "Backup-Status-E-Mail an Seiten-Admin senden"
 
-#: app/templates/settings.html:946
+#: app/templates/settings.html:958
 msgid ""
 "After each <strong>scheduled</strong> backup, send a status report to the"
 " site admin. Manual backups do not trigger this email."
@@ -1886,67 +1921,67 @@ msgstr ""
 "Nach jedem <strong>geplanten</strong> Backup einen Statusbericht an den "
 "Seiten-Admin senden. Manuelle Backups lösen diese E-Mail nicht aus."
 
-#: app/templates/settings.html:989
+#: app/templates/settings.html:1001
 msgid "Keep last"
 msgstr "Letzte behalten"
 
-#: app/templates/settings.html:993
+#: app/templates/settings.html:1005
 msgid "backups (older ones are deleted automatically)"
 msgstr "Backups (ältere werden automatisch gelöscht)"
 
-#: app/templates/settings.html:1004
+#: app/templates/settings.html:1016
 msgid "Backups run"
 msgstr "Backups laufen"
 
-#: app/templates/settings.html:1022
+#: app/templates/settings.html:1034
 msgid "Backup Debug Log"
 msgstr "Backup-Debug-Log"
 
-#: app/templates/settings.html:1025
+#: app/templates/settings.html:1037
 msgid "Clear the entire backup debug log?"
 msgstr "Das gesamte Backup-Debug-Log löschen?"
 
-#: app/templates/settings.html:1035
+#: app/templates/settings.html:1047
 msgid "No log entries yet."
 msgstr "Noch keine Logeinträge."
 
-#: app/templates/settings.html:1050
+#: app/templates/settings.html:1062
 msgid "Colors & Theme"
 msgstr "Farben & Design"
 
-#: app/templates/settings.html:1055
+#: app/templates/settings.html:1067
 msgid "Preset theme"
 msgstr "Design-Vorlage"
 
-#: app/templates/settings.html:1057
+#: app/templates/settings.html:1069
 msgid "— Custom —"
 msgstr "— Benutzerdefiniert —"
 
-#: app/templates/settings.html:1058
+#: app/templates/settings.html:1070
 msgid "Default"
 msgstr "Standard"
 
-#: app/templates/settings.html:1058
+#: app/templates/settings.html:1070
 msgid "Classic"
 msgstr "Klassisch"
 
-#: app/templates/settings.html:1058
+#: app/templates/settings.html:1070
 msgid "Ocean"
 msgstr "Ozean"
 
-#: app/templates/settings.html:1059
+#: app/templates/settings.html:1071
 msgid "Forest"
 msgstr "Wald"
 
-#: app/templates/settings.html:1059
+#: app/templates/settings.html:1071
 msgid "Sunset"
 msgstr "Sonnenuntergang"
 
-#: app/templates/settings.html:1059
+#: app/templates/settings.html:1071
 msgid "Slate"
 msgstr "Schiefer"
 
-#: app/templates/settings.html:1064
+#: app/templates/settings.html:1076
 msgid ""
 "Selecting a preset fills all color pickers below. Changing any picker "
 "switches to Custom."
@@ -1954,221 +1989,221 @@ msgstr ""
 "Eine Vorlage auswählen füllt alle Farbwähler unten. Das Ändern eines "
 "Farbwählers wechselt zu Benutzerdefiniert."
 
-#: app/templates/settings.html:1069
+#: app/templates/settings.html:1081
 msgid "Navbar color"
 msgstr "Navigationsfarbe"
 
-#: app/templates/settings.html:1076 app/templates/settings.html:1088
-#: app/templates/settings.html:1100 app/templates/settings.html:1112
-#: app/templates/settings.html:1124
+#: app/templates/settings.html:1088 app/templates/settings.html:1100
+#: app/templates/settings.html:1112 app/templates/settings.html:1124
+#: app/templates/settings.html:1136
 msgid "Hex value"
 msgstr "Hex-Wert"
 
-#: app/templates/settings.html:1081
+#: app/templates/settings.html:1093
 msgid "Email gradient start"
 msgstr "E-Mail-Farbverlauf Anfang"
 
-#: app/templates/settings.html:1093
+#: app/templates/settings.html:1105
 msgid "Email gradient end"
 msgstr "E-Mail-Farbverlauf Ende"
 
-#: app/templates/settings.html:1105
+#: app/templates/settings.html:1117
 msgid "Positive balance color"
 msgstr "Farbe für positiven Saldo"
 
-#: app/templates/settings.html:1117
+#: app/templates/settings.html:1129
 msgid "Negative balance color"
 msgstr "Farbe für negativen Saldo"
 
-#: app/templates/settings.html:1135
+#: app/templates/settings.html:1147
 msgid "Weekly Balance Email"
 msgstr "Wöchentliche Saldo-E-Mail"
 
-#: app/templates/settings.html:1137 app/templates/settings.html:1184
-#: app/templates/settings.html:1229
+#: app/templates/settings.html:1149 app/templates/settings.html:1196
+#: app/templates/settings.html:1241
 msgid "Preview"
 msgstr "Vorschau"
 
-#: app/templates/settings.html:1142 app/templates/settings.html:1189
-#: app/templates/settings.html:1234
+#: app/templates/settings.html:1154 app/templates/settings.html:1201
+#: app/templates/settings.html:1246
 msgid "Available placeholders:"
 msgstr "Verfügbare Platzhalter:"
 
-#: app/templates/settings.html:1143
+#: app/templates/settings.html:1155
 msgid "Leave a body field blank to omit that line from the email."
 msgstr "Ein Textfeld leer lassen, um diese Zeile in der E-Mail auszulassen."
 
-#: app/templates/settings.html:1146 app/templates/settings.html:1193
-#: app/templates/settings.html:1238
+#: app/templates/settings.html:1158 app/templates/settings.html:1205
+#: app/templates/settings.html:1250
 msgid "Subject"
 msgstr "Betreff"
 
-#: app/templates/settings.html:1152
+#: app/templates/settings.html:1164
 msgid "Greeting"
 msgstr "Begrüßung"
 
-#: app/templates/settings.html:1156
+#: app/templates/settings.html:1168
 msgid "First line of the email body."
 msgstr "Erste Zeile des E-Mail-Textes."
 
-#: app/templates/settings.html:1159 app/templates/settings.html:1199
+#: app/templates/settings.html:1171 app/templates/settings.html:1211
 msgid "Intro line"
 msgstr "Einleitungszeile"
 
-#: app/templates/settings.html:1165
+#: app/templates/settings.html:1177
 msgid "Footer line 1"
 msgstr "Fußzeile 1"
 
-#: app/templates/settings.html:1171
+#: app/templates/settings.html:1183
 msgid "Footer line 2"
 msgstr "Fußzeile 2"
 
-#: app/templates/settings.html:1182
+#: app/templates/settings.html:1194
 msgid "Admin Summary Email"
 msgstr "Admin-Zusammenfassungs-E-Mail"
 
-#: app/templates/settings.html:1190
+#: app/templates/settings.html:1202
 msgid "Leave a body field blank to omit that line."
 msgstr "Ein Textfeld leer lassen, um diese Zeile auszulassen."
 
-#: app/templates/settings.html:1202
+#: app/templates/settings.html:1214
 msgid "(optional intro above the table)"
 msgstr "(optionale Einleitung über der Tabelle)"
 
-#: app/templates/settings.html:1205 app/templates/settings.html:1244
+#: app/templates/settings.html:1217 app/templates/settings.html:1256
 msgid "Footer"
 msgstr "Fußzeile"
 
-#: app/templates/settings.html:1216
+#: app/templates/settings.html:1228
 msgid "Include email addresses in summary table"
 msgstr "E-Mail-Adressen in der Zusammenfassungstabelle anzeigen"
 
-#: app/templates/settings.html:1219
+#: app/templates/settings.html:1231
 msgid "When off, only names and balances are shown. Default: off."
 msgstr ""
 "Wenn deaktiviert, werden nur Namen und Salden angezeigt. Standard: "
 "deaktiviert."
 
-#: app/templates/settings.html:1227
+#: app/templates/settings.html:1239
 msgid "Backup Status Email"
 msgstr "Backup-Status-E-Mail"
 
-#: app/templates/settings.html:1235
+#: app/templates/settings.html:1247
 msgid "Leave the footer blank to omit it."
 msgstr "Fußzeile leer lassen, um sie auszulassen."
 
-#: app/templates/settings.html:1254
+#: app/templates/settings.html:1266
 msgid "Save Templates"
 msgstr "Vorlagen speichern"
 
-#: app/templates/settings.html:1257
+#: app/templates/settings.html:1269
 msgid "Reset to Defaults"
 msgstr "Auf Standardwerte zurücksetzen"
 
-#: app/templates/settings.html:1268
+#: app/templates/settings.html:1280
 msgid "App Icon"
 msgstr "App-Icon"
 
-#: app/templates/settings.html:1272
+#: app/templates/settings.html:1284
 msgid "Current icon"
 msgstr "Aktuelles Icon"
 
-#: app/templates/settings.html:1274
+#: app/templates/settings.html:1286
 msgid "Current app icon"
 msgstr "Aktuelles App-Icon"
 
-#: app/templates/settings.html:1281
+#: app/templates/settings.html:1293
 msgid "Generate from theme"
 msgstr "Aus Design generieren"
 
-#: app/templates/settings.html:1283
+#: app/templates/settings.html:1295
 msgid "Uses current navbar color as background with the bank silhouette in white."
 msgstr ""
 "Verwendet die aktuelle Navigationsfarbe als Hintergrund mit der Bank-"
 "Silhouette in Weiß."
 
-#: app/templates/settings.html:1288
+#: app/templates/settings.html:1300
 msgid "Regenerate with Navbar Color"
 msgstr "Mit Navigationsfarbe neu generieren"
 
-#: app/templates/settings.html:1294
+#: app/templates/settings.html:1306
 msgid "or"
 msgstr "oder"
 
-#: app/templates/settings.html:1298
+#: app/templates/settings.html:1310
 msgid "Upload custom icon"
 msgstr "Benutzerdefiniertes Icon hochladen"
 
-#: app/templates/settings.html:1300
+#: app/templates/settings.html:1312
 msgid "PNG or JPG, will be resized to 32x32, 192x192, and 512x512."
 msgstr "PNG oder JPG, wird auf 32x32, 192x192 und 512x512 skaliert."
 
-#: app/templates/settings.html:1318
+#: app/templates/settings.html:1330
 msgid "Reset to Default"
 msgstr "Auf Standard zurücksetzen"
 
-#: app/templates/settings.html:1332
+#: app/templates/settings.html:1344
 msgid "Add User"
 msgstr "Benutzer hinzufügen"
 
-#: app/templates/settings.html:1345 app/templates/user_detail.html:160
+#: app/templates/settings.html:1357 app/templates/user_detail.html:160
 msgid "Weekly email report"
 msgstr "Wöchentlicher E-Mail-Bericht"
 
-#: app/templates/settings.html:1350 app/templates/user_detail.html:166
+#: app/templates/settings.html:1362 app/templates/user_detail.html:166
 msgid "Send weekly balance email"
 msgstr "Wöchentliche Saldo-E-Mail senden"
 
-#: app/templates/settings.html:1355 app/templates/user_detail.html:171
+#: app/templates/settings.html:1367 app/templates/user_detail.html:171
 msgid "Include in email"
 msgstr "In E-Mail einschließen"
 
-#: app/templates/settings.html:1357 app/templates/user_detail.html:173
+#: app/templates/settings.html:1369 app/templates/user_detail.html:173
 msgid "No transactions"
 msgstr "Keine Transaktionen"
 
-#: app/templates/settings.html:1358 app/templates/user_detail.html:174
+#: app/templates/settings.html:1370 app/templates/user_detail.html:174
 msgid "Last 3 transactions"
 msgstr "Letzte 3 Transaktionen"
 
-#: app/templates/settings.html:1359 app/templates/user_detail.html:175
+#: app/templates/settings.html:1371 app/templates/user_detail.html:175
 msgid "Transactions this week"
 msgstr "Transaktionen dieser Woche"
 
-#: app/templates/settings.html:1360 app/templates/user_detail.html:176
+#: app/templates/settings.html:1372 app/templates/user_detail.html:176
 msgid "Transactions this month"
 msgstr "Transaktionen dieses Monats"
 
-#: app/templates/settings.html:1375
+#: app/templates/settings.html:1387
 msgid "Active Users"
 msgstr "Aktive Benutzer"
 
-#: app/templates/settings.html:1407
+#: app/templates/settings.html:1419
 #, python-format
 msgid "Deactivate %(name)s?"
 msgstr "%(name)s deaktivieren?"
 
-#: app/templates/settings.html:1408
+#: app/templates/settings.html:1420
 msgid "Deactivate"
 msgstr "Deaktivieren"
 
-#: app/templates/settings.html:1418
+#: app/templates/settings.html:1430
 msgid "No active users. Add your first user above."
 msgstr "Keine aktiven Benutzer. Füge oben deinen ersten Benutzer hinzu."
 
-#: app/templates/settings.html:1428
+#: app/templates/settings.html:1440
 msgid "Deactivated Users"
 msgstr "Deaktivierte Benutzer"
 
-#: app/templates/settings.html:1458
+#: app/templates/settings.html:1470
 msgid "Reactivate"
 msgstr "Reaktivieren"
 
-#: app/templates/settings.html:1479
+#: app/templates/settings.html:1491
 msgid "Restore from this backup?"
 msgstr "Aus diesem Backup wiederherstellen?"
 
-#: app/templates/settings.html:1479
+#: app/templates/settings.html:1491
 msgid ""
 "This will overwrite the current database and all receipt images. A backup"
 " of the current state is created first."
@@ -2176,31 +2211,31 @@ msgstr ""
 "Dies überschreibt die aktuelle Datenbank und alle Belegbilder. Vorher "
 "wird ein Backup des aktuellen Stands erstellt."
 
-#: app/templates/settings.html:1480
+#: app/templates/settings.html:1492
 msgid "Please select a file first."
 msgstr "Bitte zuerst eine Datei auswählen."
 
-#: app/templates/settings.html:1481
+#: app/templates/settings.html:1493
 msgid "The selected file is empty."
 msgstr "Die ausgewählte Datei ist leer."
 
-#: app/templates/settings.html:1482
+#: app/templates/settings.html:1494
 msgid "The file is too large (max 2 GB)."
 msgstr "Die Datei ist zu groß (max. 2 GB)."
 
-#: app/templates/settings.html:1483
+#: app/templates/settings.html:1495
 msgid "Uploading…"
 msgstr "Wird hochgeladen…"
 
-#: app/templates/settings.html:1484
+#: app/templates/settings.html:1496
 msgid "Upload complete:"
 msgstr "Upload abgeschlossen:"
 
-#: app/templates/settings.html:1485
+#: app/templates/settings.html:1497
 msgid "Upload error:"
 msgstr "Upload-Fehler:"
 
-#: app/templates/settings.html:1486
+#: app/templates/settings.html:1498
 msgid "Reset all templates and colors to defaults?"
 msgstr "Alle Vorlagen und Farben auf Standardwerte zurücksetzen?"
 

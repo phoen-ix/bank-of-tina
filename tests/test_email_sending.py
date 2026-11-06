@@ -107,11 +107,12 @@ def test_port_465_is_implicit_tls_whatever_the_mode(app, smtp):
         _assert_verifying(server.context)
 
 
-def test_ehlo_name_and_timeout(app, smtp, monkeypatch):
+def test_ehlo_name_and_timeout(app, smtp):
     with app.app_context():
         from email_service import send_single_email
+        from helpers import set_setting
         assert send_single_email('a@example.com', 'A', 'Hi', '<p>x</p>')[0]
-        monkeypatch.setenv('SMTP_EHLO_NAME', 'mx.tina.example')
+        set_setting('smtp_ehlo_name', 'mx.tina.example')
         assert send_single_email('a@example.com', 'A', 'Hi', '<p>x</p>')[0]
         assert [(s.local_hostname, s.timeout) for s in smtp.instances] == [('tina.example', 30),
                                                                            ('mx.tina.example', 30)]
@@ -138,10 +139,11 @@ def test_html_mail_has_a_text_part(app, smtp):
         assert msg.get_payload()[0].get_payload(decode=True).decode() == 'Hello & welcome\nLink: https://tina.example/x\n'
 
 
-def test_weekly_email_has_one_click_unsubscribe(app, smtp, make_user, monkeypatch):
-    monkeypatch.setenv('APP_URL', 'https://tina.example/')
+def test_weekly_email_has_one_click_unsubscribe(app, smtp, make_user):
     with app.app_context():
         from email_service import send_all_emails
+        from helpers import set_setting
+        set_setting('app_url', 'https://tina.example/')
         make_user()
         assert send_all_emails()[0] == 1
         msg = smtp.instances[0].messages[0]
@@ -151,8 +153,7 @@ def test_weekly_email_has_one_click_unsubscribe(app, smtp, make_user, monkeypatc
         assert link in msg.get_payload()[0].get_payload(decode=True).decode() and f'href="{link}"' in msg.get_payload()[1].get_payload(decode=True).decode()
 
 
-def test_without_app_url_no_unsubscribe_link(app, smtp, make_user, monkeypatch):
-    monkeypatch.delenv('APP_URL', raising=False)
+def test_without_app_url_no_unsubscribe_link(app, smtp, make_user):
     with app.app_context():
         from email_service import send_all_emails
         make_user()

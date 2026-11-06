@@ -234,6 +234,18 @@
                                 <input type="text" class="form-control" id="from_name" name="from_name"
                                        value="{{ cfg.from_name }}">
                             </div>
+                            <div class="mb-3">
+                                <label for="smtp_ehlo_name" class="form-label">{{ _('EHLO Name') }}</label>
+                                <input type="text" class="form-control" id="smtp_ehlo_name" name="smtp_ehlo_name"
+                                       value="{{ cfg.smtp_ehlo_name }}">
+                                <div class="form-text">{{ _('The name the app gives the SMTP server in EHLO. Empty: the domain of the From Email.') }}</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="app_url" class="form-label">{{ _('Site URL') }}</label>
+                                <input type="url" class="form-control" id="app_url" name="app_url"
+                                       value="{{ cfg.app_url }}" placeholder="https://tina.example.org">
+                                <div class="form-text">{{ _('The public address of the app. With it, the weekly email carries an unsubscribe link and one-click unsubscribe headers; behind a proxy with login, let /unsubscribe/ through. Empty: no unsubscribe link.') }}</div>
+                            </div>
 
                             <hr>
 

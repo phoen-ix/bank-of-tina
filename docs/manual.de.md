@@ -56,7 +56,7 @@ Die häufigsten Aufgaben Schritt für Schritt, alle Einstellungs-Tabs im Überbl
 
 ## E-Mail einrichten
 1. **Einstellungen** → **E-Mail**-Tab
-2. SMTP-Zugangsdaten eingeben und **Einstellungen speichern** klicken
+2. SMTP-Zugangsdaten eingeben und **Einstellungen speichern** klicken. **EHLO-Name** ist optional (leer: die Domain der Absender-E-Mail); mit einer **Seiten-URL** (der öffentlichen Adresse der App) trägt die wöchentliche Mail einen Abbestell-Link
 3. **E-Mails jetzt senden** zum Testen verwenden, oder unter **Automatischer Zeitplan** einen wiederkehrenden Zeitplan einrichten
 4. Optional **Admin-Zusammenfassungs-E-Mail senden** aktivieren — erfordert dass zuerst ein Seiten-Admin im Allgemein-Tab eingestellt wird
 
@@ -110,7 +110,7 @@ Alles wird in der Web-UI eingestellt, kein `.env`-Bearbeiten nötig. Die Einstel
 | Tab | Was konfiguriert wird |
 |-----|----------------------|
 | **Allgemein** | Standard-Artikelzeilen im Transaktionsformular; Anzahl letzter Transaktionen auf der Übersicht (0 blendet den Bereich aus); Zeitzone; **Sprache** (Deutsch/Englisch); **Dezimaltrennzeichen** (Punkt `1.99` oder Komma `1,99`); **Währungssymbol** (€, $, £, ¥ und mehr); E-Mail-Spalte auf der Übersicht ein-/ausblenden; Seiten-Admin |
-| **E-Mail** | SMTP-Zugangsdaten und **Verschlüsselung** (STARTTLS / SSL/TLS / keine); E-Mail-Versand aktivieren/deaktivieren; Debug-Modus; Admin-Zusammenfassungs-E-Mail-Schalter; Saldo-E-Mails auf Abruf senden; wiederkehrenden Zeitplan einrichten |
+| **E-Mail** | SMTP-Zugangsdaten und **Verschlüsselung** (STARTTLS / SSL/TLS / keine); EHLO-Name; Seiten-URL für den Abbestell-Link; E-Mail-Versand aktivieren/deaktivieren; Debug-Modus; Admin-Zusammenfassungs-E-Mail-Schalter; Saldo-E-Mails auf Abruf senden; wiederkehrenden Zeitplan einrichten |
 | **Häufige** | Globaler Autovervollständigungsschalter; Artikelnamen, Beschreibungen und Preise manuell verwalten (jeweils mit eigener Blacklist); Auto-Sammlungs-Job konfigurieren und Debug-Log anzeigen |
 | **Backup** | Backups erstellen/herunterladen/löschen; aus jedem Backup oder einer hochgeladenen Datei wiederherstellen; automatischen Backup-Zeitplan mit Auto-Bereinigung konfigurieren; Backup-Status-E-Mail an Seiten-Admin; Debug-Log |
 | **Vorlagen** | Farbpalette + vordefinierte Designs; bearbeitbare Betreffs und Texte für alle drei E-Mail-Typen; Vorschau-Buttons; **App-Icon**-Karte — Icons aus Navigationsfarbe generieren, benutzerdefiniertes Icon hochladen oder auf Standard zurücksetzen |

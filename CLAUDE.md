@@ -155,12 +155,13 @@ admin summary, but present everywhere else.
 skips a job with broken settings; `reschedule_all(app)` after a timezone change or restore.
 
 **Email**: `Mailer` keeps one SMTP connection per run (STARTTLS / SSL / none, port 465 always SSL,
-certificates always verified, 30 s timeout, EHLO = `SMTP_EHLO_NAME` or the From domain), reconnects
-once, fails the rest of the run fast on connect/TLS/login errors. Every message gets a text/plain part
-(`plain_text`), Message-ID/Date and `Auto-Submitted`; a placeholder From (`example.com`, `.local`,
-dotless) is refused. With `APP_URL` the weekly mail carries `List-Unsubscribe`(+`-Post`) and a footer
-link to `/unsubscribe/<token>` (itsdangerous, salt `unsubscribe`, `[id, email]`: dies with an email
-change): GET asks, POST (CSRF-exempt, RFC 8058 one-click) clears `email_opt_in`.
+certificates always verified, 30 s timeout, EHLO = the `smtp_ehlo_name` setting or the From domain),
+reconnects once, fails the rest of the run fast on connect/TLS/login errors. Every message gets a
+text/plain part (`plain_text`), Message-ID/Date and `Auto-Submitted`; a placeholder From (`example.com`,
+`.local`, dotless) is refused. With the `app_url` setting (Settings → Email, Site URL) the weekly mail
+carries `List-Unsubscribe`(+`-Post`) and a footer link to `/unsubscribe/<token>` (itsdangerous, salt
+`unsubscribe`, `[id, email]`: dies with an email change): GET asks, POST (CSRF-exempt, RFC 8058
+one-click) clears `email_opt_in`. Both settings live only in the DB, never in `.env`.
 Failures always go to `EmailLog`, successes only with `email_debug`. Placeholder values are
 HTML-escaped; template text is admin-authored HTML. The backup status email is sent after
 *scheduled* backups only.

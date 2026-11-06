@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import html
 import logging
-import os
 import re
 import smtplib
 import ssl
@@ -33,8 +32,8 @@ def _unsubscribe_signer() -> URLSafeSerializer:
 
 
 def unsubscribe_url(user: User) -> str | None:
-    """The weekly email's unsubscribe link, or None without APP_URL. It dies with an email change."""
-    base = os.environ.get('APP_URL', '').rstrip('/')
+    """The weekly email's unsubscribe link, or None without a site URL. It dies with an email change."""
+    base = get_setting('app_url', '').rstrip('/')
     return f'{base}/unsubscribe/{_unsubscribe_signer().dumps([user.id, user.email])}' if base else None
 
 
@@ -289,7 +288,7 @@ class Mailer:
         self.from_email = get_setting('from_email', '') or self.username
         self.from_name = get_setting('from_name', 'Bank of Tina')
         self.from_domain = self.from_email.rpartition('@')[2].lower()
-        self.ehlo_name = os.environ.get('SMTP_EHLO_NAME') or self.from_domain
+        self.ehlo_name = get_setting('smtp_ehlo_name', '') or self.from_domain
 
     def __enter__(self) -> Mailer:
         return self

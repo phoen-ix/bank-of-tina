@@ -78,7 +78,7 @@ Item rows, recent transactions, timezone, language, decimal separator and curren
 
 ## Settings: Email
 
-SMTP server, encryption and sender, Send Now and the weekly auto-schedule; the sending switches follow below.
+SMTP server, encryption, sender, EHLO name and site URL, Send Now and the weekly auto-schedule; the sending switches follow below.
 
 <img src="settings-email.png" alt="Settings: Email" width="800">
 
@@ -194,7 +194,7 @@ Artikelzeilen, letzte Transaktionen, Zeitzone, Sprache, Dezimaltrennzeichen und 
 
 ## Einstellungen: E-Mail
 
-SMTP-Server, Verschlüsselung und Absender, Jetzt senden und der wöchentliche Zeitplan; die Versandschalter folgen darunter.
+SMTP-Server, Verschlüsselung, Absender, EHLO-Name und Seiten-URL, Jetzt senden und der wöchentliche Zeitplan; die Versandschalter folgen darunter.
 
 <img src="settings-email.de.png" alt="Einstellungen: E-Mail" width="800">
 

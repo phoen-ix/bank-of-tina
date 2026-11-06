@@ -137,8 +137,8 @@ Tests: `npx playwright test --list` (102 tests in 15 files, including the setup 
 | 108 | General: email column on the dashboard, recent transactions count (incl. 0) | ✅ global/general.spec.ts › dashboard options: email column and recent transactions |
 | 109 | General: default empty item rows (incl. 0) | ✅ global/general.spec.ts › default empty item rows on the expense form |
 | 110 | General: site admin (hidden on dashboard, enables admin emails, inactive admin stays) | ✅ global/general.spec.ts › site admin: hidden from the dashboard, enables the admin emails |
-| 111 | Email: credentials, password kept, encryption → port suggestion | ✅ global/email.spec.ts › credentials form: saved, password kept when left blank, port suggestion |
-| 112 | Email: invalid port | ✅ global/email.spec.ts › invalid port is refused by the server |
+| 111 | Email: credentials, password kept, encryption → port suggestion, EHLO name and site URL with their help texts | ✅ global/email.spec.ts › credentials form: saved, password kept when left blank, port suggestion |
+| 112 | Email: invalid port, EHLO name, site URL | ✅ global/email.spec.ts › invalid port, EHLO name and site URL are refused by the server |
 | 113 | Email: Send Now (Mailpit), opt-out, admin summary, debug log, Clear Log confirm | ✅ global/email.spec.ts › Send Now: every opted-in user gets their balance, the admin a summary |
 | 114 | Email: SMTP failure | ✅ global/email.spec.ts › a broken SMTP server: every send fails, and the failures are logged |
 | 115 | Email: sending switched off | ✅ global/email.spec.ts › sending switched off: Send Now does nothing |

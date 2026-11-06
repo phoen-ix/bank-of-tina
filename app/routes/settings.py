@@ -48,6 +48,8 @@ def settings() -> str:
         'smtp_password': get_setting('smtp_password', ''),
         'from_email':    get_setting('from_email', ''),
         'from_name':     get_setting('from_name', 'Bank of Tina'),
+        'smtp_ehlo_name': get_setting('smtp_ehlo_name', ''),
+        'app_url':       get_setting('app_url', ''),
         'schedule_enabled': get_setting('schedule_enabled', '0'),
         'schedule_day':  get_setting('schedule_day', 'mon'),
         'schedule_hour': get_setting('schedule_hour', '9'),
@@ -127,6 +129,14 @@ def settings_email() -> Response:
     if not (port.isdigit() and 0 < int(port) < 65536):
         flash(_('SMTP port must be a number between 1 and 65535.'), 'error')
         return redirect(url_for('settings_bp.settings'))
+    ehlo_name = request.form.get('smtp_ehlo_name', '').strip()
+    if ehlo_name and not re.fullmatch(r'[A-Za-z0-9.-]+', ehlo_name):
+        flash(_('The EHLO name may only contain letters, digits, dots and hyphens.'), 'error')
+        return redirect(url_for('settings_bp.settings'))
+    app_url = request.form.get('app_url', '').strip()
+    if app_url and not re.fullmatch(r'https?://[^\s<>"]+', app_url):
+        flash(_('The site URL must start with http:// or https://.'), 'error')
+        return redirect(url_for('settings_bp.settings'))
     security = request.form.get('smtp_security', 'starttls')
     if security not in SMTP_SECURITY_MODES:
         security = 'starttls'
@@ -136,6 +146,8 @@ def settings_email() -> Response:
     set_setting('smtp_username', request.form.get('smtp_username', '').strip())
     set_setting('from_email',    request.form.get('from_email', '').strip())
     set_setting('from_name',     request.form.get('from_name', '').strip())
+    set_setting('smtp_ehlo_name', ehlo_name)
+    set_setting('app_url',       app_url)
 
     new_password = request.form.get('smtp_password', '').strip()
     if new_password:

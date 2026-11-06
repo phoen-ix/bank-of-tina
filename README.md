@@ -140,10 +140,10 @@ Sechs Tabs: **Allgemein**, **E-Mail**, **Häufige**, **Backup**, **Vorlagen** un
 ### E-Mail-Benachrichtigungen
 - **SMTP-Zugangsdaten** liegen in der Datenbank (Einstellungen → E-Mail).
 - **Verschlüsselung**: STARTTLS (meist Port 587), SSL/TLS (Port 465 ist immer SSL/TLS) oder keine. Server-Zertifikate werden immer geprüft; ein Versandlauf nutzt eine einzige SMTP-Verbindung.
-- **Absender**: eine Absenderadresse bei `example.com`, `.local` oder ohne Punkt in der Domain wird beim Versand abgelehnt. Im EHLO meldet sich die App mit der Domain der Absenderadresse (`SMTP_EHLO_NAME` in `.env` ändert das). Jede Mail hat einen Text- und einen HTML-Teil.
+- **Absender**: eine Absenderadresse bei `example.com`, `.local` oder ohne Punkt in der Domain wird beim Versand abgelehnt. Im EHLO meldet sich die App mit der Domain der Absenderadresse (das Feld **EHLO-Name** ändert das). Jede Mail hat einen Text- und einen HTML-Teil.
 - **Jetzt senden** schickt allen aktiven Benutzern sofort ihren aktuellen Saldo.
 - **Automatischer Zeitplan**: Tag und Uhrzeit (24-Stunden-Format); der Zeitplan überlebt Container-Neustarts.
-- **Opt-in pro Benutzer**: abgemeldete Benutzer werden bei jedem Versand übersprungen (manuell und geplant). Mit `APP_URL` in `.env` trägt die wöchentliche Mail einen Abbestell-Link und `List-Unsubscribe` (Ein-Klick-Abbestellen im Mailprogramm); hinter einem Reverse-Proxy mit Anmeldung muss `/unsubscribe/` ohne Anmeldung erreichbar sein.
+- **Opt-in pro Benutzer**: abgemeldete Benutzer werden bei jedem Versand übersprungen (manuell und geplant). Mit einer **Seiten-URL** (Einstellungen → E-Mail) trägt die wöchentliche Mail einen Abbestell-Link und `List-Unsubscribe` (Ein-Klick-Abbestellen im Mailprogramm); hinter einem Reverse-Proxy mit Anmeldung muss `/unsubscribe/` ohne Anmeldung erreichbar sein.
 - **Transaktionsumfang pro Benutzer**: letzte 3 Transaktionen, alle dieser Woche, alle dieses Monats oder keine Historie.
 - **Admin-Zusammenfassung**: optional an den Seiten-Admin (Einstellungen → Allgemein), mit farbcodierter Saldenübersicht *aller* aktiven Benutzer, unabhängig vom Opt-in.
 - **E-Mail-Log**: fehlgeschlagene Sendungen immer, erfolgreiche nur im Debug-Modus.
@@ -467,10 +467,10 @@ Six tabs: **General**, **Email**, **Common**, **Backup**, **Templates**, and **U
 ### Email Notifications
 - **SMTP credentials** are stored in the database (Settings → Email).
 - **Encryption**: STARTTLS (usually port 587), SSL/TLS (port 465 is always SSL/TLS) or none. Server certificates are always verified; one SMTP connection is used per send run.
-- **Sender**: a From address at `example.com`, `.local` or a domain without a dot is refused at send time. The app gives the From domain in EHLO (`SMTP_EHLO_NAME` in `.env` overrides it). Every mail has a text and an HTML part.
+- **Sender**: a From address at `example.com`, `.local` or a domain without a dot is refused at send time. The app gives the From domain in EHLO (the **EHLO Name** field overrides it). Every mail has a text and an HTML part.
 - **Send Now** emails all active users their current balance immediately.
 - **Auto-schedule**: pick a day and time (24 h clock); the schedule survives container restarts.
-- **Per-user opt-in**: opted-out users are skipped on every send (manual and scheduled). With `APP_URL` in `.env` the weekly email carries an unsubscribe link and `List-Unsubscribe` (one-click unsubscribe in the mail client); behind an authenticating reverse proxy, let `/unsubscribe/` through without login.
+- **Per-user opt-in**: opted-out users are skipped on every send (manual and scheduled). With a **Site URL** (Settings → Email) the weekly email carries an unsubscribe link and `List-Unsubscribe` (one-click unsubscribe in the mail client); behind an authenticating reverse proxy, let `/unsubscribe/` through without login.
 - **Per-user transaction scope**: last 3 transactions, all this week, all this month, or no history at all.
 - **Admin summary email**: optional, to the site admin (Settings → General), with a colour-coded balance overview of *all* active users, regardless of opt-in.
 - **Email log**: failed sends always, successful ones only in debug mode.

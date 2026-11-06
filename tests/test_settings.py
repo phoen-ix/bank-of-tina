@@ -1,6 +1,8 @@
 import os
 from decimal import Decimal
 
+import pytest
+
 
 def test_settings_page_loads(client, app):
     response = client.get('/settings')
@@ -36,6 +38,8 @@ def test_email_update(client, app):
             'smtp_username': 'user@test.com',
             'from_email': 'from@test.com',
             'from_name': 'Test Bank',
+            'smtp_ehlo_name': 'mx.test.com',
+            'app_url': 'https://tina.test.com',
             'email_enabled': '1',
         }, follow_redirects=True)
         assert response.status_code == 200
@@ -43,6 +47,20 @@ def test_email_update(client, app):
         from helpers import get_setting
         assert get_setting('smtp_server') == 'smtp.test.com'
         assert get_setting('smtp_port') == '465'
+        assert get_setting('smtp_ehlo_name') == 'mx.test.com'
+        assert get_setting('app_url') == 'https://tina.test.com'
+
+
+@pytest.mark.parametrize('field, value', [('smtp_ehlo_name', 'mx.test.com\r\nRSET'),
+                                          ('app_url', 'tina.test.com'),
+                                          ('app_url', 'https://tina.test.com>\r\nBcc: x')])
+def test_email_update_rejects_bad_ehlo_name_and_site_url(client, app, field, value):
+    with app.app_context():
+        response = client.post('/settings/email', data={'smtp_port': '587', field: value}, follow_redirects=True)
+        assert response.status_code == 200
+
+        from helpers import get_setting
+        assert get_setting(field) is None and get_setting('smtp_port') is None
 
 
 def test_common_item_add_delete(client, app):
