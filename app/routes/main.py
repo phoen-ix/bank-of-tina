@@ -11,7 +11,8 @@ from decimal import Decimal
 from flask import Blueprint, Response, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, current_app, abort
 from flask_babel import gettext as _, format_date as babel_format_date
 
-from extensions import db, limiter
+from extensions import csrf, db, limiter
+from email_service import unsubscribe_user
 from models import User, Transaction, ExpenseItem
 from helpers import (get_setting, get_tpl, parse_amount, fmt_amount, allowed_file,
                      save_receipt, delete_receipt_file, parse_submitted_date, parse_local_datetime,
@@ -447,6 +448,19 @@ def user_detail(user_id: int) -> str:
     ).order_by(Transaction.date.desc())
     pagination = db.paginate(stmt, page=page, per_page=20, error_out=False)
     return render_template('user_detail.html', user=user, pagination=pagination)
+
+
+@main_bp.route('/unsubscribe/<token>', methods=['GET', 'POST'])
+@csrf.exempt
+def unsubscribe(token: str) -> tuple[str, int]:
+    """Stop the weekly email from its link. GET only asks (link checkers follow links); the POST of
+    that form or of the mail client's one-click button (RFC 8058) does it. The signed token is the
+    credential, so the POST carries no CSRF token."""
+    user = unsubscribe_user(token)
+    if user and request.method == 'POST':
+        user.email_opt_in = False
+        db.session.commit()
+    return render_template('unsubscribe.html', user=user, done=request.method == 'POST'), 200 if user else 404
 
 
 @main_bp.route('/receipt/<path:filepath>')

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import html
 import logging
+import os
+import re
 import smtplib
 import ssl
 from datetime import timedelta
@@ -9,8 +11,10 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.utils import formataddr, formatdate, make_msgid
 
+from itsdangerous import BadSignature, URLSafeSerializer
 from sqlalchemy.orm import joinedload
 
+from flask import current_app
 from flask_babel import gettext as _
 
 from extensions import db
@@ -22,6 +26,37 @@ from helpers import (get_setting, get_tpl, apply_template, fmt_amount, now_local
 SMTP_SECURITY_MODES = ('starttls', 'ssl', 'none')
 
 logger = logging.getLogger(__name__)
+
+
+def _unsubscribe_signer() -> URLSafeSerializer:
+    return URLSafeSerializer(current_app.config['SECRET_KEY'], salt='unsubscribe')
+
+
+def unsubscribe_url(user: User) -> str | None:
+    """The weekly email's unsubscribe link, or None without APP_URL. It dies with an email change."""
+    base = os.environ.get('APP_URL', '').rstrip('/')
+    return f'{base}/unsubscribe/{_unsubscribe_signer().dumps([user.id, user.email])}' if base else None
+
+
+def unsubscribe_user(token: str) -> User | None:
+    """The user an unsubscribe token belongs to, or None."""
+    try:
+        user_id, email = _unsubscribe_signer().loads(token)
+    except (BadSignature, ValueError, TypeError):
+        return None
+    user = db.session.get(User, user_id) if isinstance(user_id, int) else None
+    return user if user and user.email == email else None
+
+
+def plain_text(html_body: str) -> str:
+    """The text/plain part of an HTML mail: links keep their address, blocks and rows their own lines."""
+    text = re.sub(r'<head\b.*?</head>', '', html_body, flags=re.S | re.I)
+    text = re.sub(r'<a\s[^>]*href="([^"]+)"[^>]*>(.*?)</a>', r'\2: \1', text, flags=re.S | re.I)
+    text = re.sub(r'<br\s*/?>', '\n', text, flags=re.I)
+    text = re.sub(r'</(p|div|h[1-6]|tr)>', '\n', text, flags=re.I)
+    text = html.unescape(re.sub(r'<[^>]+>', ' ', text))
+    lines = (' '.join(line.split()) for line in text.splitlines())
+    return '\n'.join(line for line in lines if line) + '\n'
 
 
 def build_email_html(user: User) -> str:
@@ -135,6 +170,10 @@ def build_email_html(user: User) -> str:
     intro_html    = f'<p>{intro}</p>' if intro.strip() else ''
     footer1_html  = f'<p>{footer1}</p>' if footer1.strip() else ''
     footer2_html  = f'<p style="margin-top: 10px;">{footer2}</p>' if footer2.strip() else ''
+    unsubscribe = unsubscribe_url(user)
+    unsubscribe_html = (f'<p style="margin-top: 10px; font-size: 12px;">'
+                        f'<a href="{unsubscribe}" style="color: #6c757d;">{_("Unsubscribe from these emails")}</a></p>'
+                        if unsubscribe else '')
 
     email_body = f"""
     <!DOCTYPE html>
@@ -163,6 +202,7 @@ def build_email_html(user: User) -> str:
             <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6; text-align: center; color: #6c757d; font-size: 14px;">
                 {footer1_html}
                 {footer2_html}
+                {unsubscribe_html}
             </div>
         </div>
     </body>
@@ -233,8 +273,8 @@ class Mailer:
     """Sends messages over one SMTP connection, opened on first use.
 
     Certificates are always verified. The connection mode comes from the
-    smtp_security setting: STARTTLS (usually port 587), implicit TLS (465)
-    or none. A failed connection is remembered so a batch fails fast instead
+    smtp_security setting: STARTTLS (usually port 587), implicit TLS (465,
+    whatever the setting) or none. A failed connection is remembered so a batch fails fast instead
     of waiting for the timeout once per recipient.
     """
 
@@ -248,6 +288,8 @@ class Mailer:
         self.password = get_setting('smtp_password', '')
         self.from_email = get_setting('from_email', '') or self.username
         self.from_name = get_setting('from_name', 'Bank of Tina')
+        self.from_domain = self.from_email.rpartition('@')[2].lower()
+        self.ehlo_name = os.environ.get('SMTP_EHLO_NAME') or self.from_domain
 
     def __enter__(self) -> Mailer:
         return self
@@ -258,12 +300,14 @@ class Mailer:
     def _connect(self) -> smtplib.SMTP:
         context = ssl.create_default_context()
         port = int(self.port)
-        if self.security == 'ssl':
-            server: smtplib.SMTP = smtplib.SMTP_SSL(self.host, port, timeout=30, context=context)
+        implicit_tls = self.security == 'ssl' or port == 465
+        if implicit_tls:
+            server: smtplib.SMTP = smtplib.SMTP_SSL(self.host, port, local_hostname=self.ehlo_name, timeout=30,
+                                                    context=context)
         else:
-            server = smtplib.SMTP(self.host, port, timeout=30)
+            server = smtplib.SMTP(self.host, port, local_hostname=self.ehlo_name, timeout=30)
         try:
-            if self.security == 'starttls':
+            if self.security == 'starttls' and not implicit_tls:
                 server.starttls(context=context)
             server.login(self.username, self.password)
         except Exception:
@@ -271,25 +315,34 @@ class Mailer:
             raise
         return server
 
-    def _message(self, to_email: str, to_name: str, subject: str, html_body: str) -> MIMEMultipart:
+    def _message(self, to_email: str, to_name: str, subject: str, html_body: str,
+                 headers: dict[str, str] | None = None) -> MIMEMultipart:
         msg = MIMEMultipart('alternative')
         msg['Subject'] = ' '.join(subject.splitlines())
         # formataddr quotes names like "Doe, John" and encodes non-ASCII ones.
         msg['From'] = formataddr((self.from_name, self.from_email))
         msg['To'] = formataddr((to_name, to_email))
         msg['Date'] = formatdate(localtime=True)
-        msg['Message-ID'] = make_msgid(domain=self.from_email.rpartition('@')[2] or None)
+        msg['Message-ID'] = make_msgid(domain=self.from_domain)
+        msg['Auto-Submitted'] = 'auto-generated'
+        for name, value in (headers or {}).items():
+            msg[name] = value
+        msg.attach(MIMEText(plain_text(html_body), 'plain', 'utf-8'))
         msg.attach(MIMEText(html_body, 'html', 'utf-8'))
         return msg
 
-    def send(self, to_email: str, to_name: str, subject: str, html_body: str) -> tuple[bool, str | None]:
+    def send(self, to_email: str, to_name: str, subject: str, html_body: str,
+             headers: dict[str, str] | None = None) -> tuple[bool, str | None]:
         if not self.username or not self.password:
             return False, _('SMTP credentials not configured')
         if self.security not in SMTP_SECURITY_MODES or not self.port.isdigit():
             return False, _('SMTP settings are invalid')
+        if ('.' not in self.from_domain or self.from_domain.endswith('.local')
+                or self.from_domain in ('example.com', 'example.org', 'example.net')):
+            return False, _('The From address %(address)s is not a real address.', address=self.from_email)
         if self.connect_error:
             return False, self.connect_error
-        msg = self._message(to_email, to_name, subject, html_body)
+        msg = self._message(to_email, to_name, subject, html_body, headers)
         try:
             if self.server is None:
                 self.server = self._connect()
@@ -339,7 +392,10 @@ def send_all_emails() -> tuple[int, int, list[str]]:
     # Failures are always logged; successes only in debug mode.
     with Mailer() as mailer:
         for user in opted_in_users:
-            ok, err = mailer.send(user.email, user.name, subject, build_email_html(user))
+            unsubscribe = unsubscribe_url(user)
+            headers = {'List-Unsubscribe': f'<{unsubscribe}>',
+                       'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'} if unsubscribe else None
+            ok, err = mailer.send(user.email, user.name, subject, build_email_html(user), headers)
             if ok:
                 success += 1
                 if debug:

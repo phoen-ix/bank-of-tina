@@ -101,6 +101,35 @@ test('Send Now: every opted-in user gets their balance, the admin a summary', as
   await expect(page.getByText('No log entries yet. Send emails to generate log entries.')).toBeVisible()
 })
 
+test('unsubscribe: the link asks first, its button and the one-click POST stop the weekly email', async ({ page, app, request }) => {
+  const [a, b] = [await app.addUser(), await app.addUser()]
+  await sendNow(page)
+  await expectToast(page, /^\d+ email\(s\) sent, 0 failed\.$/)
+  const link = async (to: string) => {
+    const [mail] = await mails(request, to)
+    const headers = await (await request.get(`${MAILPIT}/api/v1/message/${mail.ID}/headers`)).json()
+    expect(headers['List-Unsubscribe-Post']).toEqual(['List-Unsubscribe=One-Click'])
+    expect(headers['Auto-Submitted']).toEqual(['auto-generated'])
+    const text: string = (await (await request.get(`${MAILPIT}/api/v1/message/${mail.ID}`)).json()).Text
+    const path = /\/unsubscribe\/[\w.-]+/.exec(text)?.[0]
+    expect(path, 'the unsubscribe link in the text part').toBeTruthy()
+    expect(headers['List-Unsubscribe'][0]).toContain(path!)
+    return path!
+  }
+
+  await page.goto(await link(a.email))
+  await expect(page.getByText(`Stop the weekly balance email to ${a.email}?`)).toBeVisible()
+  await page.getByRole('button', { name: 'Unsubscribe' }).click()
+  await expect(page.getByText(`${a.name} no longer gets the weekly balance email.`)).toBeVisible()
+  const res = await app.api.post(await link(b.email), { form: { 'List-Unsubscribe': 'One-Click' } })
+  expect(res.status()).toBe(200)
+
+  await sendNow(page)
+  await expectToast(page, /^\d+ email\(s\) sent, 0 failed\.$/)
+  expect(await mails(request, a.email)).toHaveLength(1)
+  expect(await mails(request, b.email)).toHaveLength(1)
+})
+
 test('a broken SMTP server: every send fails, and the failures are logged', async ({ page, app }) => {
   const a = await app.addUser()
   await app.post('/settings/email', { ...SMTP, smtp_port: '1026' })

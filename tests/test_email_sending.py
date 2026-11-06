@@ -14,10 +14,11 @@ class FakeSMTP:
     disconnect_on_send = []      # send_message call numbers that raise SMTPServerDisconnected
     sends = 0
 
-    def __init__(self, host, port, timeout=None, context=None):
+    def __init__(self, host, port, local_hostname=None, timeout=None, context=None):
         if FakeSMTP.fail_connect:
             raise FakeSMTP.fail_connect
         self.host, self.port, self.context = host, port, context
+        self.local_hostname, self.timeout = local_hostname, timeout
         self.starttls_context = None
         self.logged_in = None
         self.messages = []
@@ -59,7 +60,7 @@ def smtp(app, monkeypatch):
     with app.app_context():
         from helpers import set_setting
         for key, value in {'smtp_server': 'mail.example', 'smtp_port': '587', 'smtp_username': 'bot',
-                           'smtp_password': 'pw', 'from_email': 'bot@example.com'}.items():
+                           'smtp_password': 'pw', 'from_email': 'bot@tina.example'}.items():
             set_setting(key, value)
     return FakeSMTP
 
@@ -95,6 +96,71 @@ def test_ssl_mode_uses_implicit_tls(app, smtp):
         assert server.starttls_context is None
 
 
+def test_port_465_is_implicit_tls_whatever_the_mode(app, smtp):
+    with app.app_context():
+        from helpers import set_setting
+        from email_service import send_single_email
+        set_setting('smtp_port', '465')
+        assert send_single_email('a@example.com', 'A', 'Hi', '<p>x</p>')[0]
+        server = smtp.instances[0]
+        assert type(server) is FakeSMTPSSL and server.starttls_context is None
+        _assert_verifying(server.context)
+
+
+def test_ehlo_name_and_timeout(app, smtp, monkeypatch):
+    with app.app_context():
+        from email_service import send_single_email
+        assert send_single_email('a@example.com', 'A', 'Hi', '<p>x</p>')[0]
+        monkeypatch.setenv('SMTP_EHLO_NAME', 'mx.tina.example')
+        assert send_single_email('a@example.com', 'A', 'Hi', '<p>x</p>')[0]
+        assert [(s.local_hostname, s.timeout) for s in smtp.instances] == [('tina.example', 30),
+                                                                           ('mx.tina.example', 30)]
+
+
+@pytest.mark.parametrize('sender', ['bot@example.com', 'bot@tina.local', 'bot@localhost', ''])
+def test_placeholder_from_is_refused(app, smtp, sender):
+    with app.app_context():
+        from helpers import set_setting
+        from email_service import send_single_email
+        set_setting('from_email', sender)
+        set_setting('smtp_username', 'bot')
+        ok, err = send_single_email('a@example.com', 'A', 'Hi', '<p>x</p>')
+        assert not ok and 'not a real address' in err and smtp.instances == []
+
+
+def test_html_mail_has_a_text_part(app, smtp):
+    with app.app_context():
+        from email_service import send_single_email
+        send_single_email('a@example.com', 'A', 'Hi', '<html><head><title>T</title></head><body>'
+                          '<p>Hello &amp; welcome</p><p><a href="https://tina.example/x">Link</a></p></body></html>')
+        msg = smtp.instances[0].messages[0]
+        assert [p.get_content_type() for p in msg.get_payload()] == ['text/plain', 'text/html']
+        assert msg.get_payload()[0].get_payload(decode=True).decode() == 'Hello & welcome\nLink: https://tina.example/x\n'
+
+
+def test_weekly_email_has_one_click_unsubscribe(app, smtp, make_user, monkeypatch):
+    monkeypatch.setenv('APP_URL', 'https://tina.example/')
+    with app.app_context():
+        from email_service import send_all_emails
+        make_user()
+        assert send_all_emails()[0] == 1
+        msg = smtp.instances[0].messages[0]
+        link = msg['List-Unsubscribe'].strip('<>')
+        assert link.startswith('https://tina.example/unsubscribe/')
+        assert msg['List-Unsubscribe-Post'] == 'List-Unsubscribe=One-Click'
+        assert link in msg.get_payload()[0].get_payload(decode=True).decode() and f'href="{link}"' in msg.get_payload()[1].get_payload(decode=True).decode()
+
+
+def test_without_app_url_no_unsubscribe_link(app, smtp, make_user, monkeypatch):
+    monkeypatch.delenv('APP_URL', raising=False)
+    with app.app_context():
+        from email_service import send_all_emails
+        make_user()
+        send_all_emails()
+        msg = smtp.instances[0].messages[0]
+        assert 'List-Unsubscribe' not in msg and '/unsubscribe/' not in msg.get_payload()[1].get_payload(decode=True).decode()
+
+
 def test_none_mode_skips_tls(app, smtp):
     with app.app_context():
         from helpers import set_setting
@@ -110,7 +176,9 @@ def test_headers_are_well_formed(app, smtp):
         send_single_email('john@example.com', 'Doe, John', 'Line1\nLine2', '<p>x</p>')
         msg = smtp.instances[0].messages[0]
         assert getaddresses([msg['To']]) == [('Doe, John', 'john@example.com')]
-        assert msg['Date'] and msg['Message-ID'].endswith('@example.com>')
+        assert msg['Date'] and msg['Message-ID'].endswith('@tina.example>')
+        assert msg['Auto-Submitted'] == 'auto-generated'
+        assert 'List-Unsubscribe' not in msg
         assert '\n' not in msg['Subject']
         send_single_email('j@example.com', 'Jörg', 'Hi', '<p>x</p>')
         assert '=?utf-8?' in smtp.instances[1].messages[0]['To']
@@ -240,3 +308,48 @@ def test_backup_status_mail_failure_is_logged(app, smtp, make_user, monkeypatch)
         db.session.expire_all()
         messages = db.session.execute(db.select(BackupLog.message)).scalars().all()
         assert any('boom' in m for m in messages)
+
+
+def _unsubscribe_path(user):
+    from email_service import _unsubscribe_signer
+    return f'/unsubscribe/{_unsubscribe_signer().dumps([user.id, user.email])}'
+
+
+def test_unsubscribe_get_only_asks(app, client, make_user):
+    with app.app_context():
+        user = make_user()
+        resp = client.get(_unsubscribe_path(user))
+        assert resp.status_code == 200 and '<form method="POST">' in resp.data.decode()
+        assert user.email_opt_in
+
+
+def test_unsubscribe_post_without_csrf_token(app, make_user, monkeypatch):
+    """RFC 8058: the mail client POSTs List-Unsubscribe=One-Click with no session."""
+    monkeypatch.setitem(app.config, 'WTF_CSRF_ENABLED', True)
+    with app.app_context():
+        from extensions import db
+        user = make_user()
+        resp = app.test_client().post(_unsubscribe_path(user), data={'List-Unsubscribe': 'One-Click'})
+        assert resp.status_code == 200
+        db.session.refresh(user)
+        assert user.email_opt_in is False
+
+
+@pytest.mark.parametrize('token', ['garbage', 'WzEsIngiXQ.bad'])
+def test_unsubscribe_bad_token(app, client, make_user, token):
+    with app.app_context():
+        make_user()
+        resp = client.post(f'/unsubscribe/{token}')
+        assert resp.status_code == 404 and 'no longer valid' in resp.data.decode()
+
+
+def test_unsubscribe_link_dies_with_an_email_change(app, client, make_user):
+    with app.app_context():
+        from extensions import db
+        user = make_user()
+        path = _unsubscribe_path(user)
+        user.email = 'new@tina.example'
+        db.session.commit()
+        assert client.post(path).status_code == 404
+        db.session.refresh(user)
+        assert user.email_opt_in

@@ -38,6 +38,8 @@ export DB_ROOT_PASSWORD=e2e-root-not-a-secret DB_USER=tina DB_NAME=bank_of_tina
 export BEHIND_PROXY=1
 # Mailpit (the `mail` profile of docker-compose.e2e.yml) receives what the app sends.
 export COMPOSE_PROFILES=mail
+# The weekly email's unsubscribe link points here.
+export APP_URL="http://127.0.0.1:${PORT_BASE}"
 
 compose() { docker compose -f docker-compose.yml -f docker-compose.e2e.yml "$@"; }
 teardown() {

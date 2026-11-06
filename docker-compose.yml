@@ -40,6 +40,8 @@ services:
       - DB_PASSWORD=${DB_PASSWORD:?Set DB_PASSWORD in .env}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - BEHIND_PROXY=${BEHIND_PROXY:-0}
+      - APP_URL=${APP_URL:-}
+      - SMTP_EHLO_NAME=${SMTP_EHLO_NAME:-}
     depends_on:
       db:
         condition: service_healthy

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Unsubscribe') }} - Bank of Tina{% endblock %}
+
+{% block content %}
+<div class="card mx-auto" style="max-width: 32rem;">
+    <div class="card-body text-center">
+        {% if not user %}
+            <p class="mb-0">{{ _('This unsubscribe link is no longer valid.') }}</p>
+        {% elif done %}
+            <p class="mb-0">{{ _('%(name)s no longer gets the weekly balance email.', name=user.name) }}</p>
+        {% else %}
+            <p>{{ _('Stop the weekly balance email to %(email)s?', email=user.email) }}</p>
+            <form method="POST">
+                <button type="submit" class="btn btn-primary">{{ _('Unsubscribe') }}</button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
