@@ -255,3 +255,25 @@ def test_backup_create_reports_failure(client, app, backup_dir, monkeypatch):
         assert response.status_code == 200
         assert b'Access denied' in response.data
         assert not [f for f in os.listdir(backup_dir) if f.endswith('.tar.gz')]
+
+
+def test_settings_load_once_per_request(app, client, make_user):
+    from sqlalchemy import event
+    from helpers import get_setting, set_setting
+    from extensions import db
+    with app.app_context():
+        for i in range(5):
+            make_user(name=f'S{i}', balance=Decimal('1.5'))
+    stmts = []
+    listener = lambda *a: stmts.append(a[2])  # noqa: E731
+    event.listen(db.engine, 'before_cursor_execute', listener)
+    try:
+        assert client.get('/').status_code == 200
+    finally:
+        event.remove(db.engine, 'before_cursor_execute', listener)
+    assert sum('FROM setting' in s for s in stmts) == 1
+    # A write is visible to the next read in the same request.
+    with app.test_request_context():
+        get_setting('currency_symbol')
+        set_setting('currency_symbol', '$')
+        assert get_setting('currency_symbol') == '$'

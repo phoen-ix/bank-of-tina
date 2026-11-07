@@ -151,6 +151,12 @@ def tx_type_filter(value: str) -> str:
     }.get(value, value)
 
 
+@app.before_request
+def reload_settings() -> None:
+    # get_setting() caches on g; requests inside one app context (tests) would share it.
+    g.pop('settings', None)
+
+
 @app.context_processor
 def inject_theme() -> dict[str, str]:
     """Inject theme colors and CSP nonce into every template."""

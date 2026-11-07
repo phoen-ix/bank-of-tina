@@ -7,7 +7,7 @@ import time
 from decimal import Decimal
 
 from flask import (Blueprint, Response, render_template, request, redirect, url_for, flash, jsonify,
-                   abort, current_app, send_from_directory)
+                   abort, current_app, g, send_from_directory)
 from flask_babel import gettext as _
 
 from extensions import db, scheduler, limiter
@@ -699,6 +699,7 @@ def backup_restore(filename: str) -> Response:
             flash(result, 'error')
             return redirect(url_for('settings_bp.settings'))
         db.session.remove()
+        g.pop('settings', None)
         _migrate_after_restore()
         reschedule_all(current_app._get_current_object())
         flash(_('Restore from %(filename)s completed successfully. The previous state was saved as %(safety)s.',

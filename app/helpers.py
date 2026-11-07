@@ -121,14 +121,17 @@ def apply_balance_effect(trans: Transaction, reverse: bool = False) -> None:
 
 
 def get_setting(key: str, default: str | None = None) -> str | None:
-    s = db.session.get(Setting, key)
-    return s.value if s else default
+    # All settings in one query, cached on g: a page reads a dozen of them, unset ones too.
+    if 'settings' not in g:
+        g.settings = dict(db.session.execute(db.select(Setting.key, Setting.value)).all())
+    return g.settings.get(key, default)
 
 
 def set_setting(key: str, value: str, commit: bool = True) -> None:
     s = db.session.get(Setting, key) or Setting(key=key)
     s.value = value
     db.session.add(s)
+    g.pop('settings', None)
     if commit:
         db.session.commit()
 
@@ -137,6 +140,7 @@ def delete_setting(key: str, commit: bool = True) -> None:
     s = db.session.get(Setting, key)
     if s:
         db.session.delete(s)
+    g.pop('settings', None)
     if commit:
         db.session.commit()
 

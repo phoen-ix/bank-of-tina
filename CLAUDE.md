@@ -142,7 +142,8 @@ app.py         → assembly point: config, extensions, blueprints, filters, CSP,
 `upgrade()`; it retries the DB connection 5 times with backoff. `env.py` uses `render_as_batch=True`.
 
 **Settings**: key/value rows in `Setting` (`get_setting(key, default)`, `set_setting(key, value,
-commit=True)`). Defaults live at the call sites; the full list with defaults is the `cfg` dict in
+commit=True)`). `get_setting` reads the whole table once per request into `g.settings`
+(`set_setting`/`delete_setting` drop it; a restore must too). Defaults live at the call sites; the full list with defaults is the `cfg` dict in
 `routes/settings.py:settings()`. The page remembers its tab in `sessionStorage`; `?tab=<name>` wins.
 
 **Balances**: `from_user` pays (expense debtor, withdrawal), `to_user` receives (expense buyer, deposit).
