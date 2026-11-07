@@ -88,8 +88,10 @@ def analytics_data() -> Response:
     history_labels   = [d.strftime('%Y-%m-%d') for d in sample_dates]
     history_datasets: dict[str, list[float]] = {}
 
+    # Only transactions after the first sample day change a sampled balance (see the loop below).
     all_user_tx_stmt = db.select(Transaction).where(
-        (Transaction.from_user_id.in_(all_uid)) | (Transaction.to_user_id.in_(all_uid))
+        (Transaction.from_user_id.in_(all_uid)) | (Transaction.to_user_id.in_(all_uid)),
+        Transaction.date >= local_day_start_utc(sample_dates[0] + timedelta(days=1)),
     )
     all_user_tx_list = db.session.execute(all_user_tx_stmt).scalars().all()
     tx_by_user: dict[int, list] = {uid: [] for uid in all_uid}
