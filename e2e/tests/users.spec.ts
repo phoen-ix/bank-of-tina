@@ -202,8 +202,8 @@ test('deactivate (with confirm) and reactivate on the Users tab', async ({ page,
 
 test('unknown user ids answer 404 on every user action', async ({ app }) => {
   for (const path of ['/user/99999999/edit', '/user/99999999/toggle-active']) {
-    const res = await app.api.post(path, { form: { name: 'x', email: 'x@e2e.example', created_at: '2024-01-01' } })
-    expect(res.status(), path).toBe(400) // no CSRF token: refused before the lookup
+    const res = await app.api.post(path, { form: { name: 'x', email: 'x@e2e.example', created_at: '2024-01-01' }, maxRedirects: 0 })
+    expect(res.status(), path).toBe(302) // no CSRF token: refused before the lookup, sent back with a message
   }
   // With a token: 404.
   const token = /<meta name="csrf-token" content="([^"]+)"/.exec(await app.html('/search'))![1]
