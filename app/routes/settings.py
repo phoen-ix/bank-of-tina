@@ -6,7 +6,6 @@ import re
 import time
 from decimal import Decimal
 
-import pytz
 from flask import (Blueprint, Response, render_template, request, redirect, url_for, flash, jsonify,
                    abort, current_app, send_from_directory)
 from flask_babel import gettext as _
@@ -15,7 +14,7 @@ from extensions import db, scheduler, limiter
 from models import (User, CommonItem, CommonDescription, CommonPrice, CommonBlacklist,
                     AutoCollectLog, EmailLog, BackupLog)
 from helpers import (get_setting, set_setting, delete_setting, get_tpl, parse_amount, amount_str, fmt_amount,
-                     detect_theme, generate_and_save_icons, now_local, path_inside, InputError)
+                     detect_theme, generate_and_save_icons, now_local, path_inside, timezone_choices, InputError)
 from config import (THEMES, TEMPLATE_DEFAULTS, TEMPLATE_DEFAULTS_DE, BACKUP_DIR, DEFAULT_ICON_BG,
                     CURRENCIES, CRON_DAYS)
 from email_service import send_all_emails, build_email_html, build_admin_summary_email, SMTP_SECURITY_MODES
@@ -111,7 +110,7 @@ def settings() -> str:
     backups             = _list_backups()
     all_users = db.session.execute(db.select(User).order_by(User.name)).scalars().all()
     timezone_groups = {}
-    for tz in pytz.common_timezones:
+    for tz in timezone_choices():
         region = tz.split('/')[0]
         timezone_groups.setdefault(region, []).append(tz)
     return render_template('settings.html', cfg=cfg, common_items=common_items,
@@ -223,7 +222,7 @@ def settings_general() -> Response:
         set_setting('language', language)
 
     timezone = request.form.get('timezone', 'UTC')
-    if timezone in pytz.common_timezones:
+    if timezone in timezone_choices():
         set_setting('timezone', timezone)
         reschedule_all(current_app._get_current_object())
     admin_id = request.form.get('site_admin_id', '').strip()

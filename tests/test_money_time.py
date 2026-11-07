@@ -313,3 +313,17 @@ def test_templates_store_only_customizations(client, app):
         client.post('/settings/templates/reset')
         assert db.session.get(Setting, 'tpl_email_greeting_en') is None
         assert get_tpl('tpl_email_greeting') == TEMPLATE_DEFAULTS['tpl_email_greeting']
+
+
+def test_unknown_timezone_falls_back_to_utc():
+    from helpers import zone
+    assert zone('Nowhere/Atlantis').key == 'UTC'
+    assert zone('../etc/passwd').key == 'UTC'
+    assert zone('Europe/Vienna').key == 'Europe/Vienna'
+
+
+def test_timezone_choices_are_region_names_and_utc():
+    from helpers import timezone_choices
+    tzs = timezone_choices()
+    assert {'UTC', 'Europe/Vienna', 'US/Eastern'} <= set(tzs)
+    assert not any(tz.startswith('Etc/') or '/' not in tz and tz != 'UTC' for tz in tzs)

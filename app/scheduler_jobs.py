@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 
-import pytz
 from flask import Flask
 from sqlalchemy import func
 
@@ -11,7 +10,7 @@ from flask_babel import force_locale, gettext as _
 from extensions import db, scheduler
 from models import (User, Transaction, ExpenseItem, CommonItem, CommonDescription,
                     CommonPrice, CommonBlacklist, AutoCollectLog)
-from helpers import get_setting, get_tpl, apply_template, now_local, parse_amount, amount_str, prune_log, InputError
+from helpers import get_setting, get_tpl, apply_template, now_local, parse_amount, amount_str, prune_log, InputError, zone
 from email_service import send_all_emails, send_single_email
 from backup_service import (run_backup, _prune_old_backups, _list_backups, build_backup_status_email,
                             _backup_log)
@@ -23,11 +22,7 @@ def _add_email_job(app: Flask) -> None:
     day    = get_setting('schedule_day', 'mon')
     hour   = int(get_setting('schedule_hour', '9'))
     minute = int(get_setting('schedule_minute', '0'))
-    tz_name = get_setting('timezone', 'UTC')
-    try:
-        tz = pytz.timezone(tz_name)
-    except pytz.exceptions.UnknownTimeZoneError:
-        tz = pytz.UTC
+    tz = zone(get_setting('timezone', 'UTC'))
 
     def job() -> None:
         with app.app_context():
@@ -37,7 +32,7 @@ def _add_email_job(app: Flask) -> None:
 
     scheduler.add_job(job, 'cron', day_of_week=day, hour=hour, minute=minute,
                       timezone=tz, id='email_job', replace_existing=True)
-    logger.info('Email job scheduled: day=%s hour=%s minute=%s tz=%s', day, hour, minute, tz_name)
+    logger.info('Email job scheduled: day=%s hour=%s minute=%s tz=%s', day, hour, minute, tz.key)
 
 
 def _price_key(value: str) -> str:
@@ -124,10 +119,7 @@ def _add_common_job(app: Flask) -> None:
     day    = get_setting('common_auto_day', '*')
     hour   = int(get_setting('common_auto_hour', '2'))
     minute = int(get_setting('common_auto_minute', '0'))
-    try:
-        tz = pytz.timezone(get_setting('timezone', 'UTC'))
-    except pytz.exceptions.UnknownTimeZoneError:
-        tz = pytz.UTC
+    tz = zone(get_setting('timezone', 'UTC'))
 
     def job() -> None:
         with app.app_context():
@@ -143,10 +135,7 @@ def _add_backup_job(app: Flask) -> None:
     hour   = int(get_setting('backup_hour', '3'))
     minute = int(get_setting('backup_minute', '0'))
     keep   = int(get_setting('backup_keep', '7'))
-    try:
-        tz = pytz.timezone(get_setting('timezone', 'UTC'))
-    except pytz.exceptions.UnknownTimeZoneError:
-        tz = pytz.UTC
+    tz = zone(get_setting('timezone', 'UTC'))
 
     def job() -> None:
         with app.app_context():

@@ -10,8 +10,8 @@ from datetime import UTC, date, datetime, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 
 from urllib.parse import urlparse
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError, available_timezones
 
-import pytz
 from flask import Response, current_app, g, redirect, request
 from flask_babel import gettext as _
 from werkzeug.datastructures import FileStorage
@@ -150,14 +150,22 @@ def prune_log(model: type[db.Model], keep: int = LOG_KEEP) -> None:
         db.session.execute(db.delete(model).where(model.id < oldest_kept))
 
 
+def zone(name: str) -> ZoneInfo:
+    """The named timezone, UTC for an unknown or invalid name."""
+    try:
+        return ZoneInfo(name)
+    except (ZoneInfoNotFoundError, ValueError):
+        return ZoneInfo('UTC')
+
+
+def timezone_choices() -> list[str]:
+    """The timezones Settings offers: region/city names and UTC."""
+    return sorted(tz for tz in available_timezones() if tz == 'UTC' or ('/' in tz and not tz.startswith('Etc/')))
+
+
 def now_local() -> datetime:
     """Return the current datetime in the configured app timezone."""
-    tz_name = get_setting('timezone', 'UTC')
-    try:
-        tz = pytz.timezone(tz_name)
-    except pytz.exceptions.UnknownTimeZoneError:
-        tz = pytz.UTC
-    return datetime.now(tz)
+    return datetime.now(zone(get_setting('timezone', 'UTC')))
 
 
 def get_tpl(key: str) -> str:
@@ -322,20 +330,16 @@ def parse_submitted_date(date_str: str) -> datetime:
     return parsed or datetime.now(UTC).replace(tzinfo=None)
 
 
-def get_app_tz() -> pytz.BaseTzInfo:
-    """Return the configured pytz timezone, cached for the duration of the request."""
+def get_app_tz() -> ZoneInfo:
+    """Return the configured timezone, cached for the duration of the request."""
     if 'app_tz' not in g:
-        tz_name = get_setting('timezone', 'UTC')
-        try:
-            g.app_tz = pytz.timezone(tz_name)
-        except pytz.exceptions.UnknownTimeZoneError:
-            g.app_tz = pytz.UTC
+        g.app_tz = zone(get_setting('timezone', 'UTC'))
     return g.app_tz
 
 
 def local_to_utc(naive_local: datetime) -> datetime:
     """Interpret a naive datetime in the app timezone and return it as naive UTC."""
-    return get_app_tz().localize(naive_local).astimezone(pytz.UTC).replace(tzinfo=None)
+    return naive_local.replace(tzinfo=get_app_tz()).astimezone(UTC).replace(tzinfo=None)
 
 
 def local_day_start_utc(d: date) -> datetime:
@@ -359,7 +363,7 @@ def to_local(dt: datetime | None) -> datetime | None:
     if dt is None:
         return dt
     if dt.tzinfo is None:
-        dt = pytz.utc.localize(dt)
+        dt = dt.replace(tzinfo=UTC)
     return dt.astimezone(get_app_tz())
 
 
