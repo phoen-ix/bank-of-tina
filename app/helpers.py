@@ -8,7 +8,6 @@ import time
 import zlib
 from datetime import UTC, date, datetime, timedelta
 from decimal import ROUND_HALF_UP, Decimal
-
 from urllib.parse import urlparse
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError, available_timezones
 
@@ -17,9 +16,9 @@ from flask_babel import gettext as _
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
+from config import ALLOWED_EXTENSIONS, LOG_KEEP, TEMPLATE_DEFAULTS, TEMPLATE_DEFAULTS_DE
 from extensions import db
 from models import Setting, Transaction, User
-from config import ALLOWED_EXTENSIONS, TEMPLATE_DEFAULTS, TEMPLATE_DEFAULTS_DE, LOG_KEEP
 
 _QUANTUM = Decimal('0.0001')
 # Numeric(12, 4): eight digits before the decimal point.
@@ -80,10 +79,7 @@ def delete_receipt_file(receipt_path: str | None, exclude_transaction_id: int) -
     if not receipt_path:
         return
     others = db.session.execute(
-        db.select(Transaction).where(
-            Transaction.receipt_path == receipt_path,
-            Transaction.id != exclude_transaction_id
-        )
+        db.select(Transaction).where(Transaction.receipt_path == receipt_path, Transaction.id != exclude_transaction_id)
     ).scalar()
     if others:
         return
@@ -100,7 +96,8 @@ def adjust_balance(user_id: int | None, delta: Decimal) -> None:
     if user_id is None or not delta:
         return
     db.session.execute(
-        db.update(User).where(User.id == user_id)
+        db.update(User)
+        .where(User.id == user_id)
         .values(balance=User.balance + delta)
         .execution_options(synchronize_session=False)
     )
@@ -147,9 +144,7 @@ def delete_setting(key: str, commit: bool = True) -> None:
 
 def prune_log(model: type[db.Model], keep: int = LOG_KEEP) -> None:
     """Delete all but the newest `keep` rows of a log table. Does not commit."""
-    oldest_kept = db.session.execute(
-        db.select(model.id).order_by(model.id.desc()).offset(keep - 1).limit(1)
-    ).scalar()
+    oldest_kept = db.session.execute(db.select(model.id).order_by(model.id.desc()).offset(keep - 1).limit(1)).scalar()
     if oldest_kept is not None:
         db.session.execute(db.delete(model).where(model.id < oldest_kept))
 
@@ -158,7 +153,7 @@ def zone(name: str) -> ZoneInfo:
     """The named timezone, UTC for an unknown or invalid name."""
     try:
         return ZoneInfo(name)
-    except (ZoneInfoNotFoundError, ValueError):
+    except ZoneInfoNotFoundError, ValueError:
         return ZoneInfo('UTC')
 
 
@@ -239,13 +234,14 @@ def hex_to_rgb(hex_color: str) -> str:
     """Convert #rrggbb to 'r, g, b' string for CSS custom properties."""
     try:
         h = hex_color.lstrip('#')
-        return f'{int(h[0:2],16)}, {int(h[2:4],16)}, {int(h[4:6],16)}'
-    except (ValueError, IndexError):
+        return f'{int(h[0:2], 16)}, {int(h[2:4], 16)}, {int(h[4:6], 16)}'
+    except ValueError, IndexError:
         return '0, 0, 0'
 
 
-def make_icon_png(size: int, bg_color: tuple[int, int, int],
-                  fg_color: tuple[int, int, int] = (0xff, 0xff, 0xff)) -> bytes:
+def make_icon_png(
+    size: int, bg_color: tuple[int, int, int], fg_color: tuple[int, int, int] = (0xFF, 0xFF, 0xFF)
+) -> bytes:
     """Generate a square PNG of `size` pixels with a bank silhouette."""
     width = height = size
     pixels: list[list[tuple[int, int, int]]] = [[bg_color] * width for _ in range(height)]
@@ -283,10 +279,7 @@ def make_icon_png(size: int, bg_color: tuple[int, int, int],
         return struct.pack('>I', len(data)) + c + struct.pack('>I', zlib.crc32(c) & 0xFFFFFFFF)
 
     ihdr_data = struct.pack('>IIBBBBB', width, height, 8, 2, 0, 0, 0)
-    return (b'\x89PNG\r\n\x1a\n'
-            + chunk(b'IHDR', ihdr_data)
-            + chunk(b'IDAT', compressed)
-            + chunk(b'IEND', b''))
+    return b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', ihdr_data) + chunk(b'IDAT', compressed) + chunk(b'IEND', b'')
 
 
 def generate_and_save_icons(bg_hex: str) -> str:
@@ -307,8 +300,14 @@ def generate_and_save_icons(bg_hex: str) -> str:
 def detect_theme() -> str:
     """Return the key of the active preset theme, or 'custom'."""
     from config import THEMES
-    color_keys = ['color_navbar', 'color_email_grad_start', 'color_email_grad_end',
-                  'color_balance_positive', 'color_balance_negative']
+
+    color_keys = [
+        'color_navbar',
+        'color_email_grad_start',
+        'color_email_grad_end',
+        'color_balance_positive',
+        'color_balance_negative',
+    ]
     current = {k: get_tpl(k) for k in color_keys}
     for theme_key, theme in THEMES.items():
         if all(current[k] == theme[k] for k in color_keys):

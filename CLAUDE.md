@@ -11,6 +11,7 @@ then English); the user manual is `docs/manual.de.md` / `docs/manual.md`.
 pip install -r docker/requirements-dev.txt
 FLASK_TESTING=1 python -m pytest tests/ -v          # SQLite in-memory, no services needed
 python -m pytest --collect-only -q | tail -1         # how many tests there are
+ruff check . && ruff format --check .               # lint + format (pyproject.toml), as in CI
 
 flask db migrate -m "description"   # from app/, against a DB at the current head; runs on next start
 

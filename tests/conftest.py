@@ -10,7 +10,8 @@ os.environ['SQLALCHEMY_DATABASE_URI'] = 'sqlite://'
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'app'))
 
 import pytest
-from sqlalchemy import event, Numeric
+from sqlalchemy import Numeric, event
+
 from app import app as _app
 from extensions import db as _db
 
@@ -34,15 +35,18 @@ def _coerce_numeric_to_float(target, _context):
 @pytest.fixture(scope='session')
 def app(tmp_path_factory):
     """Create application for testing."""
-    _app.config.update({
-        'TESTING': True,
-        'WTF_CSRF_ENABLED': False,
-        'SQLALCHEMY_DATABASE_URI': 'sqlite://',
-        'UPLOAD_FOLDER': str(tmp_path_factory.mktemp('uploads')),
-    })
+    _app.config.update(
+        {
+            'TESTING': True,
+            'WTF_CSRF_ENABLED': False,
+            'SQLALCHEMY_DATABASE_URI': 'sqlite://',
+            'UPLOAD_FOLDER': str(tmp_path_factory.mktemp('uploads')),
+        }
+    )
     # Flask-Limiter reads RATELIMIT_ENABLED in init_app(), which already ran at
     # import time; without this the suite trips the 30/minute limits.
     from extensions import limiter
+
     limiter.enabled = False
     with _app.app_context():
         _db.create_all()
@@ -56,6 +60,7 @@ def clean_db(app):
     """Empty every table and drop scheduled jobs after each test."""
     from extensions import scheduler
     from helpers import set_setting
+
     with app.app_context():
         _db.create_all()
         set_setting('language', 'en')
@@ -80,20 +85,27 @@ def make_user(app):
     Must be called inside a ``with app.app_context():`` block.
     """
     from decimal import Decimal
+
     from models import User
 
     _counter = [0]
 
-    def _make(name=None, email=None, balance=Decimal('0'), is_active=True,
-              email_opt_in=True, email_transactions='last3'):
+    def _make(
+        name=None, email=None, balance=Decimal('0'), is_active=True, email_opt_in=True, email_transactions='last3'
+    ):
         _counter[0] += 1
         if name is None:
             name = f'User{_counter[0]}'
         if email is None:
             email = f'user{_counter[0]}@example.com'
-        user = User(name=name, email=email, balance=balance,
-                    is_active=is_active, email_opt_in=email_opt_in,
-                    email_transactions=email_transactions)
+        user = User(
+            name=name,
+            email=email,
+            balance=balance,
+            is_active=is_active,
+            email_opt_in=email_opt_in,
+            email_transactions=email_transactions,
+        )
         _db.session.add(user)
         _db.session.commit()
         return user
@@ -106,6 +118,7 @@ def backup_dir(tmp_path, monkeypatch, app):
     """Point backups and uploads at temporary directories."""
     import backup_service
     import routes.settings as settings_routes
+
     backups = tmp_path / 'backups'
     uploads = tmp_path / 'uploads'
     backups.mkdir()

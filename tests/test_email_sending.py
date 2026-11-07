@@ -1,4 +1,5 @@
 """SMTP sending: TLS modes, certificate verification, headers, batching, escaping."""
+
 import smtplib
 import ssl
 from datetime import datetime
@@ -10,8 +11,8 @@ import pytest
 
 class FakeSMTP:
     instances = []
-    fail_connect = None          # exception raised by the constructor
-    disconnect_on_send = []      # send_message call numbers that raise SMTPServerDisconnected
+    fail_connect = None  # exception raised by the constructor
+    disconnect_on_send = []  # send_message call numbers that raise SMTPServerDisconnected
     sends = 0
 
     def __init__(self, host, port, local_hostname=None, timeout=None, context=None):
@@ -51,6 +52,7 @@ class FakeSMTPSSL(FakeSMTP):
 @pytest.fixture
 def smtp(app, monkeypatch):
     import email_service
+
     FakeSMTP.instances = []
     FakeSMTP.fail_connect = None
     FakeSMTP.disconnect_on_send = []
@@ -59,8 +61,14 @@ def smtp(app, monkeypatch):
     monkeypatch.setattr(email_service.smtplib, 'SMTP_SSL', FakeSMTPSSL)
     with app.app_context():
         from helpers import set_setting
-        for key, value in {'smtp_server': 'mail.example', 'smtp_port': '587', 'smtp_username': 'bot',
-                           'smtp_password': 'pw', 'from_email': 'bot@tina.example'}.items():
+
+        for key, value in {
+            'smtp_server': 'mail.example',
+            'smtp_port': '587',
+            'smtp_username': 'bot',
+            'smtp_password': 'pw',
+            'from_email': 'bot@tina.example',
+        }.items():
             set_setting(key, value)
     return FakeSMTP
 
@@ -74,6 +82,7 @@ def _assert_verifying(context):
 def test_starttls_verifies_certificate(app, smtp):
     with app.app_context():
         from email_service import send_single_email
+
         ok, err = send_single_email('a@example.com', 'A', 'Hi', '<p>x</p>')
         assert ok, err
         server = smtp.instances[0]
@@ -85,8 +94,9 @@ def test_starttls_verifies_certificate(app, smtp):
 
 def test_ssl_mode_uses_implicit_tls(app, smtp):
     with app.app_context():
-        from helpers import set_setting
         from email_service import send_single_email
+        from helpers import set_setting
+
         set_setting('smtp_security', 'ssl')
         set_setting('smtp_port', '465')
         assert send_single_email('a@example.com', 'A', 'Hi', '<p>x</p>')[0]
@@ -98,8 +108,9 @@ def test_ssl_mode_uses_implicit_tls(app, smtp):
 
 def test_port_465_is_implicit_tls_whatever_the_mode(app, smtp):
     with app.app_context():
-        from helpers import set_setting
         from email_service import send_single_email
+        from helpers import set_setting
+
         set_setting('smtp_port', '465')
         assert send_single_email('a@example.com', 'A', 'Hi', '<p>x</p>')[0]
         server = smtp.instances[0]
@@ -111,18 +122,22 @@ def test_ehlo_name_and_timeout(app, smtp):
     with app.app_context():
         from email_service import send_single_email
         from helpers import set_setting
+
         assert send_single_email('a@example.com', 'A', 'Hi', '<p>x</p>')[0]
         set_setting('smtp_ehlo_name', 'mx.tina.example')
         assert send_single_email('a@example.com', 'A', 'Hi', '<p>x</p>')[0]
-        assert [(s.local_hostname, s.timeout) for s in smtp.instances] == [('tina.example', 30),
-                                                                           ('mx.tina.example', 30)]
+        assert [(s.local_hostname, s.timeout) for s in smtp.instances] == [
+            ('tina.example', 30),
+            ('mx.tina.example', 30),
+        ]
 
 
 @pytest.mark.parametrize('sender', ['bot@example.com', 'bot@tina.local', 'bot@localhost', ''])
 def test_placeholder_from_is_refused(app, smtp, sender):
     with app.app_context():
-        from helpers import set_setting
         from email_service import send_single_email
+        from helpers import set_setting
+
         set_setting('from_email', sender)
         set_setting('smtp_username', 'bot')
         ok, err = send_single_email('a@example.com', 'A', 'Hi', '<p>x</p>')
@@ -132,17 +147,26 @@ def test_placeholder_from_is_refused(app, smtp, sender):
 def test_html_mail_has_a_text_part(app, smtp):
     with app.app_context():
         from email_service import send_single_email
-        send_single_email('a@example.com', 'A', 'Hi', '<html><head><title>T</title></head><body>'
-                          '<p>Hello &amp; welcome</p><p><a href="https://tina.example/x">Link</a></p></body></html>')
+
+        send_single_email(
+            'a@example.com',
+            'A',
+            'Hi',
+            '<html><head><title>T</title></head><body>'
+            '<p>Hello &amp; welcome</p><p><a href="https://tina.example/x">Link</a></p></body></html>',
+        )
         msg = smtp.instances[0].messages[0]
         assert [p.get_content_type() for p in msg.get_payload()] == ['text/plain', 'text/html']
-        assert msg.get_payload()[0].get_payload(decode=True).decode() == 'Hello & welcome\nLink: https://tina.example/x\n'
+        assert (
+            msg.get_payload()[0].get_payload(decode=True).decode() == 'Hello & welcome\nLink: https://tina.example/x\n'
+        )
 
 
 def test_weekly_email_has_one_click_unsubscribe(app, smtp, make_user):
     with app.app_context():
         from email_service import send_all_emails
         from helpers import set_setting
+
         set_setting('app_url', 'https://tina.example/')
         make_user()
         assert send_all_emails()[0] == 1
@@ -150,22 +174,30 @@ def test_weekly_email_has_one_click_unsubscribe(app, smtp, make_user):
         link = msg['List-Unsubscribe'].strip('<>')
         assert link.startswith('https://tina.example/unsubscribe/')
         assert msg['List-Unsubscribe-Post'] == 'List-Unsubscribe=One-Click'
-        assert link in msg.get_payload()[0].get_payload(decode=True).decode() and f'href="{link}"' in msg.get_payload()[1].get_payload(decode=True).decode()
+        assert (
+            link in msg.get_payload()[0].get_payload(decode=True).decode()
+            and f'href="{link}"' in msg.get_payload()[1].get_payload(decode=True).decode()
+        )
 
 
 def test_without_app_url_no_unsubscribe_link(app, smtp, make_user):
     with app.app_context():
         from email_service import send_all_emails
+
         make_user()
         send_all_emails()
         msg = smtp.instances[0].messages[0]
-        assert 'List-Unsubscribe' not in msg and '/unsubscribe/' not in msg.get_payload()[1].get_payload(decode=True).decode()
+        assert (
+            'List-Unsubscribe' not in msg
+            and '/unsubscribe/' not in msg.get_payload()[1].get_payload(decode=True).decode()
+        )
 
 
 def test_none_mode_skips_tls(app, smtp):
     with app.app_context():
-        from helpers import set_setting
         from email_service import send_single_email
+        from helpers import set_setting
+
         set_setting('smtp_security', 'none')
         assert send_single_email('a@example.com', 'A', 'Hi', '<p>x</p>')[0]
         assert smtp.instances[0].starttls_context is None
@@ -174,6 +206,7 @@ def test_none_mode_skips_tls(app, smtp):
 def test_headers_are_well_formed(app, smtp):
     with app.app_context():
         from email_service import send_single_email
+
         send_single_email('john@example.com', 'Doe, John', 'Line1\nLine2', '<p>x</p>')
         msg = smtp.instances[0].messages[0]
         assert getaddresses([msg['To']]) == [('Doe, John', 'john@example.com')]
@@ -188,6 +221,7 @@ def test_headers_are_well_formed(app, smtp):
 def test_batch_uses_one_connection(app, smtp, make_user):
     with app.app_context():
         from email_service import send_all_emails
+
         for _ in range(3):
             make_user()
         success, fail, errors = send_all_emails()
@@ -199,6 +233,7 @@ def test_batch_uses_one_connection(app, smtp, make_user):
 def test_reconnects_once_after_disconnect(app, smtp, make_user):
     with app.app_context():
         from email_service import send_all_emails
+
         for _ in range(2):
             make_user()
         smtp.disconnect_on_send = [2]
@@ -209,9 +244,10 @@ def test_reconnects_once_after_disconnect(app, smtp, make_user):
 
 def test_connection_failure_fails_fast_and_is_logged(app, smtp, make_user):
     with app.app_context():
-        from extensions import db
         from email_service import send_all_emails
+        from extensions import db
         from models import EmailLog
+
         for _ in range(3):
             make_user()
         smtp.fail_connect = ssl.SSLCertVerificationError('certificate verify failed')
@@ -227,6 +263,7 @@ def test_admin_summary_failure_is_reported(app, smtp, make_user, monkeypatch):
     with app.app_context():
         from email_service import Mailer, send_all_emails
         from helpers import set_setting
+
         admin = make_user(name='Tina', email_opt_in=False)
         make_user()
         set_setting('site_admin_id', str(admin.id))
@@ -237,6 +274,7 @@ def test_admin_summary_failure_is_reported(app, smtp, make_user, monkeypatch):
             if to_email == admin.email:
                 return False, 'mailbox full'
             return original(self, to_email, *args)
+
         monkeypatch.setattr(Mailer, 'send', send)
 
         success, fail, errors = send_all_emails()
@@ -246,8 +284,9 @@ def test_admin_summary_failure_is_reported(app, smtp, make_user, monkeypatch):
 
 def test_invalid_security_setting_is_refused(app, smtp):
     with app.app_context():
-        from helpers import set_setting
         from email_service import send_single_email
+        from helpers import set_setting
+
         set_setting('smtp_security', 'sometimes')
         ok, err = send_single_email('a@example.com', 'A', 'Hi', '<p>x</p>')
         assert not ok and smtp.instances == []
@@ -256,6 +295,7 @@ def test_invalid_security_setting_is_refused(app, smtp):
 def test_email_settings_store_security_mode(client, app):
     with app.app_context():
         from helpers import get_setting
+
         client.post('/settings/email', data={'smtp_port': '465', 'smtp_security': 'ssl'})
         assert get_setting('smtp_security') == 'ssl'
         client.post('/settings/email', data={'smtp_port': '465', 'smtp_security': 'bogus'})
@@ -264,8 +304,9 @@ def test_email_settings_store_security_mode(client, app):
 
 def test_email_body_escapes_user_values(app, make_user):
     with app.app_context():
-        from helpers import set_setting
         from email_service import build_email_html
+        from helpers import set_setting
+
         set_setting('currency_symbol', '<i>')
         user = make_user(name='<b>Eve</b>', balance=Decimal('3'))
         body = build_email_html(user)
@@ -275,14 +316,22 @@ def test_email_body_escapes_user_values(app, make_user):
 
 def test_email_transaction_dates_are_local(app, make_user):
     with app.app_context():
+        from email_service import build_email_html
         from extensions import db
         from helpers import set_setting
-        from email_service import build_email_html
         from models import Transaction
+
         set_setting('timezone', 'Europe/Vienna')
         user = make_user()
-        db.session.add(Transaction(description='Late', amount=Decimal('1'), to_user_id=user.id,
-                                   transaction_type='deposit', date=datetime(2026, 2, 28, 23, 30)))
+        db.session.add(
+            Transaction(
+                description='Late',
+                amount=Decimal('1'),
+                to_user_id=user.id,
+                transaction_type='deposit',
+                date=datetime(2026, 2, 28, 23, 30),
+            )
+        )
         db.session.commit()
         assert '2026-03-01' in build_email_html(user)
 
@@ -290,6 +339,7 @@ def test_email_transaction_dates_are_local(app, make_user):
 def test_backup_status_mail_failure_is_logged(app, smtp, make_user, monkeypatch):
     import scheduler_jobs
     from extensions import scheduler
+
     monkeypatch.setattr(scheduler_jobs, 'run_backup', lambda: (True, 'bot_backup_x.tar.gz'))
     monkeypatch.setattr(scheduler_jobs, '_list_backups', lambda: [])
     monkeypatch.setattr(scheduler_jobs, 'send_single_email', lambda *a: (False, 'boom'))
@@ -297,6 +347,7 @@ def test_backup_status_mail_failure_is_logged(app, smtp, make_user, monkeypatch)
         from extensions import db
         from helpers import set_setting
         from models import BackupLog
+
         admin = make_user()
         set_setting('site_admin_id', str(admin.id))
         set_setting('backup_admin_email', '1')
@@ -313,6 +364,7 @@ def test_backup_status_mail_failure_is_logged(app, smtp, make_user, monkeypatch)
 
 def _unsubscribe_path(user):
     from email_service import _unsubscribe_signer
+
     return f'/unsubscribe/{_unsubscribe_signer().dumps([user.id, user.email])}'
 
 
@@ -329,6 +381,7 @@ def test_unsubscribe_post_without_csrf_token(app, make_user, monkeypatch):
     monkeypatch.setitem(app.config, 'WTF_CSRF_ENABLED', True)
     with app.app_context():
         from extensions import db
+
         user = make_user()
         resp = app.test_client().post(_unsubscribe_path(user), data={'List-Unsubscribe': 'One-Click'})
         assert resp.status_code == 200
@@ -347,6 +400,7 @@ def test_unsubscribe_bad_token(app, client, make_user, token):
 def test_unsubscribe_link_dies_with_an_email_change(app, client, make_user):
     with app.app_context():
         from extensions import db
+
         user = make_user()
         path = _unsubscribe_path(user)
         user.email = 'new@tina.example'

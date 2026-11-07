@@ -34,6 +34,7 @@ class FakeDb:
 
 def test_backup_keeps_password_out_of_argv(app, backup_dir, monkeypatch):
     import backup_service
+
     fake = FakeDb()
     monkeypatch.setattr(backup_service.subprocess, 'run', fake)
     monkeypatch.setenv('DB_PASSWORD', 's3cret')
@@ -57,6 +58,7 @@ def test_backup_keeps_password_out_of_argv(app, backup_dir, monkeypatch):
 
 def test_backup_names_never_collide(app, backup_dir, monkeypatch):
     import backup_service
+
     monkeypatch.setattr(backup_service.subprocess, 'run', FakeDb())
     with app.app_context():
         first = backup_service.run_backup()[1]
@@ -67,16 +69,20 @@ def test_backup_names_never_collide(app, backup_dir, monkeypatch):
 
 def test_restore_order_and_sandbox(app, backup_dir, monkeypatch):
     import backup_service
+
     fake = FakeDb()
     monkeypatch.setattr(backup_service.subprocess, 'run', fake)
     uploads = app.config['UPLOAD_FOLDER']
     with open(os.path.join(uploads, 'old.txt'), 'w') as f:
         f.write('old')
-    _make_archive(backup_dir / 'bot_backup_2026_01_01_00-00-00.tar.gz', {
-        'dump.sql': b'SELECT 1;',
-        'receipts/2026/01/01/new.txt': b'new',
-        '.env': b'SECRET_KEY=x',
-    })
+    _make_archive(
+        backup_dir / 'bot_backup_2026_01_01_00-00-00.tar.gz',
+        {
+            'dump.sql': b'SELECT 1;',
+            'receipts/2026/01/01/new.txt': b'new',
+            '.env': b'SECRET_KEY=x',
+        },
+    )
 
     with app.app_context():
         ok, safety = backup_service.run_restore('bot_backup_2026_01_01_00-00-00.tar.gz')
@@ -95,12 +101,15 @@ def test_restore_runs_outside_a_db_transaction(app, backup_dir, monkeypatch):
     (metadata locks of earlier reads) would make it wait forever."""
     import backup_service
     from extensions import db
+
     fake = FakeDb()
     open_tx = []
+
     def run(cmd, **kwargs):
         if cmd[0] == 'mariadb':
             open_tx.append(db.session().in_transaction())
         return fake(cmd, **kwargs)
+
     monkeypatch.setattr(backup_service.subprocess, 'run', run)
     _make_archive(backup_dir / 'bot_backup_2026_01_01_00-00-00.tar.gz', {'dump.sql': b'SELECT 1;'})
     with app.app_context():
@@ -111,14 +120,18 @@ def test_restore_runs_outside_a_db_transaction(app, backup_dir, monkeypatch):
 
 def test_restore_db_failure_keeps_receipts(app, backup_dir, monkeypatch):
     import backup_service
+
     monkeypatch.setattr(backup_service.subprocess, 'run', FakeDb(restore_rc=1))
     uploads = app.config['UPLOAD_FOLDER']
     with open(os.path.join(uploads, 'old.txt'), 'w') as f:
         f.write('old')
-    _make_archive(backup_dir / 'bot_backup_2026_01_01_00-00-00.tar.gz', {
-        'dump.sql': b'SELECT 1;',
-        'receipts/new.txt': b'new',
-    })
+    _make_archive(
+        backup_dir / 'bot_backup_2026_01_01_00-00-00.tar.gz',
+        {
+            'dump.sql': b'SELECT 1;',
+            'receipts/new.txt': b'new',
+        },
+    )
 
     with app.app_context():
         ok, err = backup_service.run_restore('bot_backup_2026_01_01_00-00-00.tar.gz')
@@ -131,6 +144,7 @@ def test_restore_db_failure_keeps_receipts(app, backup_dir, monkeypatch):
 
 def test_restore_requires_dump(app, backup_dir, monkeypatch):
     import backup_service
+
     fake = FakeDb()
     monkeypatch.setattr(backup_service.subprocess, 'run', fake)
     _make_archive(backup_dir / 'bot_backup_2026_01_01_00-00-00.tar.gz', {'receipts/a.txt': b'a'})
@@ -144,12 +158,16 @@ def test_restore_requires_dump(app, backup_dir, monkeypatch):
 
 def test_restore_ignores_unexpected_members(app, backup_dir, monkeypatch, tmp_path):
     import backup_service
+
     monkeypatch.setattr(backup_service.subprocess, 'run', FakeDb())
-    _make_archive(backup_dir / 'bot_backup_2026_01_01_00-00-00.tar.gz', {
-        'dump.sql': b'SELECT 1;',
-        '../escaped.txt': b'x',
-        'receipts/../../escaped2.txt': b'x',
-    })
+    _make_archive(
+        backup_dir / 'bot_backup_2026_01_01_00-00-00.tar.gz',
+        {
+            'dump.sql': b'SELECT 1;',
+            '../escaped.txt': b'x',
+            'receipts/../../escaped2.txt': b'x',
+        },
+    )
 
     with app.app_context():
         ok, _ = backup_service.run_restore('bot_backup_2026_01_01_00-00-00.tar.gz')
@@ -161,14 +179,14 @@ def test_restore_ignores_unexpected_members(app, backup_dir, monkeypatch, tmp_pa
 
 def test_restore_route_migrates_and_reschedules(client, app, backup_dir, monkeypatch):
     import routes.settings as settings_routes
+
     calls = []
     monkeypatch.setattr(settings_routes, 'run_restore', lambda f: (True, 'bot_backup_safety.tar.gz'))
     monkeypatch.setattr(settings_routes, '_migrate_after_restore', lambda: calls.append('migrate'))
     monkeypatch.setattr(settings_routes, 'reschedule_all', lambda a: calls.append('reschedule'))
     (backup_dir / 'bot_backup_2026_01_01_00-00-00.tar.gz').write_bytes(b'x')
 
-    response = client.post('/backups/restore/bot_backup_2026_01_01_00-00-00.tar.gz',
-                           follow_redirects=True)
+    response = client.post('/backups/restore/bot_backup_2026_01_01_00-00-00.tar.gz', follow_redirects=True)
 
     assert response.status_code == 200
     assert calls == ['migrate', 'reschedule']
@@ -176,17 +194,19 @@ def test_restore_route_migrates_and_reschedules(client, app, backup_dir, monkeyp
 
 
 def _upload(client, data, chunk=b'x'):
-    form = {'uploadId': '12345678-1234-1234-1234-123456789abc', **data,
-            'chunk': (io.BytesIO(chunk), 'chunk')}
+    form = {'uploadId': '12345678-1234-1234-1234-123456789abc', **data, 'chunk': (io.BytesIO(chunk), 'chunk')}
     return client.post('/backups/upload-chunk', data=form, content_type='multipart/form-data')
 
 
 def test_upload_rejects_bad_chunk_parameters(client, app, backup_dir):
     from backup_service import MAX_UPLOAD_CHUNKS
-    for data in ({'chunkIndex': '0', 'totalChunks': '0'},
-                 {'chunkIndex': '3', 'totalChunks': '2'},
-                 {'chunkIndex': '-1', 'totalChunks': '2'},
-                 {'chunkIndex': '0', 'totalChunks': str(MAX_UPLOAD_CHUNKS + 1)}):
+
+    for data in (
+        {'chunkIndex': '0', 'totalChunks': '0'},
+        {'chunkIndex': '3', 'totalChunks': '2'},
+        {'chunkIndex': '-1', 'totalChunks': '2'},
+        {'chunkIndex': '0', 'totalChunks': str(MAX_UPLOAD_CHUNKS + 1)},
+    ):
         assert _upload(client, data).status_code == 400
     assert not [f for f in os.listdir(backup_dir) if f.endswith('.tar.gz')]
 
@@ -214,8 +234,10 @@ def test_upload_rejects_non_archive(client, app, backup_dir):
 
 def test_upload_failure_does_not_leak_the_os_error(client, app, backup_dir, tmp_path, monkeypatch):
     import backup_service
-    monkeypatch.setattr(backup_service, '_new_backup_path',
-                        lambda: ('x.tar.gz', str(tmp_path / 'no-such-dir' / 'x.tar.gz')))
+
+    monkeypatch.setattr(
+        backup_service, '_new_backup_path', lambda: ('x.tar.gz', str(tmp_path / 'no-such-dir' / 'x.tar.gz'))
+    )
     response = _upload(client, {'chunkIndex': '0', 'totalChunks': '1'})
     assert response.status_code == 400
     assert response.get_json()['error'] == 'The uploaded backup could not be saved.'
@@ -230,8 +252,12 @@ def test_names_with_a_trailing_newline_are_refused(client, app, backup_dir):
     for action in ('delete', 'restore'):
         response = client.post(f'/backups/{action}/{name}', follow_redirects=True)
         assert 'Invalid filename.' in response.get_data(as_text=True)
-    form = {'uploadId': '12345678-1234-1234-1234-123456789abc\n', 'chunkIndex': '0', 'totalChunks': '2',
-            'chunk': (io.BytesIO(b'x'), 'chunk')}
+    form = {
+        'uploadId': '12345678-1234-1234-1234-123456789abc\n',
+        'chunkIndex': '0',
+        'totalChunks': '2',
+        'chunk': (io.BytesIO(b'x'), 'chunk'),
+    }
     response = client.post('/backups/upload-chunk', data=form, content_type='multipart/form-data')
     assert response.status_code == 400
     assert not (backup_dir / '.tmp').exists()
@@ -239,6 +265,7 @@ def test_names_with_a_trailing_newline_are_refused(client, app, backup_dir):
 
 def test_path_inside_refuses_to_leave_the_root(tmp_path):
     from helpers import path_inside
+
     assert path_inside(str(tmp_path), 'a', 'b.txt') == str(tmp_path / 'a' / 'b.txt')
     for parts in (('..', 'x'), ('/etc/passwd',), ('a', '../../x'), ('.',)):
         with pytest.raises(ValueError):
@@ -248,6 +275,7 @@ def test_path_inside_refuses_to_leave_the_root(tmp_path):
 def test_migrations_keep_app_logging(app):
     """Running Alembic must not disable the app's loggers (fileConfig default)."""
     from flask_migrate import upgrade
+
     root_handlers = list(logging.getLogger().handlers)
     with app.app_context():
         upgrade(sql=True)
@@ -259,6 +287,7 @@ def test_migrations_keep_app_logging(app):
 def test_backup_job_prunes_to_keep_and_mails_admin(app, backup_dir, make_user, monkeypatch):
     import scheduler_jobs
     from extensions import scheduler
+
     names = [f'bot_backup_2026_01_0{d}_03-00-00.tar.gz' for d in range(1, 5)]
 
     def fake_backup():
@@ -271,6 +300,7 @@ def test_backup_job_prunes_to_keep_and_mails_admin(app, backup_dir, make_user, m
     monkeypatch.setattr(scheduler_jobs, 'send_single_email', lambda *a: sent.append(a) or (True, None))
     with app.app_context():
         from helpers import set_setting
+
         admin = make_user(email='admin@example.com')
         set_setting('site_admin_id', str(admin.id))
         set_setting('backup_admin_email', '1')

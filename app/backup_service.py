@@ -12,13 +12,12 @@ import time
 from datetime import UTC, datetime
 
 from flask import current_app
-
 from flask_babel import gettext as _
 
-from extensions import db
-from models import BackupLog
-from helpers import get_setting, get_tpl, apply_template, now_local, prune_log, path_inside
 from config import BACKUP_DIR, db_env
+from extensions import db
+from helpers import apply_template, get_setting, get_tpl, now_local, path_inside, prune_log
+from models import BackupLog
 
 logger = logging.getLogger(__name__)
 
@@ -74,8 +73,7 @@ def run_backup() -> tuple[bool, str]:
             dump_path = os.path.join(tmp, 'dump.sql')
             cmd, env = _db_command('mariadb-dump', '--single-transaction', '--add-drop-table')
             with open(dump_path, 'wb') as dump_file:
-                result = subprocess.run(cmd, stdout=dump_file, stderr=subprocess.PIPE,
-                                        env=env, timeout=300)
+                result = subprocess.run(cmd, stdout=dump_file, stderr=subprocess.PIPE, env=env, timeout=300)
             if result.returncode != 0:
                 err = result.stderr.decode(errors='replace')[:300]
                 log('ERROR', f'mariadb-dump failed: {err}')
@@ -236,26 +234,28 @@ def _list_backups() -> list[dict[str, str | int | datetime]]:
             if BACKUP_FILENAME_RE.fullmatch(f):
                 fpath = os.path.join(BACKUP_DIR, f)
                 stat = os.stat(fpath)
-                backups.append({
-                    'filename': f,
-                    'size': stat.st_size,
-                    'modified': datetime.fromtimestamp(stat.st_mtime, tz=UTC),
-                })
+                backups.append(
+                    {
+                        'filename': f,
+                        'size': stat.st_size,
+                        'modified': datetime.fromtimestamp(stat.st_mtime, tz=UTC),
+                    }
+                )
     return backups
 
 
 def build_backup_status_email(ok: bool, result: str, kept: int, pruned: int) -> str:
-    date_str   = now_local().strftime('%Y-%m-%d %H:%M')
+    date_str = now_local().strftime('%Y-%m-%d %H:%M')
     grad_start = get_tpl('color_email_grad_start')
-    grad_end   = get_tpl('color_email_grad_end')
-    footer     = apply_template(get_tpl('tpl_backup_footer'), Date=date_str)
+    grad_end = get_tpl('color_email_grad_end')
+    footer = apply_template(get_tpl('tpl_backup_footer'), Date=date_str)
     footer_html = f'<p>{footer}</p>' if footer.strip() else ''
 
     if ok:
         status_color = '#28a745'
-        status_icon  = '\u2714'
-        status_text  = _('Backup completed successfully')
-        detail_rows  = f"""
+        status_icon = '\u2714'
+        status_text = _('Backup completed successfully')
+        detail_rows = f"""
             <tr><td style="padding:8px;color:#6c757d;width:140px;">{_('File')}</td>
                 <td style="padding:8px;font-family:monospace;">{html_mod.escape(result)}</td></tr>
             <tr><td style="padding:8px;color:#6c757d;">{_('Backups kept')}</td>
@@ -266,9 +266,9 @@ def build_backup_status_email(ok: bool, result: str, kept: int, pruned: int) -> 
                 <td style="padding:8px;">{_('%(count)d old backup(s) deleted', count=pruned)}</td></tr>"""
     else:
         status_color = '#dc3545'
-        status_icon  = '\u2718'
-        status_text  = _('Backup failed')
-        detail_rows  = f"""
+        status_icon = '\u2718'
+        status_text = _('Backup failed')
+        detail_rows = f"""
             <tr><td style="padding:8px;color:#6c757d;width:140px;">{_('Error')}</td>
                 <td style="padding:8px;color:#dc3545;">{html_mod.escape(result)}</td></tr>"""
 

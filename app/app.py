@@ -9,26 +9,24 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
-from flask import Flask, Response, g
+from flask import Flask, Response, flash, g, jsonify, render_template, request, url_for
 from flask.json.provider import DefaultJSONProvider
-
-from flask import request, url_for, flash, jsonify, render_template
+from flask_babel import format_date as babel_format_date
+from flask_babel import gettext as _
 from flask_wtf.csrf import CSRFError
-from flask_babel import gettext as _, format_date as babel_format_date
-from extensions import db, csrf, migrate, limiter, scheduler, babel
-from helpers import get_setting, get_tpl, hex_to_rgb, to_local, redirect_back
-from config import db_env
 from sqlalchemy.engine import URL
 from sqlalchemy.exc import SQLAlchemyError
+
+from config import db_env
+from extensions import babel, csrf, db, limiter, migrate, scheduler
+from helpers import get_setting, get_tpl, hex_to_rgb, redirect_back, to_local
 
 
 def setup_logging() -> None:
     """Configure structured logging to stdout."""
     log_level = os.environ.get('LOG_LEVEL', 'INFO').upper()
     handler = logging.StreamHandler()
-    handler.setFormatter(logging.Formatter(
-        '%(asctime)s %(levelname)s [%(name)s] %(message)s'
-    ))
+    handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s [%(name)s] %(message)s'))
     root = logging.getLogger()
     root.setLevel(getattr(logging, log_level, logging.INFO))
     root.addHandler(handler)
@@ -42,6 +40,7 @@ logger = logging.getLogger(__name__)
 
 class DecimalJSONProvider(DefaultJSONProvider):
     """Serialize Decimal values as floats so jsonify() works transparently."""
+
     def default(self, o: Any) -> Any:
         if isinstance(o, Decimal):
             return float(o)
@@ -53,6 +52,7 @@ if os.environ.get('BEHIND_PROXY') == '1':
     # Trust one reverse proxy's X-Forwarded-* headers so rate limits and
     # redirects see the real client address and host.
     from werkzeug.middleware.proxy_fix import ProxyFix
+
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
 _secret = os.environ.get('SECRET_KEY', '')
@@ -69,11 +69,16 @@ if not _db_uri:
     _db = db_env()
     if not _db['user'] or not _db['password']:
         raise RuntimeError(
-            'DB_USER and DB_PASSWORD must be set in your .env file '
-            '(or set SQLALCHEMY_DATABASE_URI directly).'
+            'DB_USER and DB_PASSWORD must be set in your .env file (or set SQLALCHEMY_DATABASE_URI directly).'
         )
-    _db_uri = URL.create('mysql+pymysql', username=_db['user'], password=_db['password'],
-                         host=_db['host'], port=int(_db['port']), database=_db['name'])
+    _db_uri = URL.create(
+        'mysql+pymysql',
+        username=_db['user'],
+        password=_db['password'],
+        host=_db['host'],
+        port=int(_db['port']),
+        database=_db['name'],
+    )
 app.config['SQLALCHEMY_DATABASE_URI'] = _db_uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # MariaDB drops idle connections after wait_timeout; test before reuse.
@@ -103,9 +108,9 @@ limiter.init_app(app)
 babel.init_app(app, locale_selector=get_locale)
 
 # Import models so they are registered with SQLAlchemy
-import models  # noqa: F401
+import models  # noqa: E402, F401
+from routes import register_blueprints  # noqa: E402
 
-from routes import register_blueprints
 register_blueprints(app)
 
 
@@ -146,10 +151,12 @@ def ratelimit_handler(e: Exception) -> tuple[Response, int] | Response:
 @app.template_filter('money')
 def money_filter(value: Any) -> str:
     from decimal import InvalidOperation
+
     from helpers import fmt_amount
+
     try:
         return fmt_amount(Decimal(str(value)))
-    except (ValueError, TypeError, InvalidOperation):
+    except ValueError, TypeError, InvalidOperation:
         sep = get_setting('decimal_separator', '.')
         return '0' + sep + '00'
 
@@ -188,9 +195,9 @@ def reload_settings() -> None:
 def inject_theme() -> dict[str, str]:
     """Inject theme colors and CSP nonce into every template."""
     navbar = get_tpl('color_navbar')
-    pos    = get_tpl('color_balance_positive')
-    neg    = get_tpl('color_balance_negative')
-    nonce  = secrets.token_urlsafe(16)
+    pos = get_tpl('color_balance_positive')
+    neg = get_tpl('color_balance_negative')
+    nonce = secrets.token_urlsafe(16)
     g.csp_nonce = nonce
     return dict(
         theme_navbar=navbar,
@@ -238,7 +245,8 @@ if os.environ.get('FLASK_TESTING') != '1':
             with app.app_context():
                 db.session.execute(db.text('SELECT 1'))
 
-                from flask_migrate import upgrade, stamp
+                from flask_migrate import stamp, upgrade
+
                 inspector = db.inspect(db.engine)
                 tables = inspector.get_table_names()
                 has_alembic = 'alembic_version' in tables
@@ -255,14 +263,18 @@ if os.environ.get('FLASK_TESTING') != '1':
                     logger.info('Database migrations up to date')
 
                 icons_dir = os.path.join(app.root_path, 'static', 'icons')
-                if not os.path.exists(os.path.join(icons_dir, 'icon-192.png')) or not os.path.exists(os.path.join(icons_dir, 'icon-32.png')):
+                if not os.path.exists(os.path.join(icons_dir, 'icon-192.png')) or not os.path.exists(
+                    os.path.join(icons_dir, 'icon-32.png')
+                ):
                     from config import DEFAULT_ICON_BG
                     from helpers import generate_and_save_icons
+
                     os.makedirs(icons_dir, exist_ok=True)
                     generate_and_save_icons(DEFAULT_ICON_BG)
                     logger.info('Generated default PWA icons')
 
                 from scheduler_jobs import _restore_schedule
+
                 _restore_schedule(app)
             break
         except OperationalError:

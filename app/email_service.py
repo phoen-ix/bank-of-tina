@@ -6,20 +6,27 @@ import re
 import smtplib
 import ssl
 from datetime import timedelta
-from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from email.utils import formataddr, formatdate, make_msgid
-
-from itsdangerous import BadSignature, URLSafeSerializer
-from sqlalchemy.orm import joinedload
 
 from flask import current_app
 from flask_babel import gettext as _
+from itsdangerous import BadSignature, URLSafeSerializer
+from sqlalchemy.orm import joinedload
 
 from extensions import db
-from models import User, Transaction, EmailLog
-from helpers import (get_setting, get_tpl, apply_template, fmt_amount, now_local, local_day_start_utc,
-                     to_local, prune_log)
+from helpers import (
+    apply_template,
+    fmt_amount,
+    get_setting,
+    get_tpl,
+    local_day_start_utc,
+    now_local,
+    prune_log,
+    to_local,
+)
+from models import EmailLog, Transaction, User
 
 # Values of the smtp_security setting.
 SMTP_SECURITY_MODES = ('starttls', 'ssl', 'none')
@@ -41,7 +48,7 @@ def unsubscribe_user(token: str) -> User | None:
     """The user an unsubscribe token belongs to, or None."""
     try:
         user_id, email = _unsubscribe_signer().loads(token)
-    except (BadSignature, ValueError, TypeError):
+    except BadSignature, ValueError, TypeError:
         return None
     user = db.session.get(User, user_id) if isinstance(user_id, int) else None
     return user if user and user.email == email else None
@@ -66,11 +73,12 @@ def build_email_html(user: User) -> str:
         show_tx_section = False
     else:
         show_tx_section = True
-        base_stmt = db.select(Transaction).options(
-            joinedload(Transaction.from_user), joinedload(Transaction.to_user)
-        ).where(
-            (Transaction.from_user_id == user.id) | (Transaction.to_user_id == user.id)
-        ).order_by(Transaction.date.desc())
+        base_stmt = (
+            db.select(Transaction)
+            .options(joinedload(Transaction.from_user), joinedload(Transaction.to_user))
+            .where((Transaction.from_user_id == user.id) | (Transaction.to_user_id == user.id))
+            .order_by(Transaction.date.desc())
+        )
 
         if tx_pref == 'last3':
             recent_transactions = db.session.execute(base_stmt.limit(3)).scalars().all()
@@ -156,23 +164,30 @@ def build_email_html(user: User) -> str:
             </table>"""
 
     grad_start = get_tpl('color_email_grad_start')
-    grad_end   = get_tpl('color_email_grad_end')
-    tpl_vars   = dict(Name=html.escape(user.name), Balance=f'{sym}{fmt_amount(user.balance)}',
-                      BalanceStatus=balance_status, Date=now_local().strftime('%Y-%m-%d'))
+    grad_end = get_tpl('color_email_grad_end')
+    tpl_vars = dict(
+        Name=html.escape(user.name),
+        Balance=f'{sym}{fmt_amount(user.balance)}',
+        BalanceStatus=balance_status,
+        Date=now_local().strftime('%Y-%m-%d'),
+    )
 
     greeting = apply_template(get_tpl('tpl_email_greeting'), **tpl_vars)
-    intro    = apply_template(get_tpl('tpl_email_intro'),    **tpl_vars)
-    footer1  = apply_template(get_tpl('tpl_email_footer1'),  **tpl_vars)
-    footer2  = apply_template(get_tpl('tpl_email_footer2'),  **tpl_vars)
+    intro = apply_template(get_tpl('tpl_email_intro'), **tpl_vars)
+    footer1 = apply_template(get_tpl('tpl_email_footer1'), **tpl_vars)
+    footer2 = apply_template(get_tpl('tpl_email_footer2'), **tpl_vars)
 
     greeting_html = f'<p style="font-size: 16px; margin-bottom: 20px;">{greeting}</p>' if greeting.strip() else ''
-    intro_html    = f'<p>{intro}</p>' if intro.strip() else ''
-    footer1_html  = f'<p>{footer1}</p>' if footer1.strip() else ''
-    footer2_html  = f'<p style="margin-top: 10px;">{footer2}</p>' if footer2.strip() else ''
+    intro_html = f'<p>{intro}</p>' if intro.strip() else ''
+    footer1_html = f'<p>{footer1}</p>' if footer1.strip() else ''
+    footer2_html = f'<p style="margin-top: 10px;">{footer2}</p>' if footer2.strip() else ''
     unsubscribe = unsubscribe_url(user)
-    unsubscribe_html = (f'<p style="margin-top: 10px; font-size: 12px;">'
-                        f'<a href="{unsubscribe}" style="color: #6c757d;">{_("Unsubscribe from these emails")}</a></p>'
-                        if unsubscribe else '')
+    unsubscribe_html = (
+        f'<p style="margin-top: 10px; font-size: 12px;">'
+        f'<a href="{unsubscribe}" style="color: #6c757d;">{_("Unsubscribe from these emails")}</a></p>'
+        if unsubscribe
+        else ''
+    )
 
     email_body = f"""
     <!DOCTYPE html>
@@ -211,16 +226,16 @@ def build_email_html(user: User) -> str:
 
 
 def build_admin_summary_email(users: list[User], include_emails: bool = False) -> str:
-    sym        = html.escape(get_setting('currency_symbol', '\u20ac'))
-    date_str   = now_local().strftime('%Y-%m-%d')
+    sym = html.escape(get_setting('currency_symbol', '\u20ac'))
+    date_str = now_local().strftime('%Y-%m-%d')
     grad_start = get_tpl('color_email_grad_start')
-    grad_end   = get_tpl('color_email_grad_end')
-    tpl_vars   = dict(Date=date_str, UserCount=len(users))
+    grad_end = get_tpl('color_email_grad_end')
+    tpl_vars = dict(Date=date_str, UserCount=len(users))
 
-    intro  = apply_template(get_tpl('tpl_admin_intro'),  **tpl_vars)
+    intro = apply_template(get_tpl('tpl_admin_intro'), **tpl_vars)
     footer = apply_template(get_tpl('tpl_admin_footer'), **tpl_vars)
 
-    intro_html  = f'<p style="margin-bottom:20px;">{intro}</p>' if intro.strip() else ''
+    intro_html = f'<p style="margin-bottom:20px;">{intro}</p>' if intro.strip() else ''
     footer_html = f'<p>{footer}</p>' if footer.strip() else ''
 
     pos_color = get_tpl('color_balance_positive')
@@ -228,7 +243,11 @@ def build_admin_summary_email(users: list[User], include_emails: bool = False) -
     rows_html = ''
     for user in users:
         color = neg_color if user.balance < 0 else (pos_color if user.balance > 0 else '#6c757d')
-        email_cell = f'<td style="padding: 10px 8px; border-bottom: 1px solid #dee2e6; color: #6c757d; font-size: 0.9em;">{html.escape(user.email)}</td>' if include_emails else ''
+        email_cell = (
+            f'<td style="padding: 10px 8px; border-bottom: 1px solid #dee2e6; color: #6c757d; font-size: 0.9em;">{html.escape(user.email)}</td>'
+            if include_emails
+            else ''
+        )
         rows_html += f"""
             <tr>
                 <td style="padding: 10px 8px; border-bottom: 1px solid #dee2e6;">{html.escape(user.name)}</td>
@@ -236,7 +255,11 @@ def build_admin_summary_email(users: list[User], include_emails: bool = False) -
                 <td style="padding: 10px 8px; border-bottom: 1px solid #dee2e6; text-align: right; font-weight: bold; color: {color};">{sym}{fmt_amount(user.balance)}</td>
             </tr>"""
 
-    email_header = f'<th style="padding: 10px 8px; text-align: left; border-bottom: 2px solid #dee2e6;">{_("Email")}</th>' if include_emails else ''
+    email_header = (
+        f'<th style="padding: 10px 8px; text-align: left; border-bottom: 2px solid #dee2e6;">{_("Email")}</th>'
+        if include_emails
+        else ''
+    )
 
     return f"""<!DOCTYPE html>
 <html>
@@ -301,8 +324,9 @@ class Mailer:
         port = int(self.port)
         implicit_tls = self.security == 'ssl' or port == 465
         if implicit_tls:
-            server: smtplib.SMTP = smtplib.SMTP_SSL(self.host, port, local_hostname=self.ehlo_name, timeout=30,
-                                                    context=context)
+            server: smtplib.SMTP = smtplib.SMTP_SSL(
+                self.host, port, local_hostname=self.ehlo_name, timeout=30, context=context
+            )
         else:
             server = smtplib.SMTP(self.host, port, local_hostname=self.ehlo_name, timeout=30)
         try:
@@ -314,8 +338,9 @@ class Mailer:
             raise
         return server
 
-    def _message(self, to_email: str, to_name: str, subject: str, html_body: str,
-                 headers: dict[str, str] | None = None) -> MIMEMultipart:
+    def _message(
+        self, to_email: str, to_name: str, subject: str, html_body: str, headers: dict[str, str] | None = None
+    ) -> MIMEMultipart:
         msg = MIMEMultipart('alternative')
         msg['Subject'] = ' '.join(subject.splitlines())
         # formataddr quotes names like "Doe, John" and encodes non-ASCII ones.
@@ -330,14 +355,18 @@ class Mailer:
         msg.attach(MIMEText(html_body, 'html', 'utf-8'))
         return msg
 
-    def send(self, to_email: str, to_name: str, subject: str, html_body: str,
-             headers: dict[str, str] | None = None) -> tuple[bool, str | None]:
+    def send(
+        self, to_email: str, to_name: str, subject: str, html_body: str, headers: dict[str, str] | None = None
+    ) -> tuple[bool, str | None]:
         if not self.username or not self.password:
             return False, _('SMTP credentials not configured')
         if self.security not in SMTP_SECURITY_MODES or not self.port.isdigit():
             return False, _('SMTP settings are invalid')
-        if ('.' not in self.from_domain or self.from_domain.endswith('.local')
-                or self.from_domain in ('example.com', 'example.org', 'example.net')):
+        if (
+            '.' not in self.from_domain
+            or self.from_domain.endswith('.local')
+            or self.from_domain in ('example.com', 'example.org', 'example.net')
+        ):
             return False, _('The From address %(address)s is not a real address.', address=self.from_email)
         if self.connect_error:
             return False, self.connect_error
@@ -382,7 +411,7 @@ def send_all_emails() -> tuple[int, int, list[str]]:
         return 0, 0, [_('Email sending is disabled in General settings.')]
 
     all_active_users = db.session.execute(db.select(User).filter_by(is_active=True)).scalars().all()
-    opted_in_users   = [u for u in all_active_users if u.email_opt_in]
+    opted_in_users = [u for u in all_active_users if u.email_opt_in]
     success, fail = 0, 0
     errors: list[str] = []
     debug = get_setting('email_debug', '0') == '1'
@@ -392,44 +421,60 @@ def send_all_emails() -> tuple[int, int, list[str]]:
     with Mailer() as mailer:
         for user in opted_in_users:
             unsubscribe = unsubscribe_url(user)
-            headers = {'List-Unsubscribe': f'<{unsubscribe}>',
-                       'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'} if unsubscribe else None
+            headers = (
+                {'List-Unsubscribe': f'<{unsubscribe}>', 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'}
+                if unsubscribe
+                else None
+            )
             ok, err = mailer.send(user.email, user.name, subject, build_email_html(user), headers)
             if ok:
                 success += 1
                 if debug:
-                    db.session.add(EmailLog(level='SUCCESS',
-                                            recipient=f'{user.name} <{user.email}>',
-                                            message='Email sent successfully'))
+                    db.session.add(
+                        EmailLog(
+                            level='SUCCESS', recipient=f'{user.name} <{user.email}>', message='Email sent successfully'
+                        )
+                    )
             else:
                 fail += 1
                 errors.append(f"{user.name} <{user.email}>: {err}")
-                db.session.add(EmailLog(level='FAIL',
-                                        recipient=f'{user.name} <{user.email}>',
-                                        message=err or 'Unknown error'))
+                db.session.add(
+                    EmailLog(level='FAIL', recipient=f'{user.name} <{user.email}>', message=err or 'Unknown error')
+                )
 
         admin_id = get_setting('site_admin_id', '')
         if get_setting('admin_summary_email', '0') == '1' and admin_id:
             admin = db.session.get(User, int(admin_id)) if admin_id.isdigit() else None
             if admin:
                 summary_users = [u for u in all_active_users if str(u.id) != admin_id]
-                summary_subject = apply_template(get_tpl('tpl_admin_subject'),
-                                                 Date=now_local().strftime('%Y-%m-%d'),
-                                                 UserCount=len(summary_users))
-                summary_html = build_admin_summary_email(summary_users, include_emails=get_setting('admin_summary_include_emails', '0') == '1')
+                summary_subject = apply_template(
+                    get_tpl('tpl_admin_subject'), Date=now_local().strftime('%Y-%m-%d'), UserCount=len(summary_users)
+                )
+                summary_html = build_admin_summary_email(
+                    summary_users, include_emails=get_setting('admin_summary_include_emails', '0') == '1'
+                )
                 ok, err = mailer.send(admin.email, admin.name, summary_subject, summary_html)
                 if ok:
                     if debug:
-                        db.session.add(EmailLog(level='INFO', recipient=None,
-                                                message=f'Admin summary sent to {admin.name} <{admin.email}>'))
+                        db.session.add(
+                            EmailLog(
+                                level='INFO',
+                                recipient=None,
+                                message=f'Admin summary sent to {admin.name} <{admin.email}>',
+                            )
+                        )
                 else:
                     errors.append(_('Admin summary to %(name)s: %(err)s', name=admin.name, err=err))
-                    db.session.add(EmailLog(level='FAIL', recipient=f'{admin.name} <{admin.email}>',
-                                            message=f'Admin summary failed: {err}'))
+                    db.session.add(
+                        EmailLog(
+                            level='FAIL',
+                            recipient=f'{admin.name} <{admin.email}>',
+                            message=f'Admin summary failed: {err}',
+                        )
+                    )
 
     if debug:
-        db.session.add(EmailLog(level='INFO', recipient=None,
-                                message=f'Run complete: {success} sent, {fail} failed'))
+        db.session.add(EmailLog(level='INFO', recipient=None, message=f'Run complete: {success} sent, {fail} failed'))
     db.session.flush()
     prune_log(EmailLog)
     db.session.commit()

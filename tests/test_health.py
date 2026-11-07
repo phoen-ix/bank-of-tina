@@ -14,6 +14,7 @@ def test_health_reports_db_error_without_details(client, app, monkeypatch):
 
     def broken(*args, **kwargs):
         raise RuntimeError('Access denied for user tina@10.0.0.5')
+
     monkeypatch.setattr(db.session, 'execute', broken)
     response = client.get('/health')
     assert response.status_code == 503
@@ -60,14 +61,13 @@ def test_security_headers_everywhere(client, app):
 def test_redirect_back_ignores_foreign_referrer(client, app, make_user):
     with app.app_context():
         user = make_user()
-        response = client.post(f'/user/{user.id}/toggle-active',
-                               headers={'Referer': 'https://evil.example/phish'})
+        response = client.post(f'/user/{user.id}/toggle-active', headers={'Referer': 'https://evil.example/phish'})
         assert response.status_code == 302
         assert 'evil.example' not in response.headers['Location']
         # Browsers read the backslash as a slash: evil.example is the host.
-        response = client.post(f'/user/{user.id}/toggle-active',
-                               headers={'Referer': 'https://evil.example\\@localhost/'})
+        response = client.post(
+            f'/user/{user.id}/toggle-active', headers={'Referer': 'https://evil.example\\@localhost/'}
+        )
         assert 'evil.example' not in response.headers['Location']
-        response = client.post(f'/user/{user.id}/toggle-active',
-                               headers={'Referer': 'http://localhost/user/1'})
+        response = client.post(f'/user/{user.id}/toggle-active', headers={'Referer': 'http://localhost/user/1'})
         assert response.headers['Location'] == 'http://localhost/user/1'

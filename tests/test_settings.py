@@ -14,16 +14,21 @@ def test_settings_page_loads(client, app):
 
 def test_general_update(client, app):
     with app.app_context():
-        response = client.post('/settings/general', data={
-            'default_item_rows': '5',
-            'recent_transactions_count': '10',
-            'timezone': 'UTC',
-            'decimal_separator': ',',
-            'currency_symbol': '$',
-        }, follow_redirects=True)
+        response = client.post(
+            '/settings/general',
+            data={
+                'default_item_rows': '5',
+                'recent_transactions_count': '10',
+                'timezone': 'UTC',
+                'decimal_separator': ',',
+                'currency_symbol': '$',
+            },
+            follow_redirects=True,
+        )
         assert response.status_code == 200
 
         from helpers import get_setting
+
         assert get_setting('decimal_separator') == ','
         assert get_setting('currency_symbol') == '$'
         assert get_setting('default_item_rows') == '5'
@@ -32,139 +37,172 @@ def test_general_update(client, app):
 
 def test_email_update(client, app):
     with app.app_context():
-        response = client.post('/settings/email', data={
-            'smtp_server': 'smtp.test.com',
-            'smtp_port': '465',
-            'smtp_username': 'user@test.com',
-            'from_email': 'from@test.com',
-            'from_name': 'Test Bank',
-            'smtp_ehlo_name': 'mx.test.com',
-            'app_url': 'https://tina.test.com',
-            'email_enabled': '1',
-        }, follow_redirects=True)
+        response = client.post(
+            '/settings/email',
+            data={
+                'smtp_server': 'smtp.test.com',
+                'smtp_port': '465',
+                'smtp_username': 'user@test.com',
+                'from_email': 'from@test.com',
+                'from_name': 'Test Bank',
+                'smtp_ehlo_name': 'mx.test.com',
+                'app_url': 'https://tina.test.com',
+                'email_enabled': '1',
+            },
+            follow_redirects=True,
+        )
         assert response.status_code == 200
 
         from helpers import get_setting
+
         assert get_setting('smtp_server') == 'smtp.test.com'
         assert get_setting('smtp_port') == '465'
         assert get_setting('smtp_ehlo_name') == 'mx.test.com'
         assert get_setting('app_url') == 'https://tina.test.com'
 
 
-@pytest.mark.parametrize('field, value', [('smtp_ehlo_name', 'mx.test.com\r\nRSET'),
-                                          ('app_url', 'tina.test.com'),
-                                          ('app_url', 'https://tina.test.com>\r\nBcc: x')])
+@pytest.mark.parametrize(
+    'field, value',
+    [
+        ('smtp_ehlo_name', 'mx.test.com\r\nRSET'),
+        ('app_url', 'tina.test.com'),
+        ('app_url', 'https://tina.test.com>\r\nBcc: x'),
+    ],
+)
 def test_email_update_rejects_bad_ehlo_name_and_site_url(client, app, field, value):
     with app.app_context():
         response = client.post('/settings/email', data={'smtp_port': '587', field: value}, follow_redirects=True)
         assert response.status_code == 200
 
         from helpers import get_setting
+
         assert get_setting(field) is None and get_setting('smtp_port') is None
 
 
 def test_common_item_add_delete(client, app):
     with app.app_context():
-        response = client.post('/settings/common-items/add', data={
-            'name': 'TestItem',
-        }, follow_redirects=True)
+        response = client.post(
+            '/settings/common-items/add',
+            data={
+                'name': 'TestItem',
+            },
+            follow_redirects=True,
+        )
         assert response.status_code == 200
 
         from extensions import db
         from models import CommonItem
+
         item = db.session.execute(db.select(CommonItem).filter_by(name='TestItem')).scalar()
         assert item is not None
 
-        response = client.post(f'/settings/common-items/{item.id}/delete',
-                               follow_redirects=True)
+        response = client.post(f'/settings/common-items/{item.id}/delete', follow_redirects=True)
         assert response.status_code == 200
         assert db.session.execute(db.select(CommonItem).filter_by(name='TestItem')).scalar() is None
 
 
 def test_common_description_add_delete(client, app):
     with app.app_context():
-        response = client.post('/settings/common-descriptions/add', data={
-            'value': 'Weekly Lunch',
-        }, follow_redirects=True)
+        response = client.post(
+            '/settings/common-descriptions/add',
+            data={
+                'value': 'Weekly Lunch',
+            },
+            follow_redirects=True,
+        )
         assert response.status_code == 200
 
         from extensions import db
         from models import CommonDescription
+
         item = db.session.execute(db.select(CommonDescription).filter_by(value='Weekly Lunch')).scalar()
         assert item is not None
 
-        response = client.post(f'/settings/common-descriptions/{item.id}/delete',
-                               follow_redirects=True)
+        response = client.post(f'/settings/common-descriptions/{item.id}/delete', follow_redirects=True)
         assert response.status_code == 200
         assert db.session.execute(db.select(CommonDescription).filter_by(value='Weekly Lunch')).scalar() is None
 
 
 def test_common_price_add_delete(client, app):
     with app.app_context():
-        response = client.post('/settings/common-prices/add', data={
-            'value': '12.50',
-        }, follow_redirects=True)
+        response = client.post(
+            '/settings/common-prices/add',
+            data={
+                'value': '12.50',
+            },
+            follow_redirects=True,
+        )
         assert response.status_code == 200
 
         from extensions import db
         from models import CommonPrice
+
         item = db.session.execute(db.select(CommonPrice).filter_by(value=Decimal('12.50'))).scalar()
         assert item is not None
 
-        response = client.post(f'/settings/common-prices/{item.id}/delete',
-                               follow_redirects=True)
+        response = client.post(f'/settings/common-prices/{item.id}/delete', follow_redirects=True)
         assert response.status_code == 200
         assert db.session.get(CommonPrice, item.id) is None
 
 
 def test_common_blacklist_add_delete(client, app):
     with app.app_context():
-        response = client.post('/settings/common-blacklist/add', data={
-            'type': 'item',
-            'value': 'BadItem',
-        }, follow_redirects=True)
+        response = client.post(
+            '/settings/common-blacklist/add',
+            data={
+                'type': 'item',
+                'value': 'BadItem',
+            },
+            follow_redirects=True,
+        )
         assert response.status_code == 200
 
         from extensions import db
         from models import CommonBlacklist
+
         item = db.session.execute(db.select(CommonBlacklist).filter_by(type='item', value='BadItem')).scalar()
         assert item is not None
 
-        response = client.post(f'/settings/common-blacklist/{item.id}/delete',
-                               follow_redirects=True)
+        response = client.post(f'/settings/common-blacklist/{item.id}/delete', follow_redirects=True)
         assert response.status_code == 200
         assert db.session.get(CommonBlacklist, item.id) is None
 
 
 def test_template_color_update(client, app):
     with app.app_context():
-        response = client.post('/settings/templates', data={
-            'color_navbar': '#ff0000',
-            'color_email_grad_start': '#00ff00',
-            'color_email_grad_end': '#0000ff',
-            'color_balance_positive': '#aabbcc',
-            'color_balance_negative': '#ccbbaa',
-            'tpl_email_subject': 'Test Subject [Date]',
-            'tpl_email_greeting': 'Hello [Name]',
-            'tpl_email_intro': 'Intro',
-            'tpl_email_footer1': 'Footer 1',
-            'tpl_email_footer2': 'Footer 2',
-            'tpl_admin_subject': 'Admin Subject',
-            'tpl_admin_intro': 'Admin Intro',
-            'tpl_admin_footer': 'Admin Footer',
-            'tpl_backup_subject': 'Backup',
-            'tpl_backup_footer': 'Backup Footer',
-        }, follow_redirects=True)
+        response = client.post(
+            '/settings/templates',
+            data={
+                'color_navbar': '#ff0000',
+                'color_email_grad_start': '#00ff00',
+                'color_email_grad_end': '#0000ff',
+                'color_balance_positive': '#aabbcc',
+                'color_balance_negative': '#ccbbaa',
+                'tpl_email_subject': 'Test Subject [Date]',
+                'tpl_email_greeting': 'Hello [Name]',
+                'tpl_email_intro': 'Intro',
+                'tpl_email_footer1': 'Footer 1',
+                'tpl_email_footer2': 'Footer 2',
+                'tpl_admin_subject': 'Admin Subject',
+                'tpl_admin_intro': 'Admin Intro',
+                'tpl_admin_footer': 'Admin Footer',
+                'tpl_backup_subject': 'Backup',
+                'tpl_backup_footer': 'Backup Footer',
+            },
+            follow_redirects=True,
+        )
         assert response.status_code == 200
 
         from helpers import get_setting
+
         assert get_setting('color_navbar') == '#ff0000'
 
 
 def test_template_reset(client, app):
     with app.app_context():
-        from helpers import set_setting, get_setting, get_tpl
         from config import TEMPLATE_DEFAULTS
+        from helpers import get_tpl, set_setting
+
         # Language is 'en' in tests (set by clean_db fixture)
         set_setting('tpl_email_subject_en', 'Modified Subject')
 
@@ -176,15 +214,20 @@ def test_template_reset(client, app):
 
 def test_schedule_update(client, app):
     with app.app_context():
-        response = client.post('/settings/schedule', data={
-            'schedule_enabled': '1',
-            'schedule_day': 'fri',
-            'schedule_hour': '14',
-            'schedule_minute': '30',
-        }, follow_redirects=True)
+        response = client.post(
+            '/settings/schedule',
+            data={
+                'schedule_enabled': '1',
+                'schedule_day': 'fri',
+                'schedule_hour': '14',
+                'schedule_minute': '30',
+            },
+            follow_redirects=True,
+        )
         assert response.status_code == 200
 
         from helpers import get_setting
+
         assert get_setting('schedule_day') == 'fri'
         assert get_setting('schedule_hour') == '14'
         assert get_setting('schedule_minute') == '30'
@@ -193,6 +236,7 @@ def test_schedule_update(client, app):
 def test_send_now(client, app):
     with app.app_context():
         from helpers import set_setting
+
         set_setting('email_enabled', '1')
         response = client.post('/settings/send-now', follow_redirects=True)
         assert response.status_code == 200
@@ -202,16 +246,20 @@ def test_send_now(client, app):
 
 def test_common_toggle(client, app):
     with app.app_context():
-        response = client.post('/settings/common', data={
-            'common_enabled': '1',
-        }, follow_redirects=True)
+        response = client.post(
+            '/settings/common',
+            data={
+                'common_enabled': '1',
+            },
+            follow_redirects=True,
+        )
         assert response.status_code == 200
 
         from helpers import get_setting
+
         assert get_setting('common_enabled') == '1'
 
-        response = client.post('/settings/common', data={},
-                               follow_redirects=True)
+        response = client.post('/settings/common', data={}, follow_redirects=True)
         assert response.status_code == 200
         assert get_setting('common_enabled') == '0'
 
@@ -219,8 +267,9 @@ def test_common_toggle(client, app):
 def test_api_common_items(client, app):
     with app.app_context():
         from extensions import db
-        from models import CommonItem
         from helpers import set_setting
+        from models import CommonItem
+
         set_setting('common_enabled', '1')
         db.session.add(CommonItem(name='Salad'))
         db.session.commit()
@@ -234,6 +283,7 @@ def test_api_common_items(client, app):
 def test_api_common_items_disabled(client, app):
     with app.app_context():
         from helpers import set_setting
+
         set_setting('common_enabled', '0')
 
         response = client.get('/api/common-items')
@@ -244,10 +294,12 @@ def test_api_common_items_disabled(client, app):
 def test_backup_create_reports_failure(client, app, backup_dir, monkeypatch):
     """A failing dump is reported to the user and leaves no archive behind."""
     import subprocess
+
     import backup_service
 
     def fake_run(cmd, **kwargs):
         return subprocess.CompletedProcess(cmd, 2, stderr=b'Access denied')
+
     monkeypatch.setattr(backup_service.subprocess, 'run', fake_run)
 
     with app.app_context():
@@ -259,8 +311,10 @@ def test_backup_create_reports_failure(client, app, backup_dir, monkeypatch):
 
 def test_settings_load_once_per_request(app, client, make_user):
     from sqlalchemy import event
-    from helpers import get_setting, set_setting
+
     from extensions import db
+    from helpers import get_setting, set_setting
+
     with app.app_context():
         for i in range(5):
             make_user(name=f'S{i}', balance=Decimal('1.5'))

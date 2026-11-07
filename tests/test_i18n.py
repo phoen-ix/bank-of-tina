@@ -1,10 +1,12 @@
 """Tests for internationalization (i18n) support."""
-from helpers import set_setting, get_setting
+
+from helpers import get_setting, set_setting
 
 
 def test_language_setting_controls_locale(app, client, clean_db):
     """The language setting decides which catalog gettext uses."""
     from flask_babel import gettext, refresh
+
     with app.test_request_context():
         set_setting('language', 'de')
         refresh()
@@ -28,8 +30,7 @@ def test_flash_messages_translate_german(app, client, clean_db):
     """Verify flash messages appear in German when language is de."""
     with app.app_context():
         set_setting('language', 'de')
-    resp = client.post('/user/add', data={'name': '', 'email': ''},
-                       follow_redirects=True)
+    resp = client.post('/user/add', data={'name': '', 'email': ''}, follow_redirects=True)
     html = resp.data.decode()
     # Should contain the German translation
     assert 'Name und E-Mail sind erforderlich!' in html
@@ -39,8 +40,7 @@ def test_flash_messages_english(app, client, clean_db):
     """Verify flash messages appear in English when language is en."""
     with app.app_context():
         set_setting('language', 'en')
-    resp = client.post('/user/add', data={'name': '', 'email': ''},
-                       follow_redirects=True)
+    resp = client.post('/user/add', data={'name': '', 'email': ''}, follow_redirects=True)
     html = resp.data.decode()
     assert 'Name and email are required!' in html
 
@@ -51,10 +51,16 @@ def test_tx_type_filter_translates(app, client, clean_db):
 
     # Create a user and deposit via routes
     client.post('/user/add', data={'name': 'TestUser', 'email': 't@x.com'})
-    client.post('/transaction/add', data={
-        'transaction_type': 'deposit',
-        'user_id': '1', 'amount': '50', 'description': 'Test dep',
-    }, follow_redirects=True)
+    client.post(
+        '/transaction/add',
+        data={
+            'transaction_type': 'deposit',
+            'user_id': '1',
+            'amount': '50',
+            'description': 'Test dep',
+        },
+        follow_redirects=True,
+    )
 
     # English mode — badge should show 'deposit'
     resp = client.get('/')
@@ -62,11 +68,17 @@ def test_tx_type_filter_translates(app, client, clean_db):
     assert 'deposit' in html
 
     # Switch to German via settings POST
-    client.post('/settings/general', data={
-        'language': 'de', 'default_item_rows': '3',
-        'recent_transactions_count': '5', 'timezone': 'UTC',
-        'decimal_separator': '.', 'currency_symbol': '€',
-    })
+    client.post(
+        '/settings/general',
+        data={
+            'language': 'de',
+            'default_item_rows': '3',
+            'recent_transactions_count': '5',
+            'timezone': 'UTC',
+            'decimal_separator': '.',
+            'currency_symbol': '€',
+        },
+    )
     # Clear Babel's cached locale on the fixture's g so next request re-evaluates
     if hasattr(g, '_flask_babel') and hasattr(g._flask_babel, 'babel_locale'):
         del g._flask_babel.babel_locale
@@ -78,14 +90,18 @@ def test_tx_type_filter_translates(app, client, clean_db):
 
 def test_language_post_saves_setting(app, client, clean_db):
     """Verify POST to settings/general saves the language setting."""
-    resp = client.post('/settings/general', data={
-        'language': 'en',
-        'default_item_rows': '3',
-        'recent_transactions_count': '5',
-        'timezone': 'UTC',
-        'decimal_separator': '.',
-        'currency_symbol': '€',
-    }, follow_redirects=True)
+    resp = client.post(
+        '/settings/general',
+        data={
+            'language': 'en',
+            'default_item_rows': '3',
+            'recent_transactions_count': '5',
+            'timezone': 'UTC',
+            'decimal_separator': '.',
+            'currency_symbol': '€',
+        },
+        follow_redirects=True,
+    )
     assert resp.status_code == 200
     with app.app_context():
         assert get_setting('language') == 'en'
@@ -107,8 +123,10 @@ def test_html_lang_attribute(app, client, clean_db):
 def test_day_header_date_format(app, clean_db):
     """German day headers put a period after the day number ("12. Juni")."""
     from datetime import date
+
     from flask import render_template_string
     from flask_babel import refresh
+
     with app.test_request_context():
         set_setting('language', 'de')
         refresh()
@@ -121,6 +139,7 @@ def test_day_header_date_format(app, clean_db):
 def test_backup_upload_card_states_size_limit(app, client, clean_db):
     """The upload card names the 2 GB cap (400 chunks of 5 MB) in both languages."""
     from flask import g
+
     html = client.get('/settings').data.decode()
     assert 'Large files are sent in chunks, up to 2 GB.' in html
 
@@ -135,6 +154,7 @@ def test_backup_upload_card_states_size_limit(app, client, clean_db):
 def test_navbar_search_placeholder_fits(app, client, clean_db):
     """The narrow navbar input gets a short placeholder; the full text stays as its label."""
     from flask_babel import refresh
+
     html = client.get('/').data.decode()
     assert 'placeholder="Search…" aria-label="Search transactions…"' in html
 
@@ -147,11 +167,14 @@ def test_navbar_search_placeholder_fits(app, client, clean_db):
 def test_blacklist_messages_name_the_list_in_german(app, client, clean_db):
     """The German flash names the list in German, not as 'item'/'description'/'price'."""
     set_setting('language', 'de')
-    for bl_type, value, text in (('item', 'Servietten', 'zur Artikel-Blacklist hinzugefügt'),
-                                 ('description', 'Diverses', 'zur Beschreibungs-Blacklist hinzugefügt'),
-                                 ('price', '3,5', 'zur Preis-Blacklist hinzugefügt')):
-        html = client.post('/settings/common-blacklist/add', data={'type': bl_type, 'value': value},
-                           follow_redirects=True).data.decode()
+    for bl_type, value, text in (
+        ('item', 'Servietten', 'zur Artikel-Blacklist hinzugefügt'),
+        ('description', 'Diverses', 'zur Beschreibungs-Blacklist hinzugefügt'),
+        ('price', '3,5', 'zur Preis-Blacklist hinzugefügt'),
+    ):
+        html = client.post(
+            '/settings/common-blacklist/add', data={'type': bl_type, 'value': value}, follow_redirects=True
+        ).data.decode()
         assert text in html
     html = client.post('/settings/common-blacklist/1/delete', follow_redirects=True).data.decode()
     assert 'aus der Artikel-Blacklist entfernt' in html
@@ -160,15 +183,18 @@ def test_blacklist_messages_name_the_list_in_german(app, client, clean_db):
 def test_get_locale_falls_back_to_german_only_on_db_errors(app, monkeypatch):
     import pytest
     from sqlalchemy.exc import OperationalError
+
     import app as app_module
 
     def db_down(*_a, **_k):
         raise OperationalError('SELECT', {}, Exception('gone'))
+
     monkeypatch.setattr(app_module, 'get_setting', db_down)
     assert app_module.get_locale() == 'de'
 
     def bug(*_a, **_k):
         raise KeyError('bug')
+
     monkeypatch.setattr(app_module, 'get_setting', bug)
     with pytest.raises(KeyError):
         app_module.get_locale()

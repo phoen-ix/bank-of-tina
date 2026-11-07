@@ -1,3 +1,4 @@
 # Test dependencies on top of the runtime ones (not installed in the image).
 -r requirements.txt
 pytest>=9.1
+ruff>=0.17,<0.18

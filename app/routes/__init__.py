@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from flask import Flask
 
+from routes.analytics import analytics_bp
 from routes.main import main_bp
 from routes.settings import settings_bp
-from routes.analytics import analytics_bp
 
 
 def register_blueprints(app: Flask) -> None:

@@ -1,4 +1,5 @@
 """Error pages: 404, 500 (also with the database down) and an expired CSRF token."""
+
 import pytest
 from sqlalchemy.exc import OperationalError
 
@@ -16,6 +17,7 @@ def boom(app, monkeypatch):
 
     def fail():
         raise RuntimeError('boom')
+
     monkeypatch.setitem(app.view_functions, 'main.index', fail)
 
 
@@ -31,6 +33,7 @@ def test_500_page_with_the_database_down(client, boom, monkeypatch):
 
     def db_down(*_a, **_k):
         raise OperationalError('SELECT', {}, Exception('gone'))
+
     monkeypatch.setattr(helpers.db.session, 'execute', db_down)
     resp = client.get('/')
     html = resp.data.decode()

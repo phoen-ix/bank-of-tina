@@ -33,6 +33,12 @@ jobs:
       - name: Install
         run: pip install -r docker/requirements-dev.txt
 
+      - name: Lint
+        run: ruff check --output-format=github .
+
+      - name: Format
+        run: ruff format --check .
+
       - name: Test
         run: python -m pytest
 

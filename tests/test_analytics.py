@@ -20,13 +20,16 @@ def test_analytics_data_no_transactions(client, app):
 def test_analytics_data_with_transactions(client, app, make_user):
     with app.app_context():
         user = make_user(name='AnalyticsUser', balance=Decimal('50'))
-        client.post('/transaction/add', data={
-            'transaction_type': 'deposit',
-            'user_id': str(user.id),
-            'amount': '50',
-            'description': 'Analytics deposit',
-            'date': '',
-        })
+        client.post(
+            '/transaction/add',
+            data={
+                'transaction_type': 'deposit',
+                'user_id': str(user.id),
+                'amount': '50',
+                'description': 'Analytics deposit',
+                'date': '',
+            },
+        )
 
         response = client.get('/analytics/data')
         assert response.status_code == 200
@@ -37,7 +40,7 @@ def test_analytics_data_with_transactions(client, app, make_user):
 def test_analytics_data_user_filter(client, app, make_user):
     with app.app_context():
         user1 = make_user(name='FilterUser1', balance=Decimal('10'))
-        user2 = make_user(name='FilterUser2', balance=Decimal('20'))
+        make_user(name='FilterUser2', balance=Decimal('20'))
 
         response = client.get(f'/analytics/data?users={user1.id}')
         assert response.status_code == 200
@@ -49,13 +52,16 @@ def test_analytics_data_user_filter(client, app, make_user):
 def test_analytics_data_date_range(client, app, make_user):
     with app.app_context():
         user = make_user(name='DateRange')
-        client.post('/transaction/add', data={
-            'transaction_type': 'deposit',
-            'user_id': str(user.id),
-            'amount': '100',
-            'description': 'Old deposit',
-            'date': '2020-01-01T12:00',
-        })
+        client.post(
+            '/transaction/add',
+            data={
+                'transaction_type': 'deposit',
+                'user_id': str(user.id),
+                'amount': '100',
+                'description': 'Old deposit',
+                'date': '2020-01-01T12:00',
+            },
+        )
 
         response = client.get('/analytics/data?date_from=2019-01-01&date_to=2020-12-31')
         assert response.status_code == 200
@@ -66,10 +72,22 @@ def test_analytics_data_date_range(client, app, make_user):
 def test_balance_history_reverses_only_later_transactions(client, app, make_user):
     with app.app_context():
         user = make_user(name='History')
-        for amount, when in (('100', '2020-01-01T12:00'), ('1000', '2020-01-10T12:00'),
-                             ('10', '2020-03-10T12:00'), ('1', '2020-06-01T12:00')):
-            client.post('/transaction/add', data={'transaction_type': 'deposit', 'user_id': str(user.id),
-                                                  'amount': amount, 'description': 'h', 'date': when})
+        for amount, when in (
+            ('100', '2020-01-01T12:00'),
+            ('1000', '2020-01-10T12:00'),
+            ('10', '2020-03-10T12:00'),
+            ('1', '2020-06-01T12:00'),
+        ):
+            client.post(
+                '/transaction/add',
+                data={
+                    'transaction_type': 'deposit',
+                    'user_id': str(user.id),
+                    'amount': amount,
+                    'description': 'h',
+                    'date': when,
+                },
+            )
 
         weekly = client.get(f'/analytics/data?users={user.id}&date_from=2020-03-01&date_to=2020-03-31').get_json()
         assert weekly['balance_history']['labels'][0] == '2020-03-01'

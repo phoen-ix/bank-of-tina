@@ -8,29 +8,57 @@ from collections import defaultdict
 from datetime import datetime
 from decimal import Decimal
 
-from flask import Blueprint, Response, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, current_app, abort
-from flask_babel import gettext as _, format_date as babel_format_date
+from flask import (
+    Blueprint,
+    Response,
+    abort,
+    current_app,
+    flash,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    send_from_directory,
+    url_for,
+)
+from flask_babel import format_date as babel_format_date
+from flask_babel import gettext as _
 
-from extensions import csrf, db, limiter
 from email_service import unsubscribe_user
-from models import User, Transaction, ExpenseItem
-from helpers import (get_setting, get_tpl, parse_amount, fmt_amount, allowed_file,
-                     save_receipt, delete_receipt_file, parse_submitted_date, parse_local_datetime,
-                     to_local, now_local, local_days_utc, local_month_utc, apply_balance_effect,
-                     adjust_balance, redirect_back, InputError)
+from extensions import csrf, db, limiter
+from helpers import (
+    InputError,
+    adjust_balance,
+    allowed_file,
+    apply_balance_effect,
+    delete_receipt_file,
+    fmt_amount,
+    get_setting,
+    get_tpl,
+    local_days_utc,
+    local_month_utc,
+    now_local,
+    parse_amount,
+    parse_local_datetime,
+    parse_submitted_date,
+    redirect_back,
+    save_receipt,
+    to_local,
+)
+from models import ExpenseItem, Transaction, User
 
 logger = logging.getLogger(__name__)
 
 main_bp = Blueprint('main', __name__)
 
 VALID_EMAIL_TX: set[str] = {'none', 'last3', 'this_week', 'this_month'}
-DESCRIPTION_MAX = 500   # Transaction.description
-USER_FIELD_MAX = 100    # User.name / User.email
+DESCRIPTION_MAX = 500  # Transaction.description
+USER_FIELD_MAX = 100  # User.name / User.email
 # local@domain, the domain with a dot neither first nor last. Linear: '^' stops a search
 # from retrying '[^@\s]+@' at every position, and the dot-free run before the dot keeps the
 # domain from backtracking ('[^@\s]+\.[^@\s]+' was quadratic).
 EMAIL_RE = re.compile(r'^[^@\s]+@[^@\s][^@\s.]*\.[^@\s]+')
-ITEM_NAME_MAX = 200     # ExpenseItem.item_name
+ITEM_NAME_MAX = 200  # ExpenseItem.item_name
 
 
 def _user_id_field(value: object, required: bool = True) -> int | None:
@@ -41,7 +69,7 @@ def _user_id_field(value: object, required: bool = True) -> int | None:
         return None
     try:
         user_id = int(value)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         raise InputError(_('Unknown user.')) from None
     if not db.session.get(User, user_id):
         raise InputError(_('Unknown user.'))
@@ -99,6 +127,7 @@ def health() -> tuple[Response, int]:
 
     # Scheduler check
     from extensions import scheduler
+
     checks['scheduler'] = 'ok' if scheduler.running else 'not running'
 
     # Icons directory writable
@@ -119,10 +148,13 @@ def index() -> str:
         q = q.filter(User.id != int(admin_id))
     users = db.session.execute(q.order_by(User.name)).scalars().all()
     count = int(get_setting('recent_transactions_count', '5'))
-    recent = db.session.execute(db.select(Transaction).order_by(Transaction.date.desc()).limit(count)).scalars().all() if count else []
+    recent = (
+        db.session.execute(db.select(Transaction).order_by(Transaction.date.desc()).limit(count)).scalars().all()
+        if count
+        else []
+    )
     show_email = get_setting('show_email_on_dashboard', '0') == '1'
-    return render_template('index.html', users=users, transactions=recent, show_recent=count > 0,
-                           show_email=show_email)
+    return render_template('index.html', users=users, transactions=recent, show_recent=count > 0, show_email=show_email)
 
 
 def _user_form_error(name: str, email: str, user_id: int | None = None) -> str | None:
@@ -160,9 +192,7 @@ def add_user() -> Response:
     if email_transactions not in VALID_EMAIL_TX:
         email_transactions = 'last3'
 
-    user = User(name=name, email=email,
-                email_opt_in=email_opt_in,
-                email_transactions=email_transactions)
+    user = User(name=name, email=email, email_opt_in=email_opt_in, email_transactions=email_transactions)
     db.session.add(user)
     db.session.commit()
     logger.info('User created: id=%s name=%s', user.id, name)
@@ -221,8 +251,9 @@ def add_transaction() -> str | Response:
         users = db.session.execute(db.select(User).filter_by(is_active=True).order_by(User.name)).scalars().all()
         default_item_rows = int(get_setting('default_item_rows', '3'))
         default_date = now_local().strftime('%Y-%m-%dT%H:%M')
-        return render_template('add_transaction.html', users=users,
-                               default_item_rows=default_item_rows, default_date=default_date)
+        return render_template(
+            'add_transaction.html', users=users, default_item_rows=default_item_rows, default_date=default_date
+        )
 
     transaction_type = request.form.get('transaction_type')
     submitted_date = parse_submitted_date(request.form.get('date', ''))
@@ -246,7 +277,9 @@ def add_transaction() -> str | Response:
                 message = _('Deposit of %(sym)s%(amount)s added successfully!', sym=sym, amount=fmt_amount(amount))
             else:
                 transaction.from_user_id = user_id
-                message = _('Withdrawal of %(sym)s%(amount)s processed successfully!', sym=sym, amount=fmt_amount(amount))
+                message = _(
+                    'Withdrawal of %(sym)s%(amount)s processed successfully!', sym=sym, amount=fmt_amount(amount)
+                )
             db.session.add(transaction)
             apply_balance_effect(transaction)
             db.session.commit()
@@ -284,8 +317,11 @@ def add_transaction() -> str | Response:
                 db.session.add(transaction)
                 for item in items:
                     if item['debtor_id'] == debtor_id:
-                        db.session.add(ExpenseItem(transaction=transaction, item_name=item['name'],
-                                                   price=item['price'], buyer_id=buyer_id))
+                        db.session.add(
+                            ExpenseItem(
+                                transaction=transaction, item_name=item['name'], price=item['price'], buyer_id=buyer_id
+                            )
+                        )
                 adjust_balance(debtor_id, -total_amount)
                 adjust_balance(buyer_id, total_amount)
 
@@ -307,14 +343,22 @@ def add_transaction() -> str | Response:
 @main_bp.route('/transactions')
 def view_transactions() -> str:
     today = now_local().date()
-    year  = max(2000, min(2100, request.args.get('year',  today.year,  type=int)))
-    month = max(1,    min(12,   request.args.get('month', today.month, type=int)))
+    year = max(2000, min(2100, request.args.get('year', today.year, type=int)))
+    month = max(1, min(12, request.args.get('month', today.month, type=int)))
 
     start, end = local_month_utc(year, month)
-    transactions = db.session.execute(db.select(Transaction).where(
-        Transaction.date >= start,
-        Transaction.date < end,
-    ).order_by(Transaction.date.desc())).scalars().all()
+    transactions = (
+        db.session.execute(
+            db.select(Transaction)
+            .where(
+                Transaction.date >= start,
+                Transaction.date < end,
+            )
+            .order_by(Transaction.date.desc())
+        )
+        .scalars()
+        .all()
+    )
 
     by_day = defaultdict(list)
     for t in transactions:
@@ -322,9 +366,9 @@ def view_transactions() -> str:
     grouped = sorted(by_day.items(), reverse=True)
 
     prev_month = month - 1 or 12
-    prev_year  = year - (1 if month == 1 else 0)
+    prev_year = year - (1 if month == 1 else 0)
     next_month = (month % 12) + 1
-    next_year  = year + (1 if month == 12 else 0)
+    next_year = year + (1 if month == 12 else 0)
 
     first_date = db.session.execute(db.select(db.func.min(Transaction.date))).scalar()
     start_year = min(to_local(first_date).year, today.year) if first_date else today.year
@@ -338,12 +382,16 @@ def view_transactions() -> str:
     for t in transactions:
         tx_totals[t.transaction_type] = tx_totals.get(t.transaction_type, Decimal('0')) + Decimal(str(t.amount))
 
-    return render_template('transactions.html',
+    return render_template(
+        'transactions.html',
         grouped=grouped,
-        year=year, month=month,
+        year=year,
+        month=month,
         month_name=babel_format_date(datetime(year, month, 1), 'MMMM'),
-        prev_year=prev_year, prev_month=prev_month,
-        next_year=next_year, next_month=next_month,
+        prev_year=prev_year,
+        prev_month=prev_month,
+        next_year=next_year,
+        next_month=next_month,
         is_current_month=(year == today.year and month == today.month),
         year_range=year_range,
         tx_count=len(transactions),
@@ -354,15 +402,15 @@ def view_transactions() -> str:
 
 @main_bp.route('/search')
 def search() -> str:
-    q           = request.args.get('q', '').strip()
-    tx_type     = request.args.get('type', '')
-    user_id     = request.args.get('user', None, type=int)
-    date_from   = request.args.get('date_from', '')
-    date_to     = request.args.get('date_to', '')
-    amount_min  = request.args.get('amount_min', '')
-    amount_max  = request.args.get('amount_max', '')
+    q = request.args.get('q', '').strip()
+    tx_type = request.args.get('type', '')
+    user_id = request.args.get('user', None, type=int)
+    date_from = request.args.get('date_from', '')
+    date_to = request.args.get('date_to', '')
+    amount_min = request.args.get('amount_min', '')
+    amount_max = request.args.get('amount_max', '')
     has_receipt = request.args.get('has_receipt', '')
-    page        = request.args.get('page', 1, type=int)
+    page = request.args.get('page', 1, type=int)
 
     searched = any([q, tx_type, user_id, date_from, date_to, amount_min, amount_max, has_receipt])
     pagination = None
@@ -376,16 +424,13 @@ def search() -> str:
                 db.or_(
                     Transaction.description.ilike(f'%{q_escaped}%', escape='\\'),
                     Transaction.notes.ilike(f'%{q_escaped}%', escape='\\'),
-                    Transaction.items.any(ExpenseItem.item_name.ilike(f'%{q_escaped}%', escape='\\'))
+                    Transaction.items.any(ExpenseItem.item_name.ilike(f'%{q_escaped}%', escape='\\')),
                 )
             )
         if tx_type:
             stmt = stmt.where(Transaction.transaction_type == tx_type)
         if user_id:
-            stmt = stmt.where(
-                db.or_(Transaction.from_user_id == user_id,
-                       Transaction.to_user_id   == user_id)
-            )
+            stmt = stmt.where(db.or_(Transaction.from_user_id == user_id, Transaction.to_user_id == user_id))
         # The form's dates are local calendar days; stored dates are UTC.
         if date_from:
             try:
@@ -410,42 +455,57 @@ def search() -> str:
             except InputError:
                 pass
         if has_receipt:
-            stmt = stmt.where(Transaction.receipt_path.isnot(None),
-                              Transaction.receipt_path != '')
+            stmt = stmt.where(Transaction.receipt_path.isnot(None), Transaction.receipt_path != '')
 
-        pagination = db.paginate(stmt.order_by(Transaction.date.desc()),
-                                 page=page, per_page=25, error_out=False)
+        pagination = db.paginate(stmt.order_by(Transaction.date.desc()), page=page, per_page=25, error_out=False)
 
-    all_users = db.session.execute(
-        db.select(User).filter_by(is_active=True).order_by(User.name)
-    ).scalars().all()
+    all_users = db.session.execute(db.select(User).filter_by(is_active=True).order_by(User.name)).scalars().all()
 
     # Build kwargs for pagination links (preserve all query params except page)
     page_kwargs = {}
-    if q: page_kwargs['q'] = q
-    if tx_type: page_kwargs['type'] = tx_type
-    if user_id: page_kwargs['user'] = user_id
-    if date_from: page_kwargs['date_from'] = date_from
-    if date_to: page_kwargs['date_to'] = date_to
-    if amount_min: page_kwargs['amount_min'] = amount_min
-    if amount_max: page_kwargs['amount_max'] = amount_max
-    if has_receipt: page_kwargs['has_receipt'] = has_receipt
+    if q:
+        page_kwargs['q'] = q
+    if tx_type:
+        page_kwargs['type'] = tx_type
+    if user_id:
+        page_kwargs['user'] = user_id
+    if date_from:
+        page_kwargs['date_from'] = date_from
+    if date_to:
+        page_kwargs['date_to'] = date_to
+    if amount_min:
+        page_kwargs['amount_min'] = amount_min
+    if amount_max:
+        page_kwargs['amount_max'] = amount_max
+    if has_receipt:
+        page_kwargs['has_receipt'] = has_receipt
 
-    return render_template('search.html',
-        pagination=pagination, searched=searched, all_users=all_users,
-        q=q, tx_type=tx_type, user_id=user_id,
-        date_from=date_from, date_to=date_to,
-        amount_min=amount_min, amount_max=amount_max,
-        has_receipt=has_receipt, page_kwargs=page_kwargs)
+    return render_template(
+        'search.html',
+        pagination=pagination,
+        searched=searched,
+        all_users=all_users,
+        q=q,
+        tx_type=tx_type,
+        user_id=user_id,
+        date_from=date_from,
+        date_to=date_to,
+        amount_min=amount_min,
+        amount_max=amount_max,
+        has_receipt=has_receipt,
+        page_kwargs=page_kwargs,
+    )
 
 
 @main_bp.route('/user/<int:user_id>')
 def user_detail(user_id: int) -> str:
     user = db.session.get(User, user_id) or abort(404)
     page = request.args.get('page', 1, type=int)
-    stmt = db.select(Transaction).where(
-        (Transaction.from_user_id == user_id) | (Transaction.to_user_id == user_id)
-    ).order_by(Transaction.date.desc())
+    stmt = (
+        db.select(Transaction)
+        .where((Transaction.from_user_id == user_id) | (Transaction.to_user_id == user_id))
+        .order_by(Transaction.date.desc())
+    )
     pagination = db.paginate(stmt, page=page, per_page=20, error_out=False)
     return render_template('user_detail.html', user=user, pagination=pagination)
 
@@ -506,22 +566,29 @@ def pwa_manifest() -> Response:
         "background_color": "#ffffff",
         "theme_color": color,
         "icons": [
-            {"src": f"/static/icons/icon-192.png?v={get_setting('icon_version', '0')}",
-             "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
-            {"src": f"/static/icons/icon-512.png?v={get_setting('icon_version', '0')}",
-             "sizes": "512x512", "type": "image/png", "purpose": "any maskable"},
+            {
+                "src": f"/static/icons/icon-192.png?v={get_setting('icon_version', '0')}",
+                "sizes": "192x192",
+                "type": "image/png",
+                "purpose": "any maskable",
+            },
+            {
+                "src": f"/static/icons/icon-512.png?v={get_setting('icon_version', '0')}",
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "any maskable",
+            },
         ],
     }
-    return current_app.response_class(
-        json.dumps(data), mimetype='application/manifest+json'
-    )
+    return current_app.response_class(json.dumps(data), mimetype='application/manifest+json')
 
 
 @main_bp.route('/transaction/<int:transaction_id>/edit', methods=['GET', 'POST'])
 def edit_transaction(transaction_id: int) -> str | Response:
     # Row lock on POST: a double-submitted edit must not reverse the old amount twice.
-    trans = db.session.get(Transaction, transaction_id,
-                           with_for_update=True if request.method == 'POST' else None) or abort(404)
+    trans = db.session.get(
+        Transaction, transaction_id, with_for_update=True if request.method == 'POST' else None
+    ) or abort(404)
     users = db.session.execute(db.select(User).order_by(User.name)).scalars().all()
 
     if request.method == 'GET':
@@ -564,8 +631,11 @@ def edit_transaction(transaction_id: int) -> str | Response:
     if new_items is not None:
         db.session.execute(db.delete(ExpenseItem).filter_by(transaction_id=trans.id))
         for item in new_items:
-            db.session.add(ExpenseItem(transaction_id=trans.id, item_name=item['name'],
-                                       price=item['price'], buyer_id=trans.to_user_id))
+            db.session.add(
+                ExpenseItem(
+                    transaction_id=trans.id, item_name=item['name'], price=item['price'], buyer_id=trans.to_user_id
+                )
+            )
 
     apply_balance_effect(trans)
 

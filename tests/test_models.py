@@ -1,13 +1,14 @@
-from datetime import datetime
 from decimal import Decimal
 
 import pytest
+from sqlalchemy.exc import IntegrityError
 
 
 def test_create_user(app):
     with app.app_context():
         from extensions import db
         from models import User
+
         user = User(name='Test User', email='test@example.com', balance=Decimal('100.00'))
         db.session.add(user)
         db.session.commit()
@@ -22,6 +23,7 @@ def test_user_default_balance(app):
     with app.app_context():
         from extensions import db
         from models import User
+
         user = User(name='Zero User', email='zero@example.com')
         db.session.add(user)
         db.session.commit()
@@ -35,6 +37,7 @@ def test_balance_precision_no_float_drift(app):
     with app.app_context():
         from extensions import db
         from models import User
+
         user = User(name='Precision Test', email='prec@example.com', balance=Decimal('0'))
         db.session.add(user)
         db.session.commit()
@@ -51,6 +54,7 @@ def test_user_is_active_default(app):
     with app.app_context():
         from extensions import db
         from models import User
+
         user = User(name='Active User', email='active@example.com')
         db.session.add(user)
         db.session.commit()
@@ -62,7 +66,8 @@ def test_user_is_active_default(app):
 def test_transaction_creation_all_fields(app):
     with app.app_context():
         from extensions import db
-        from models import User, Transaction
+        from models import Transaction, User
+
         sender = User(name='Sender', email='sender@test.com')
         receiver = User(name='Receiver', email='receiver@test.com')
         db.session.add_all([sender, receiver])
@@ -93,18 +98,17 @@ def test_transaction_creation_all_fields(app):
 def test_expense_item_relationship(app):
     with app.app_context():
         from extensions import db
-        from models import User, Transaction, ExpenseItem
+        from models import ExpenseItem, Transaction, User
+
         buyer = User(name='Buyer', email='buyer@test.com')
         db.session.add(buyer)
         db.session.commit()
 
-        tx = Transaction(description='Lunch', amount=Decimal('15.00'),
-                         to_user_id=buyer.id, transaction_type='expense')
+        tx = Transaction(description='Lunch', amount=Decimal('15.00'), to_user_id=buyer.id, transaction_type='expense')
         db.session.add(tx)
         db.session.commit()
 
-        item = ExpenseItem(transaction_id=tx.id, item_name='Pizza',
-                           price=Decimal('15.00'), buyer_id=buyer.id)
+        item = ExpenseItem(transaction_id=tx.id, item_name='Pizza', price=Decimal('15.00'), buyer_id=buyer.id)
         db.session.add(item)
         db.session.commit()
 
@@ -115,8 +119,9 @@ def test_expense_item_relationship(app):
 
 def test_setting_get_set(app):
     with app.app_context():
-        from models import Setting
         from extensions import db
+        from models import Setting
+
         s = Setting(key='test_key', value='test_value')
         db.session.add(s)
         db.session.commit()
@@ -129,10 +134,11 @@ def test_common_item_uniqueness(app):
     with app.app_context():
         from extensions import db
         from models import CommonItem
+
         db.session.add(CommonItem(name='Apple'))
         db.session.commit()
 
-        with pytest.raises(Exception):
+        with pytest.raises(IntegrityError):
             db.session.add(CommonItem(name='Apple'))
             db.session.commit()
 
@@ -141,6 +147,7 @@ def test_user_is_active_toggle(app):
     with app.app_context():
         from extensions import db
         from models import User
+
         user = User(name='Toggle User', email='toggle@test.com')
         db.session.add(user)
         db.session.commit()
@@ -156,6 +163,7 @@ def test_user_negative_balance(app):
     with app.app_context():
         from extensions import db
         from models import User
+
         user = User(name='Debt User', email='debt@test.com', balance=Decimal('-42.50'))
         db.session.add(user)
         db.session.commit()
@@ -167,14 +175,16 @@ def test_user_negative_balance(app):
 def test_transaction_types(app):
     with app.app_context():
         from extensions import db
-        from models import User, Transaction
+        from models import Transaction, User
+
         user = User(name='Types User', email='types@test.com')
         db.session.add(user)
         db.session.commit()
 
         for tx_type in ['deposit', 'withdrawal', 'expense']:
-            tx = Transaction(description=f'Test {tx_type}', amount=Decimal('10'),
-                             transaction_type=tx_type, to_user_id=user.id)
+            tx = Transaction(
+                description=f'Test {tx_type}', amount=Decimal('10'), transaction_type=tx_type, to_user_id=user.id
+            )
             db.session.add(tx)
         db.session.commit()
 
@@ -187,15 +197,20 @@ def test_transaction_types(app):
 def test_user_relationship_navigation(app):
     with app.app_context():
         from extensions import db
-        from models import User, Transaction
+        from models import Transaction, User
+
         alice = User(name='Alice R', email='alicer@test.com')
         bob = User(name='Bob R', email='bobr@test.com')
         db.session.add_all([alice, bob])
         db.session.commit()
 
-        tx = Transaction(description='Transfer', amount=Decimal('20'),
-                         from_user_id=alice.id, to_user_id=bob.id,
-                         transaction_type='expense')
+        tx = Transaction(
+            description='Transfer',
+            amount=Decimal('20'),
+            from_user_id=alice.id,
+            to_user_id=bob.id,
+            transaction_type='expense',
+        )
         db.session.add(tx)
         db.session.commit()
 

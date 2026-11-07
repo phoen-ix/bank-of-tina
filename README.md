@@ -280,6 +280,7 @@ Tests verwenden eine SQLite-In-Memory-Datenbank und benötigen keine laufenden D
 ```bash
 pip install -r docker/requirements-dev.txt
 FLASK_TESTING=1 python -m pytest tests/ -v
+ruff check . && ruff format --check .
 ```
 
 Die Tests decken Hilfsfunktionen, Modelle, Routen, Einstellungen, Diagramme, Health-Check, E-Mail-Erstellung und -Versand, Backup/Restore, Salden und Zeitzonen, Eingabeprüfung, gerenderte Seiten und Internationalisierung ab. Wie viele es sind: `python -m pytest --collect-only -q | tail -1`.
@@ -560,6 +561,7 @@ Tests use an in-memory SQLite database and require no running services:
 ```bash
 pip install -r docker/requirements-dev.txt
 FLASK_TESTING=1 python -m pytest tests/ -v
+ruff check . && ruff format --check .
 ```
 
 The tests cover helpers, models, routes, settings, analytics, health check, email building and sending, backup/restore, balances and timezones, input validation, rendered pages, and internationalization. To count them: `python -m pytest --collect-only -q | tail -1`.

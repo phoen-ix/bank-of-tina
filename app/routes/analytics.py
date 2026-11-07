@@ -4,12 +4,12 @@ from collections import defaultdict
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 
-from flask import Blueprint, Response, render_template, request, jsonify
+from flask import Blueprint, Response, jsonify, render_template, request
 from flask_babel import format_date, get_locale
 
 from extensions import db
-from models import User, Transaction, ExpenseItem
-from helpers import now_local, to_local, local_days_utc, local_day_start_utc
+from helpers import local_day_start_utc, local_days_utc, now_local, to_local
+from models import ExpenseItem, Transaction, User
 
 analytics_bp = Blueprint('analytics_bp', __name__)
 
@@ -17,13 +17,12 @@ analytics_bp = Blueprint('analytics_bp', __name__)
 @analytics_bp.route('/analytics')
 def analytics() -> str:
     users = db.session.execute(db.select(User).filter_by(is_active=True).order_by(User.name)).scalars().all()
-    today     = now_local().date()
-    def_from  = (today - timedelta(days=90)).strftime('%Y-%m-%d')
-    def_to    = today.strftime('%Y-%m-%d')
-    first     = db.session.execute(db.select(db.func.min(Transaction.date))).scalar()
-    all_from  = to_local(first).strftime('%Y-%m-%d') if first else def_to
-    return render_template('analytics.html', users=users,
-                           default_from=def_from, default_to=def_to, all_from=all_from)
+    today = now_local().date()
+    def_from = (today - timedelta(days=90)).strftime('%Y-%m-%d')
+    def_to = today.strftime('%Y-%m-%d')
+    first = db.session.execute(db.select(db.func.min(Transaction.date))).scalar()
+    all_from = to_local(first).strftime('%Y-%m-%d') if first else def_to
+    return render_template('analytics.html', users=users, default_from=def_from, default_to=def_to, all_from=all_from)
 
 
 @analytics_bp.route('/analytics/data')
@@ -31,8 +30,8 @@ def analytics_data() -> Response:
     today = now_local().date()
 
     date_from_str = request.args.get('date_from', (today - timedelta(days=90)).strftime('%Y-%m-%d'))
-    date_to_str   = request.args.get('date_to',   today.strftime('%Y-%m-%d'))
-    users_param   = request.args.get('users', '')
+    date_to_str = request.args.get('date_to', today.strftime('%Y-%m-%d'))
+    users_param = request.args.get('users', '')
 
     # Requested dates are local calendar days; stored transaction dates are UTC.
     try:
@@ -58,9 +57,7 @@ def analytics_data() -> Response:
         Transaction.date < range_end,
     )
     if all_uid:
-        tx_stmt = tx_stmt.where(
-            (Transaction.from_user_id.in_(all_uid)) | (Transaction.to_user_id.in_(all_uid))
-        )
+        tx_stmt = tx_stmt.where((Transaction.from_user_id.in_(all_uid)) | (Transaction.to_user_id.in_(all_uid)))
     transactions = db.session.execute(tx_stmt.order_by(Transaction.date)).scalars().all()
 
     delta_days = (day_to - day_from).days
@@ -85,7 +82,7 @@ def analytics_data() -> Response:
     if not sample_dates or sample_dates[-1] < day_to:
         sample_dates.append(day_to)
 
-    history_labels   = [d.strftime('%Y-%m-%d') for d in sample_dates]
+    history_labels = [d.strftime('%Y-%m-%d') for d in sample_dates]
     history_datasets: dict[str, list[float]] = {}
 
     # Only transactions after the first sample day change a sampled balance (see the loop below).
@@ -126,7 +123,7 @@ def analytics_data() -> Response:
             key = (local_day - timedelta(days=local_day.weekday())).strftime('%Y-%m-%d')
         else:
             key = local_day.strftime('%Y-%m')
-        vol[key]['count']  += 1
+        vol[key]['count'] += 1
         vol[key]['amount'] += Decimal(str(tx.amount))
 
     sorted_vol_keys = sorted(vol.keys())
@@ -138,8 +135,8 @@ def analytics_data() -> Response:
         vol_labels = [format_date(datetime.strptime(k + '-01', '%Y-%m-%d'), 'MMM yyyy') for k in sorted_vol_keys]
 
     transaction_volume = {
-        'labels':  vol_labels,
-        'counts':  [vol[k]['count']           for k in sorted_vol_keys],
+        'labels': vol_labels,
+        'counts': [vol[k]['count'] for k in sorted_vol_keys],
         'amounts': [round(vol[k]['amount'], 4) for k in sorted_vol_keys],
     }
 
@@ -147,27 +144,33 @@ def analytics_data() -> Response:
     item_stats: dict[str, dict[str, int | Decimal]] = defaultdict(lambda: {'count': 0, 'total': Decimal('0')})
 
     if expense_ids:
-        for item in db.session.execute(db.select(ExpenseItem).where(ExpenseItem.transaction_id.in_(expense_ids))).scalars().all():
+        for item in (
+            db.session.execute(db.select(ExpenseItem).where(ExpenseItem.transaction_id.in_(expense_ids)))
+            .scalars()
+            .all()
+        ):
             name = item.item_name.strip()
             item_stats[name]['count'] += 1
             item_stats[name]['total'] += Decimal(str(item.price))
 
     top_sorted = sorted(item_stats.items(), key=lambda x: x[1]['total'], reverse=True)[:15]
     top_items = {
-        'names':  [x[0]                         for x in top_sorted],
-        'counts': [x[1]['count']                for x in top_sorted],
-        'totals': [round(x[1]['total'], 4)      for x in top_sorted],
+        'names': [x[0] for x in top_sorted],
+        'counts': [x[1]['count'] for x in top_sorted],
+        'totals': [round(x[1]['total'], 4) for x in top_sorted],
     }
 
-    return jsonify({
-        'balances':            balances,
-        'balance_history':     {'labels': history_labels, 'datasets': history_datasets},
-        'transaction_volume':  transaction_volume,
-        'top_items':           top_items,
-        'meta': {
-            'date_from':          date_from_str,
-            'date_to':            date_to_str,
-            'transaction_count':  len(transactions),
-            'user_count':         len(users),
-        },
-    })
+    return jsonify(
+        {
+            'balances': balances,
+            'balance_history': {'labels': history_labels, 'datasets': history_datasets},
+            'transaction_volume': transaction_volume,
+            'top_items': top_items,
+            'meta': {
+                'date_from': date_from_str,
+                'date_to': date_to_str,
+                'transaction_count': len(transactions),
+                'user_count': len(users),
+            },
+        }
+    )
