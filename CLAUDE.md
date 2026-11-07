@@ -113,7 +113,7 @@ On the fleet VM, Docker runs go through the fleet's `slot` gate (`slot heavy ban
 **Docs tour and fleet**
 - Never test against a checkout's plain `docker compose up`: it uses `./mariadb-data` and the project
   name `bank-of-tina`. The tour uses `docker-compose.e2e.yml` (named volumes, own container names) under
-  `COMPOSE_PROJECT_NAME=bank-of-tina_docs`; the script refuses live names. Port block on the fleet VM:
+  `COMPOSE_PROJECT_NAME=bank-of-tina_docs`; the scripts accept only `*_e2e`/`*_docs` project names and never read the checkout's `.env`. Port block on the fleet VM:
   24100 (`PORT_BASE=24100`).
 - The tour seeds through the web forms (`e2e/docs/seed.ts`) with fixed dates; screenshot names are
   stable once committed. bank-of-tina keeps a FULL screenshot set in both languages (`x.png` and

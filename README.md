@@ -292,7 +292,7 @@ Die Playwright-Suite in `e2e/tests/` bedient jede Seite und jede Funktion im Bro
 
 ```bash
 cd e2e && npm ci && npx playwright install chromium && cd ..
-scripts/e2e.sh                         # PORT_BASE=5000 ist der Standard, Mailpit auf PORT_BASE+5
+scripts/e2e.sh                         # PORT_BASE=24100 ist der Standard, Mailpit auf PORT_BASE+5
 scripts/e2e.sh tests/search.spec.ts    # weitere Argumente gehen an `playwright test`
 ```
 
@@ -306,7 +306,7 @@ Neu erzeugen (braucht Docker und Node; startet für jede Sprache einen Wegwerf-S
 
 ```bash
 cd e2e && npm ci && npx playwright install chromium && cd ..
-scripts/docs-screenshots.sh            # schreibt docs/screenshots/*.png; PORT_BASE=5000 ist der Standard
+scripts/docs-screenshots.sh            # schreibt docs/screenshots/*.png; PORT_BASE=24100 ist der Standard
 oxipng -o 4 --strip safe docs/screenshots/*.png   # vor dem Commit: hält das 6-MB-Budget ein
 ```
 
@@ -572,7 +572,7 @@ The Playwright suite in `e2e/tests/` drives every page and feature in a browser 
 
 ```bash
 cd e2e && npm ci && npx playwright install chromium && cd ..
-scripts/e2e.sh                         # PORT_BASE=5000 is the default, Mailpit on PORT_BASE+5
+scripts/e2e.sh                         # PORT_BASE=24100 is the default, Mailpit on PORT_BASE+5
 scripts/e2e.sh tests/search.spec.ts    # extra arguments go to `playwright test`
 ```
 
@@ -586,7 +586,7 @@ To regenerate (needs Docker and Node; starts a throwaway stack per language unde
 
 ```bash
 cd e2e && npm ci && npx playwright install chromium && cd ..
-scripts/docs-screenshots.sh            # writes docs/screenshots/*.png; PORT_BASE=5000 is the default
+scripts/docs-screenshots.sh            # writes docs/screenshots/*.png; PORT_BASE=24100 is the default
 oxipng -o 4 --strip safe docs/screenshots/*.png   # before committing: keeps the folder under 6 MB
 ```
 

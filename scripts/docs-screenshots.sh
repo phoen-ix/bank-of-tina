@@ -6,9 +6,9 @@
 #
 #   scripts/docs-screenshots.sh [outdir]      # default: docs/screenshots
 #
-# PORT_BASE (default 5000): the app on 127.0.0.1:PORT_BASE.
-# COMPOSE_PROJECT_NAME (default bank-of-tina_docs): never the checkout's live
-# `bank-of-tina` project. ARTIFACTS: where Playwright's test results go
+# PORT_BASE (default 24100, the fleet port block): the app on 127.0.0.1:PORT_BASE.
+# COMPOSE_PROJECT_NAME (default bank-of-tina_docs): must end in _e2e or _docs.
+# The checkout's .env is never read. ARTIFACTS: where Playwright's test results go
 # (default: a temp dir). DOCS_LANGS (default "en de"): which screenshot sets.
 # The stack uses named volumes only (docker-compose.e2e.yml), never the
 # checkout's mariadb-data/ or uploads/. Node + `npm ci` in e2e/ are the caller's.
@@ -18,20 +18,21 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 OUT="$(mkdir -p "${1:-docs/screenshots}" && cd "${1:-docs/screenshots}" && pwd)"
 ARTIFACTS="${ARTIFACTS:-$(mktemp -d)}"
-export PORT_BASE="${PORT_BASE:-5000}"
+export PORT_BASE="${PORT_BASE:-24100}"
 export COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-bank-of-tina_docs}"
 
+# Teardown runs `down -v`: only ever a throwaway project.
 case "$COMPOSE_PROJECT_NAME" in
-  bank-of-tina | phytotron | phytotron-dev | vib | fileheron | keyb-dev)
-    echo "docs-screenshots: refusing the live project name '$COMPOSE_PROJECT_NAME'" >&2
-    exit 1 ;;
+  *_e2e | *_docs) ;;
+  *) echo "docs-screenshots: COMPOSE_PROJECT_NAME must end in _e2e or _docs, not '$COMPOSE_PROJECT_NAME'" >&2
+     exit 1 ;;
 esac
 
-# Compose requires these (${VAR:?}); test-only values. Exported values win over a .env.
+# Compose requires these (${VAR:?}); test-only values. The checkout's .env is never read.
 export SECRET_KEY=docs-secret-key-not-a-secret DB_PASSWORD=docs-db-not-a-secret
 export DB_ROOT_PASSWORD=docs-root-not-a-secret DB_USER=tina DB_NAME=bank_of_tina
 
-compose() { docker compose -f docker-compose.yml -f docker-compose.e2e.yml "$@"; }
+compose() { docker compose --env-file /dev/null -f docker-compose.yml -f docker-compose.e2e.yml "$@"; }
 teardown() {
   rc=$?
   [ "$rc" = 0 ] || compose logs --tail=200 >"$ARTIFACTS/stack.log" 2>&1 || true

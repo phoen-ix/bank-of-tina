@@ -10,7 +10,7 @@ const SMTP = {
   smtp_server: 'mailpit', smtp_port: '1025', smtp_security: 'none', smtp_username: 'e2e',
   smtp_password: 'e2e-smtp-not-a-secret', from_email: 'bank@e2e.example', from_name: 'Bank of Tina',
   // The weekly email's unsubscribe link points here.
-  smtp_ehlo_name: '', app_url: process.env.E2E_BASE_URL ?? 'http://localhost:5000',
+  smtp_ehlo_name: '', app_url: process.env.E2E_BASE_URL ?? 'http://localhost:24100',
   email_enabled: '1', email_debug: '', admin_summary_email: '',
 }
 

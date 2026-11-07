@@ -27,7 +27,7 @@ export default defineConfig({
   reporter: CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: {
     ...devices['Desktop Chrome'],
-    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:5000',
+    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:24100',
     locale: 'en-GB',
     timezoneId: 'Europe/Vienna',
     // Bootstrap drops its fade transitions: a dialog closed while it was still

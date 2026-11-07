@@ -32,7 +32,7 @@ export default defineConfig({
   reporter: 'list',
   use: {
     ...devices['Desktop Chrome'],
-    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:5000',
+    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:24100',
     viewport: { width: 1280, height: 800 },
     deviceScaleFactor: 2,
     timezoneId: 'Europe/Vienna',

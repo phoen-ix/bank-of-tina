@@ -1,7 +1,7 @@
 # Throwaway stack for the docs tour (scripts/docs-screenshots.sh) and the e2e
 # suite (scripts/e2e.sh): its own container names, named volumes instead of the
 # checkout's ./mariadb-data, ./uploads, ./backups and ./icons, and the web port
-# on 127.0.0.1:${PORT_BASE:-5000}. The e2e suite adds Mailpit (profile `mail`,
+# on 127.0.0.1:${PORT_BASE:-24100}. The e2e suite adds Mailpit (profile `mail`,
 # web/API on 127.0.0.1:${MAILPIT_PORT:-8025}). Always under its own project name:
 #
 #   COMPOSE_PROJECT_NAME=bank-of-tina_docs \
@@ -19,7 +19,7 @@ services:
     container_name: ${COMPOSE_PROJECT_NAME:?}-web
     restart: "no"
     ports: !override
-      - "127.0.0.1:${PORT_BASE:-5000}:5000"
+      - "127.0.0.1:${PORT_BASE:-24100}:5000"
     volumes: !override
       - uploads:/uploads
       - backups:/backups
