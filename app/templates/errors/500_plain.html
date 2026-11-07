@@ -1,0 +1,18 @@
+{# The 500 page when errors/500.html cannot render: base.html reads the settings from the database,
+   the usual cause of a 500. Rendered without context processors (app.py). #}
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>500 - Bank of Tina</title>
+    <link href="{{ url_for('static', filename='vendor/css/bootstrap.min.css') }}" rel="stylesheet">
+</head>
+<body>
+    <div class="container text-center py-5">
+        <h1 class="display-1 text-muted">500</h1>
+        <p class="lead">{{ _('Something went wrong. Please try again.') }}</p>
+        <a href="{{ url_for('main.index') }}" class="btn btn-primary mt-3">{{ _('Dashboard') }}</a>
+    </div>
+</body>
+</html>

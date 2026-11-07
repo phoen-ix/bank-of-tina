@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-06 17:11+0000\n"
+"POT-Creation-Date: 2026-11-07 06:45+0000\n"
 "PO-Revision-Date: 2026-03-07 16:54+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -18,19 +18,27 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: app/app.py:113
+#: app/app.py:133
+msgid "The form has expired. Please reload the page."
+msgstr ""
+
+#: app/app.py:134
+msgid "The form has expired. Please submit it again."
+msgstr ""
+
+#: app/app.py:142
 msgid "Too many requests. Please wait and try again."
 msgstr ""
 
-#: app/app.py:146
+#: app/app.py:175
 msgid "deposit"
 msgstr ""
 
-#: app/app.py:147
+#: app/app.py:176
 msgid "withdrawal"
 msgstr ""
 
-#: app/app.py:148
+#: app/app.py:177
 msgid "expense"
 msgstr ""
 
@@ -245,25 +253,25 @@ msgstr ""
 msgid "Admin summary to %(name)s: %(err)s"
 msgstr ""
 
-#: app/helpers.py:194 app/helpers.py:209
+#: app/helpers.py:206 app/helpers.py:221
 msgid "Amounts must be greater than zero."
 msgstr ""
 
-#: app/helpers.py:204
+#: app/helpers.py:216
 #, python-format
 msgid "\"%(value)s\" is not a valid amount."
 msgstr ""
 
-#: app/helpers.py:207
+#: app/helpers.py:219
 #, python-format
 msgid "\"%(value)s\" is too large."
 msgstr ""
 
-#: app/scheduler_jobs.py:170
+#: app/scheduler_jobs.py:159
 msgid "Success"
 msgstr ""
 
-#: app/scheduler_jobs.py:170
+#: app/scheduler_jobs.py:159
 msgid "Failed"
 msgstr ""
 
@@ -381,229 +389,229 @@ msgstr ""
 msgid "Transaction deleted."
 msgstr ""
 
-#: app/routes/settings.py:130
+#: app/routes/settings.py:129
 msgid "SMTP port must be a number between 1 and 65535."
 msgstr ""
 
-#: app/routes/settings.py:134
+#: app/routes/settings.py:133
 msgid "The EHLO name may only contain letters, digits, dots and hyphens."
 msgstr ""
 
-#: app/routes/settings.py:138
+#: app/routes/settings.py:137
 msgid "The site URL must start with http:// or https://."
 msgstr ""
 
-#: app/routes/settings.py:160
+#: app/routes/settings.py:159
 msgid "Settings saved."
 msgstr ""
 
-#: app/routes/settings.py:168
+#: app/routes/settings.py:167
 #, python-format
 msgid "%(success)s email(s) sent, %(fail)s failed."
 msgstr ""
 
-#: app/routes/settings.py:171
+#: app/routes/settings.py:170
 #, python-format
 msgid "Debug: %(err)s"
 msgstr ""
 
-#: app/routes/settings.py:179
+#: app/routes/settings.py:178
 msgid "Email debug log cleared."
 msgstr ""
 
-#: app/routes/settings.py:200
+#: app/routes/settings.py:199
 msgid "Schedule saved and enabled."
 msgstr ""
 
-#: app/routes/settings.py:204
+#: app/routes/settings.py:203
 msgid "Schedule disabled."
 msgstr ""
 
-#: app/routes/settings.py:240
+#: app/routes/settings.py:239
 msgid "General settings saved."
 msgstr ""
 
-#: app/routes/settings.py:272
+#: app/routes/settings.py:271
 msgid "Item name is required."
 msgstr ""
 
-#: app/routes/settings.py:277
+#: app/routes/settings.py:276
 #, python-format
 msgid "\"%(name)s\" added to common items."
 msgstr ""
 
-#: app/routes/settings.py:287
+#: app/routes/settings.py:286
 #, python-format
 msgid "\"%(name)s\" removed from common items."
 msgstr ""
 
-#: app/routes/settings.py:295
+#: app/routes/settings.py:294
 msgid "Description is required."
 msgstr ""
 
-#: app/routes/settings.py:300
+#: app/routes/settings.py:299
 #, python-format
 msgid "\"%(value)s\" added to common descriptions."
 msgstr ""
 
-#: app/routes/settings.py:310
+#: app/routes/settings.py:309
 #, python-format
 msgid "\"%(value)s\" removed from common descriptions."
 msgstr ""
 
-#: app/routes/settings.py:319 app/routes/settings.py:350
+#: app/routes/settings.py:318 app/routes/settings.py:349
 msgid "Valid price is required."
 msgstr ""
 
-#: app/routes/settings.py:324
+#: app/routes/settings.py:323
 #, python-format
 msgid "%(sym)s%(amount)s added to common prices."
 msgstr ""
 
-#: app/routes/settings.py:334
+#: app/routes/settings.py:333
 #, python-format
 msgid "%(sym)s%(amount)s removed from common prices."
 msgstr ""
 
-#: app/routes/settings.py:343
+#: app/routes/settings.py:342
 msgid "Invalid blacklist entry."
 msgstr ""
 
-#: app/routes/settings.py:355
+#: app/routes/settings.py:354
 #, python-format
 msgid "\"%(value)s\" added to item blacklist."
 msgstr ""
 
-#: app/routes/settings.py:356
+#: app/routes/settings.py:355
 #, python-format
 msgid "\"%(value)s\" added to description blacklist."
 msgstr ""
 
-#: app/routes/settings.py:357
+#: app/routes/settings.py:356
 #, python-format
 msgid "\"%(value)s\" added to price blacklist."
 msgstr ""
 
-#: app/routes/settings.py:367
+#: app/routes/settings.py:366
 #, python-format
 msgid "\"%(value)s\" removed from item blacklist."
 msgstr ""
 
-#: app/routes/settings.py:368
+#: app/routes/settings.py:367
 #, python-format
 msgid "\"%(value)s\" removed from description blacklist."
 msgstr ""
 
-#: app/routes/settings.py:369
+#: app/routes/settings.py:368
 #, python-format
 msgid "\"%(value)s\" removed from price blacklist."
 msgstr ""
 
-#: app/routes/settings.py:377
+#: app/routes/settings.py:376
 msgid "Common autocomplete settings saved."
 msgstr ""
 
-#: app/routes/settings.py:421
+#: app/routes/settings.py:420
 msgid "Auto-collect schedule saved and enabled."
 msgstr ""
 
-#: app/routes/settings.py:425
+#: app/routes/settings.py:424
 msgid "Auto-collect schedule disabled."
 msgstr ""
 
-#: app/routes/settings.py:433
+#: app/routes/settings.py:432
 msgid "Auto-collect job ran successfully."
 msgstr ""
 
-#: app/routes/settings.py:441
+#: app/routes/settings.py:440
 msgid "Debug log cleared."
 msgstr ""
 
-#: app/routes/settings.py:477
+#: app/routes/settings.py:476
 msgid "Templates saved."
 msgstr ""
 
-#: app/routes/settings.py:489
+#: app/routes/settings.py:488
 msgid "Templates reset to defaults."
 msgstr ""
 
-#: app/routes/settings.py:502
+#: app/routes/settings.py:501
 msgid "Icon regenerated with current navbar color."
 msgstr ""
 
-#: app/routes/settings.py:506
+#: app/routes/settings.py:505
 msgid "Icon reset to default."
 msgstr ""
 
-#: app/routes/settings.py:511
+#: app/routes/settings.py:510
 msgid "No file selected."
 msgstr ""
 
-#: app/routes/settings.py:516
+#: app/routes/settings.py:515
 msgid "Only PNG or JPG files are accepted."
 msgstr ""
 
-#: app/routes/settings.py:529
+#: app/routes/settings.py:528
 msgid "Custom icon uploaded."
 msgstr ""
 
-#: app/routes/settings.py:531
+#: app/routes/settings.py:530
 msgid "Pillow is not installed — cannot process uploaded images."
 msgstr ""
 
-#: app/routes/settings.py:533
+#: app/routes/settings.py:532
 #, python-format
 msgid "Failed to process image: %(error)s"
 msgstr ""
 
-#: app/routes/settings.py:535
+#: app/routes/settings.py:534
 msgid "Unknown action."
 msgstr ""
 
-#: app/routes/settings.py:597
+#: app/routes/settings.py:596
 msgid "Backup schedule saved and enabled."
 msgstr ""
 
-#: app/routes/settings.py:601
+#: app/routes/settings.py:600
 msgid "Backup schedule disabled."
 msgstr ""
 
-#: app/routes/settings.py:611
+#: app/routes/settings.py:610
 #, python-format
 msgid "Backup created: %(result)s"
 msgstr ""
 
-#: app/routes/settings.py:613
+#: app/routes/settings.py:612
 #, python-format
 msgid "Backup failed: %(result)s"
 msgstr ""
 
-#: app/routes/settings.py:621
+#: app/routes/settings.py:620
 msgid "Backup debug log cleared."
 msgstr ""
 
-#: app/routes/settings.py:635 app/routes/settings.py:690
+#: app/routes/settings.py:634 app/routes/settings.py:689
 msgid "Invalid filename."
 msgstr ""
 
-#: app/routes/settings.py:640
+#: app/routes/settings.py:639
 #, python-format
 msgid "%(filename)s deleted."
 msgstr ""
 
-#: app/routes/settings.py:642 app/routes/settings.py:694
+#: app/routes/settings.py:641 app/routes/settings.py:693
 msgid "Backup file not found."
 msgstr ""
 
-#: app/routes/settings.py:652
+#: app/routes/settings.py:651
 msgid "Invalid upload ID"
 msgstr ""
 
-#: app/routes/settings.py:657 app/routes/settings.py:659
+#: app/routes/settings.py:656 app/routes/settings.py:658
 msgid "Invalid chunk parameters"
 msgstr ""
 
-#: app/routes/settings.py:661
+#: app/routes/settings.py:660
 msgid "No chunk data"
 msgstr ""
 
@@ -940,8 +948,9 @@ msgstr ""
 msgid "Toggle navigation"
 msgstr ""
 
-#: app/templates/base.html:60 app/templates/index.html:3
-#: app/templates/settings.html:147
+#: app/templates/base.html:60 app/templates/errors/404.html:9
+#: app/templates/errors/500.html:9 app/templates/errors/500_plain.html:15
+#: app/templates/index.html:3 app/templates/settings.html:147
 msgid "Dashboard"
 msgstr ""
 
@@ -2267,6 +2276,14 @@ msgstr ""
 
 #: app/templates/user_detail.html:156
 msgid "Member since"
+msgstr ""
+
+#: app/templates/errors/404.html:8
+msgid "Page not found."
+msgstr ""
+
+#: app/templates/errors/500.html:8 app/templates/errors/500_plain.html:14
+msgid "Something went wrong. Please try again."
 msgstr ""
 
 #~ msgid ""

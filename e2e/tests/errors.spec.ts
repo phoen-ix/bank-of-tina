@@ -23,15 +23,15 @@ test('rate limit is per client: another client can still add users', async ({ ap
   await other.dispose()
 })
 
-test('a form posted without its CSRF token is refused', async ({ page, app, guard }) => {
-  guard.allow(/400/)
+test('a form posted without its CSRF token is refused with a message', async ({ page, app }) => {
   const u = await app.addUser()
   await page.goto(`/user/${u.id}`)
   await page.locator('input[name="csrf_token"]').evaluateAll((els) => els.forEach((e) => e.remove()))
   const res = page.waitForResponse((r) => r.url().endsWith('/toggle-active'))
   await page.getByRole('button', { name: 'Deactivate User' }).click()
-  expect((await res).status()).toBe(400)
-  await expect(page.getByText('The CSRF token is missing.')).toBeVisible()
+  expect((await res).status()).toBe(302)
+  await expectToast(page, 'The form has expired. Please submit it again.')
+  await expect(page).toHaveURL(`/user/${u.id}`)
   expect(await app.balance(u)).toBe('€0.00')
   await page.goto(`/user/${u.id}`)
   await expect(page.getByText('Inactive', { exact: true })).toHaveCount(0)

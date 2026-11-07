@@ -100,6 +100,7 @@ test.describe('visitor (no login)', () => {
     }
     const res = await page.goto('/user/999999')
     expect(res!.status()).toBe(404)
-    await expect(page.getByRole('heading', { name: 'Not Found' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: '404' })).toBeVisible()
+    await expect(page.getByText('Page not found.')).toBeVisible()
   })
 })

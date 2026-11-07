@@ -168,8 +168,8 @@ Tests: `npx playwright test --list` (102 tests in 15 files, including the setup 
 
 | # | Item | Test |
 |---|---|---|
-| 137 | 404: unknown user / transaction / receipt / backup file / route; POST actions on unknown ids | ✅ sweep › error states: 404 for unknown ids, files and routes; users.spec.ts › unknown user ids answer 404 on every user action |
-| 138 | 400: form without CSRF token | ✅ errors.spec.ts › a form posted without its CSRF token is refused |
+| 137 | 404 page: unknown user / transaction / receipt / backup file / route; POST actions on unknown ids | ✅ sweep › error states: 404 for unknown ids, files and routes; users.spec.ts › unknown user ids answer 404 on every user action |
+| 138 | Form without CSRF token: back to the form with "The form has expired" | ✅ errors.spec.ts › a form posted without its CSRF token is refused with a message |
 | 139 | 429: per-client rate limit, message, other clients unaffected | ✅ errors.spec.ts › rate limit: the 11th new user within a minute is refused with a message; errors.spec.ts › rate limit is per client: another client can still add users |
 
 Not counted as items: the docs tour (`e2e/docs/`, its own render check) and the German

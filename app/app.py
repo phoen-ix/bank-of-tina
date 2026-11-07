@@ -12,7 +12,8 @@ from typing import Any
 from flask import Flask, Response, g
 from flask.json.provider import DefaultJSONProvider
 
-from flask import request, url_for, flash, jsonify
+from flask import request, url_for, flash, jsonify, render_template
+from flask_wtf.csrf import CSRFError
 from flask_babel import gettext as _, format_date as babel_format_date
 from extensions import db, csrf, migrate, limiter, scheduler, babel
 from helpers import get_setting, get_tpl, hex_to_rgb, to_local, redirect_back
@@ -106,6 +107,32 @@ import models  # noqa: F401
 
 from routes import register_blueprints
 register_blueprints(app)
+
+
+@app.errorhandler(404)
+def not_found_handler(e: Exception) -> tuple[str, int]:
+    return render_template('errors/404.html'), 404
+
+
+@app.errorhandler(500)
+def internal_error_handler(e: Exception) -> tuple[str, int]:
+    db.session.rollback()
+    try:
+        return render_template('errors/500.html'), 500
+    except SQLAlchemyError:
+        # The database is down: base.html cannot read the settings.
+        db.session.rollback()
+        return app.jinja_env.get_template('errors/500_plain.html').render(lang=get_locale()), 500
+
+
+@app.errorhandler(CSRFError)
+def csrf_error_handler(e: CSRFError) -> tuple[Response, int] | Response:
+    # A missing or expired token (Flask-WTF: 1 h) is mostly a form left open too long:
+    # say so and reload it with a fresh token instead of werkzeug's bare 400 page.
+    if request.headers.get('X-CSRFToken'):  # fetch() from a page script
+        return jsonify({'error': _('The form has expired. Please reload the page.')}), 400
+    flash(_('The form has expired. Please submit it again.'), 'error')
+    return redirect_back(url_for('main.index'))
 
 
 @app.errorhandler(429)

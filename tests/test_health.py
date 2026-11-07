@@ -35,11 +35,12 @@ def test_csp_header(client, app):
 
 
 def test_csp_without_template_has_no_empty_nonce(client, app):
-    """Email previews and error pages render no template: no "'nonce-'" source (browsers log it as invalid)."""
-    for path in ('/settings/templates/preview/backup', '/no-such-page'):
-        csp = client.get(path).headers['Content-Security-Policy']
-        assert "'nonce-'" not in csp
-        assert "script-src 'self';" in csp
+    """Email previews render no template: no "'nonce-'" source (browsers log it as invalid)."""
+    csp = client.get('/settings/templates/preview/backup').headers['Content-Security-Policy']
+    assert "'nonce-'" not in csp
+    assert "script-src 'self';" in csp
+    # The error pages extend base.html and get a real nonce.
+    assert "script-src 'self' 'nonce-" in client.get('/no-such-page').headers['Content-Security-Policy']
 
 
 def test_csp_not_on_json(client, app):
