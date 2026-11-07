@@ -18,6 +18,7 @@ from extensions import db, csrf, migrate, limiter, scheduler, babel
 from helpers import get_setting, get_tpl, hex_to_rgb, to_local, redirect_back
 from config import db_env
 from sqlalchemy.engine import URL
+from sqlalchemy.exc import SQLAlchemyError
 
 
 def setup_logging() -> None:
@@ -87,9 +88,10 @@ app.config['BABEL_TRANSLATION_DIRECTORIES'] = 'translations'
 
 
 def get_locale() -> str:
+    # The error pages still render (in German) when the database is down.
     try:
         return get_setting('language', 'de')
-    except Exception:
+    except SQLAlchemyError:
         return 'de'
 
 

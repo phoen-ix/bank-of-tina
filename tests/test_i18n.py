@@ -155,3 +155,20 @@ def test_blacklist_messages_name_the_list_in_german(app, client, clean_db):
         assert text in html
     html = client.post('/settings/common-blacklist/1/delete', follow_redirects=True).data.decode()
     assert 'aus der Artikel-Blacklist entfernt' in html
+
+
+def test_get_locale_falls_back_to_german_only_on_db_errors(app, monkeypatch):
+    import pytest
+    from sqlalchemy.exc import OperationalError
+    import app as app_module
+
+    def db_down(*_a, **_k):
+        raise OperationalError('SELECT', {}, Exception('gone'))
+    monkeypatch.setattr(app_module, 'get_setting', db_down)
+    assert app_module.get_locale() == 'de'
+
+    def bug(*_a, **_k):
+        raise KeyError('bug')
+    monkeypatch.setattr(app_module, 'get_setting', bug)
+    with pytest.raises(KeyError):
+        app_module.get_locale()
